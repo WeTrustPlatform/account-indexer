@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"github.com/tuyennhv/geth-indexer/core/types"
 )
 
 // Repository to store index data

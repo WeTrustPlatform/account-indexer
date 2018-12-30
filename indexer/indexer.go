@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tuyennhv/geth-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/core/types"
 )
 
 // Indexer fetch data from blockchain and store in a repository
@@ -61,14 +61,19 @@ func (indexer *Indexer) RealtimeIndex() {
 func (indexer *Indexer) IndexFromGenesis() {
 	// TODO: change this latest block to realtime?
 	// latestBlock := big.NewInt(7000000)
-	latestBlock := big.NewInt(10000)
+	latestBlock := big.NewInt(1000000)
 	start := time.Now()
-
+	// TODO: change 1 to genesis block
+	range1, range2 := DivideRange(Range{big.NewInt(1), latestBlock})
+	fmt.Println(range1)
+	fmt.Println(range2)
+	for i := 0; i < 5; i++ {
+		fmt.Println(5 - i)
+		time.Sleep(time.Second)
+	}
 	// https://nathanleclaire.com/blog/2014/02/15/how-to-wait-for-all-goroutines-to-finish-executing-before-continuing/
 	wg := sync.WaitGroup{}
 	wg.Add(2)
-	// TODO: change 1 to genesis block
-	range1, range2 := DivideRange(Range{big.NewInt(1), latestBlock})
 	go func() {
 		defer wg.Done()
 		indexer.indexByRange(range1)

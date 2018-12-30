@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/ethereum/go-ethereum/console"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/tuyennhv/geth-indexer/indexer"
 
 	"os"
 

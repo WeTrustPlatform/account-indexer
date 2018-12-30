@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/WeTrustPlatform/account-indexer/core/types"
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	gethCommon "github.com/ethereum/go-ethereum/common"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/tuyennhv/geth-indexer/core/types"
 )
 
 type MockEthClient struct{}

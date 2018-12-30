@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tuyennhv/geth-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/core/types"
 )
 
 var blockTime = *big.NewInt(time.Now().UnixNano())

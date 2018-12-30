@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tuyennhv/geth-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/core/types"
 )
 
 // TODO: test using memdb https://godoc.org/github.com/syndtr/goleveldb/leveldb/memdb#New
