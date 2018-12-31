@@ -2,10 +2,9 @@ package repository
 
 import (
 	"fmt"
-	"math/big"
-	"strings"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/repository/marshal"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
@@ -19,13 +18,14 @@ type Repository interface {
 
 // LevelDBRepo implementation of Repository
 type LevelDBRepo struct {
-	addressDB *leveldb.DB
-	blockDB   *leveldb.DB
+	addressDB  *leveldb.DB
+	blockDB    *leveldb.DB
+	marshaller marshal.Marshaller
 }
 
 // NewLevelDBRepo create an instance of LevelDBRepo
 func NewLevelDBRepo(addressDB *leveldb.DB, blockDB *leveldb.DB) *LevelDBRepo {
-	return &LevelDBRepo{addressDB: addressDB, blockDB: blockDB}
+	return &LevelDBRepo{addressDB: addressDB, blockDB: blockDB, marshaller: marshal.StringMarshaller{}}
 }
 
 // Store implements Repository
@@ -37,21 +37,21 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 	// 	fmt.Println("Cannot access block leveldb, error=" + err.Error())
 	// }
 	if reorgAddressesByteArr != nil {
-		reorgAddresses := UnmarshallBlockDBValue(reorgAddressesByteArr)
+		reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(reorgAddressesByteArr)
 		if reorgAddresses != nil {
 			repo.HandleReorg(blockIndex.BlockNumber, reorgAddresses)
 		}
 	}
 	for _, item := range indexData {
 		// fmt.Println(item)
-		batch.Put(MarshallKey(item), MarshallValue(item))
+		batch.Put(repo.marshaller.MarshallAddressKey(item), repo.marshaller.MarshallAddressValue(item))
 	}
 	err := repo.addressDB.Write(batch, nil)
 	if err != nil {
 		// TODO
 		fmt.Println("Cannot write to address leveldb")
 	}
-	err = repo.blockDB.Put([]byte(blockIndex.BlockNumber), MarshallBlockDBValue(blockIndex), nil)
+	err = repo.blockDB.Put([]byte(blockIndex.BlockNumber), repo.marshaller.MarshallBlockDBValue(blockIndex), nil)
 	if err != nil {
 		// TODO
 		fmt.Println("Cannot write to block leveldb")
@@ -64,7 +64,7 @@ func (repo *LevelDBRepo) Get(address string) []types.AddressIndex {
 	iter := repo.addressDB.NewIterator(util.BytesPrefix([]byte(address)), nil)
 	for iter.Next() {
 		value := iter.Value()
-		addressIndex := UnmarshallValue(value)
+		addressIndex := repo.marshaller.UnmarshallAddressValue(value)
 		addressIndex.Address = address
 		// missing block index, do we need it?
 		result = append(result, addressIndex)
@@ -81,7 +81,7 @@ func (repo *LevelDBRepo) Get(address string) []types.AddressIndex {
 func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []string) {
 	batch := new(leveldb.Batch)
 	for _, address := range reorgAddresses {
-		addressIndexKey := marshallKey(address, blockIndex)
+		addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address, blockIndex)
 		batch.Delete([]byte(addressIndexKey))
 	}
 	err := repo.addressDB.Write(batch, nil)
@@ -89,72 +89,4 @@ func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []string)
 		// TODO
 		fmt.Println("Cannot remove old address index")
 	}
-}
-
-// MarshallBlockDBValue marshall a blockIndex to []byte so that we store it as value in Block db
-func MarshallBlockDBValue(blockIndex types.BlockIndex) []byte {
-	value := strings.Join(blockIndex.Addresses, "_")
-	return []byte(value)
-}
-
-// UnmarshallBlockDBValue unmarshall a byte array into array of address, this is for Block db
-func UnmarshallBlockDBValue(value []byte) []string {
-	valueStr := string(value)
-	valueArr := strings.Split(valueStr, "_")
-	return valueArr
-}
-
-// MarshallKey create LevelDB key
-func MarshallKey(index types.AddressIndex) []byte {
-	return marshallKey(index.Address, index.BlockNumber.String())
-}
-
-func marshallKey(address string, blockNumber string) []byte {
-	key := address + "_" + blockNumberWidPad(blockNumber)
-	key = strings.ToUpper(key)
-	return []byte(key)
-}
-
-// MarshallValue create LevelDB value
-func MarshallValue(index types.AddressIndex) []byte {
-	value := index.TxHash + "_" + index.Value.String() + "_" + index.Time.String()
-	return []byte(value)
-}
-
-// UnmarshallKey LevelDB key to address_blockNumber
-func UnmarshallKey(key []byte) (string, *big.Int) {
-	keyStr := string(key)
-	keyArr := strings.Split(keyStr, "_")
-	blockNumber := stringToBigInt(keyArr[1])
-	return keyArr[0], blockNumber
-}
-
-// UnmarshallValue LevelDB value to txhash_Value_Time
-func UnmarshallValue(value []byte) types.AddressIndex {
-	valueStr := string(value)
-	valueArr := strings.Split(valueStr, "_")
-	txHash := valueArr[0]
-	txValue := stringToBigInt(valueArr[1])
-	time := stringToBigInt(valueArr[2])
-	return types.AddressIndex{
-		TxHash: txHash,
-		Value:  *txValue,
-		Time:   *time,
-	}
-}
-
-func stringToBigInt(str string) *big.Int {
-	result := new(big.Int)
-	result, _ = result.SetString(str, 10)
-	return result
-}
-
-func blockNumberWidPad(blockNumber string) string {
-	if len(blockNumber) < 10 {
-		count := 10 - len(blockNumber)
-		for i := 0; i < count; i++ {
-			blockNumber = "0" + blockNumber
-		}
-	}
-	return blockNumber
 }

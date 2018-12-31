@@ -66,7 +66,7 @@ func (indexer *Indexer) RealtimeIndex() {
 func (indexer *Indexer) IndexFromGenesis() {
 	// TODO: change this latest block to realtime?
 	// latestBlock := big.NewInt(7000000)
-	latestBlock := big.NewInt(1000000)
+	latestBlock := big.NewInt(1000)
 	start := time.Now()
 	// TODO: change 1 to genesis block
 	range1, range2 := DivideRange(Range{big.NewInt(1), latestBlock})
