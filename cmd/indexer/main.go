@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/WeTrustPlatform/account-indexer/indexer"
+	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/ethereum/go-ethereum/console"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -69,7 +70,7 @@ func index(ctx *cli.Context) {
 	indexer := indexer.Indexer{
 		// Fetcher: fetcher,
 		IpcPath: ipcPath,
-		Repo:    indexer.NewLevelDBRepo(addressDB, blockDB),
+		Repo:    repository.NewLevelDBRepo(addressDB, blockDB),
 		// Repo: nil,
 	}
 	// indexer.RealtimeIndex()

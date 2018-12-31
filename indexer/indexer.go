@@ -8,13 +8,15 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/fetcher"
+	"github.com/WeTrustPlatform/account-indexer/repository"
 )
 
 // Indexer fetch data from blockchain and store in a repository
 type Indexer struct {
 	// Fetcher Fetch
 	IpcPath string
-	Repo    Repository
+	Repo    repository.Repository
 }
 
 type Range struct {
@@ -45,7 +47,7 @@ func DivideRange(parent Range) (Range, Range) {
 
 // RealtimeIndex entry point for this struct
 func (indexer *Indexer) RealtimeIndex() {
-	fetcher, err := NewChainFetch(indexer.IpcPath)
+	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
 	if err != nil {
 		log.Fatal("Can't connect to IPC server", err)
 		return
@@ -96,7 +98,7 @@ func (indexer *Indexer) IndexFromGenesis() {
 func (indexer *Indexer) indexByRange(rg Range, tag string) {
 	from := rg.From
 	to := rg.To
-	fetcher, err := NewChainFetch(indexer.IpcPath)
+	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
 	if err != nil {
 		log.Fatal("Can't connect to IPC server", err)
 		return
