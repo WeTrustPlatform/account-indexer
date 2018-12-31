@@ -34,8 +34,11 @@ func DivideRange(parent Range) (Range, Range) {
 	distance = distance.Div(distance, big.NewInt(2))
 	middle := new(big.Int)
 	middle = middle.Add(parent.From, distance)
-	toPlus1 := parent.To.Add(parent.To, big.NewInt(1))
-	range1 := Range{From: parent.From, To: middle}
+	toPlus1 := new(big.Int)
+	toPlus1 = toPlus1.Add(parent.To, big.NewInt(1))
+	range1From := new(big.Int)
+	range1From = range1From.Set(parent.From)
+	range1 := Range{From: range1From, To: middle}
 	range2 := Range{From: middle, To: toPlus1}
 	return range1, range2
 }
@@ -76,11 +79,11 @@ func (indexer *Indexer) IndexFromGenesis() {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		indexer.indexByRange(range1)
+		indexer.indexByRange(range1, "1")
 	}()
 	go func() {
 		defer wg.Done()
-		indexer.indexByRange(range2)
+		indexer.indexByRange(range2, "2")
 	}()
 
 	wg.Wait()
@@ -90,7 +93,7 @@ func (indexer *Indexer) IndexFromGenesis() {
 }
 
 // from: inclusive, to: exclusive
-func (indexer *Indexer) indexByRange(rg Range) {
+func (indexer *Indexer) indexByRange(rg Range, tag string) {
 	from := rg.From
 	to := rg.To
 	fetcher, err := NewChainFetch(indexer.IpcPath)
@@ -98,18 +101,19 @@ func (indexer *Indexer) indexByRange(rg Range) {
 		log.Fatal("Can't connect to IPC server", err)
 		return
 	}
-	for blockNumber := from; blockNumber.Cmp(to) < 0; blockNumber = blockNumber.Add(blockNumber, big.NewInt(int64(1))) {
+	blockNumber := new(big.Int)
+	for blockNumber.Set(from); blockNumber.Cmp(to) < 0; blockNumber = blockNumber.Add(blockNumber, big.NewInt(int64(1))) {
 		// fmt.Println("indexer: Received BlockDetail " + blockNumber.String())
 		blockDetail, err := fetcher.FetchABlock(blockNumber)
 		if err == nil {
-			fmt.Println("indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
+			fmt.Println(tag + " indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
 			indexer.processBlock(blockDetail)
 		} else {
-			fmt.Println("indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
+			fmt.Println(tag + " indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
 			// TODO: log warning
 		}
 	}
-	fmt.Println("Done indexByRange from=" + from.String())
+	fmt.Println(tag + " is done indexByRange from=" + from.String())
 }
 
 func (indexer *Indexer) processBlock(blockDetail types.BLockDetail) {
