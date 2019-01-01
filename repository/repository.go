@@ -25,7 +25,8 @@ type LevelDBRepo struct {
 
 // NewLevelDBRepo create an instance of LevelDBRepo
 func NewLevelDBRepo(addressDB *leveldb.DB, blockDB *leveldb.DB) *LevelDBRepo {
-	return &LevelDBRepo{addressDB: addressDB, blockDB: blockDB, marshaller: marshal.StringMarshaller{}}
+	// return &LevelDBRepo{addressDB: addressDB, blockDB: blockDB, marshaller: marshal.StringMarshaller{}}
+	return &LevelDBRepo{addressDB: addressDB, blockDB: blockDB, marshaller: marshal.ByteMarshaller{}}
 }
 
 // Store implements Repository
