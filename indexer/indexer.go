@@ -139,19 +139,21 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 		negValue := transaction.Value.Mul(&posValue, big.NewInt(-1))
 
 		fromIndex := types.AddressIndex{
-			Address:     transaction.From,
-			TxHash:      transaction.TxHash,
-			Value:       *negValue,
-			Time:        blockDetail.Time,
-			BlockNumber: blockDetail.BlockNumber,
+			Address:       transaction.From,
+			TxHash:        transaction.TxHash,
+			Value:         *negValue,
+			Time:          blockDetail.Time,
+			BlockNumber:   blockDetail.BlockNumber,
+			CoupleAddress: transaction.To,
 		}
 
 		toIndex := types.AddressIndex{
-			Address:     transaction.To,
-			TxHash:      transaction.TxHash,
-			Value:       posValue,
-			Time:        blockDetail.Time,
-			BlockNumber: blockDetail.BlockNumber,
+			Address:       transaction.To,
+			TxHash:        transaction.TxHash,
+			Value:         posValue,
+			Time:          blockDetail.Time,
+			BlockNumber:   blockDetail.BlockNumber,
+			CoupleAddress: transaction.From,
 		}
 		if !tmpMap[transaction.From] {
 			tmpMap[transaction.From] = true

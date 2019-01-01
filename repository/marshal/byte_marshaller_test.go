@@ -59,11 +59,11 @@ func TestByteMarshallAddressValue(t *testing.T) {
 	value := big.NewInt(1000000000)
 	bm := ByteMarshaller{}
 	addressIndex := types.AddressIndex{
-		Address:     "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e",
-		BlockNumber: *blockNumber,
-		TxHash:      "0x9bdbd233827534e48cc23801d145c64c4f4bab6b2c4c74a54673633e4c6c1591",
-		Value:       *value,
-		Time:        *blockTime,
+		CoupleAddress: "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e",
+		BlockNumber:   *blockNumber,
+		TxHash:        "0x9bdbd233827534e48cc23801d145c64c4f4bab6b2c4c74a54673633e4c6c1591",
+		Value:         *value,
+		Time:          *blockTime,
 	}
 	indexValue := bm.MarshallAddressValue(addressIndex)
 	addressIndex2 := bm.UnmarshallAddressValue(indexValue)
@@ -72,6 +72,9 @@ func TestByteMarshallAddressValue(t *testing.T) {
 	// }
 	if !strings.EqualFold(addressIndex2.TxHash, addressIndex.TxHash) {
 		t.Error("Unmarshalled tx hash is not correct")
+	}
+	if !strings.EqualFold(addressIndex2.CoupleAddress, addressIndex.CoupleAddress) {
+		t.Error("Unmarshalled couple address is not correct")
 	}
 	if !strings.EqualFold(addressIndex2.Time.String(), addressIndex.Time.String()) {
 		t.Error("Unmarshalled tx time is not correct")

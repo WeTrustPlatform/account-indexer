@@ -68,10 +68,13 @@ func (bm ByteMarshaller) MarshallAddressKeyStr(address string, blockNumber strin
 func (bm ByteMarshaller) MarshallAddressValue(index types.AddressIndex) []byte {
 	// 32 byte
 	txHashByteArr, _ := hexutil.Decode(index.TxHash)
+	// 20 byte
+	addressByteArr, _ := hexutil.Decode(index.CoupleAddress)
 	// 8 byte
 	timeByteArr := index.Time.Bytes()
 	valueByteArr := []byte(index.Value.String())
-	result := append(txHashByteArr, timeByteArr...)
+	result := append(txHashByteArr, addressByteArr...)
+	result = append(result, timeByteArr...)
 	result = append(result, valueByteArr...)
 	return result
 }
@@ -86,16 +89,20 @@ func (bm ByteMarshaller) UnmarshallAddressKey(key []byte) (string, *big.Int) {
 
 // UnmarshallAddressValue LevelDB value to txhash_Value_Time
 func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex {
-	txHash := hexutil.Encode(value[:gethcommon.HashLength])
+	hashLength := gethcommon.HashLength
+	addressLength := gethcommon.AddressLength
+	txHash := hexutil.Encode(value[:hashLength])
+	address := hexutil.Encode(value[hashLength : hashLength+addressLength])
 	timestamp := new(big.Int)
-	timestamp.SetBytes(value[gethcommon.HashLength : gethcommon.HashLength+TIMESTAMP_BYTE_LENGTH])
-	txValue := string(value[gethcommon.HashLength+TIMESTAMP_BYTE_LENGTH:])
+	timestamp.SetBytes(value[hashLength+addressLength : hashLength+addressLength+TIMESTAMP_BYTE_LENGTH])
+	txValue := string(value[hashLength+addressLength+TIMESTAMP_BYTE_LENGTH:])
 	txValueBI := new(big.Int)
 	txValueBI.SetString(txValue, 10)
 	result := types.AddressIndex{
-		TxHash: txHash,
-		Time:   *timestamp,
-		Value:  *txValueBI,
+		TxHash:        txHash,
+		CoupleAddress: address,
+		Time:          *timestamp,
+		Value:         *txValueBI,
 	}
 	return result
 }

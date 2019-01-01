@@ -13,11 +13,12 @@ import (
 // Index data for Address LevelDB
 // Value can be negative or positive
 type AddressIndex struct {
-	Address     string
-	TxHash      string
-	Value       big.Int
-	Time        big.Int
-	BlockNumber big.Int
+	Address       string
+	TxHash        string
+	Value         big.Int
+	Time          big.Int
+	BlockNumber   big.Int
+	CoupleAddress string
 }
 
 // BlockIndex index data for Block LevelDB
