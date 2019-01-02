@@ -66,7 +66,7 @@ func (indexer *Indexer) RealtimeIndex() {
 func (indexer *Indexer) IndexFromGenesis() {
 	// TODO: change this latest block to realtime?
 	// latestBlock := big.NewInt(7000000)
-	latestBlock := big.NewInt(100000)
+	latestBlock := big.NewInt(1000)
 	start := time.Now()
 	// TODO: change 1 to genesis block
 	range1, range2 := DivideRange(Range{big.NewInt(1), latestBlock})
@@ -129,9 +129,9 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 	addressIndex := make([]types.AddressIndex, 0, 2*len(blockDetail.Transactions))
 	blockIndex := types.BlockIndex{
 		BlockNumber: blockDetail.BlockNumber.String(),
-		Addresses:   []string{},
+		Addresses:   []types.AddressSequence{},
 	}
-	tmpMap := map[string]bool{}
+	sequenceMap := map[string]uint8{}
 
 	for _, transaction := range blockDetail.Transactions {
 		// TODO: resolve pointer issue
@@ -139,7 +139,6 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 		negValue := transaction.Value.Mul(&posValue, big.NewInt(-1))
 
 		fromIndex := types.AddressIndex{
-			Address:       transaction.From,
 			TxHash:        transaction.TxHash,
 			Value:         *negValue,
 			Time:          blockDetail.Time,
@@ -148,84 +147,32 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 		}
 
 		toIndex := types.AddressIndex{
-			Address:       transaction.To,
 			TxHash:        transaction.TxHash,
 			Value:         posValue,
 			Time:          blockDetail.Time,
 			BlockNumber:   blockDetail.BlockNumber,
 			CoupleAddress: transaction.From,
 		}
-		if !tmpMap[transaction.From] {
-			tmpMap[transaction.From] = true
-			blockIndex.Addresses = append(blockIndex.Addresses, transaction.From)
+		if _, ok := sequenceMap[transaction.From]; !ok {
+			sequenceMap[transaction.From] = 0
+			// blockIndex.Addresses = append(blockIndex.Addresses, transaction.From)
 		}
-		if !tmpMap[transaction.To] {
-			tmpMap[transaction.To] = true
-			blockIndex.Addresses = append(blockIndex.Addresses, transaction.To)
+		sequenceMap[transaction.From]++
+
+		if _, ok := sequenceMap[transaction.To]; !ok {
+			sequenceMap[transaction.To] = 0
+			// blockIndex.Addresses = append(blockIndex.Addresses, transaction.To)
 		}
+		sequenceMap[transaction.To]++
+
+		fromIndex.Address = transaction.From
+		fromIndex.Sequence = sequenceMap[transaction.From]
+		toIndex.Address = transaction.To
+		toIndex.Sequence = sequenceMap[transaction.To]
 		addressIndex = append(addressIndex, fromIndex, toIndex)
+	}
+	for k, v := range sequenceMap {
+		blockIndex.Addresses = append(blockIndex.Addresses, types.AddressSequence{Address: k, Sequence: v})
 	}
 	return addressIndex, blockIndex
 }
-
-// func Index111(ipcPath string) {
-// 	fmt.Println("Hello from Tuyen")
-// 	client, err := ethclient.Dial(ipcPath)
-// 	if err != nil {
-// 		log.Fatalf("Failed to connect to the Ethereum client: %v", err)
-// 	} else {
-// 		fmt.Println("Successfully connect to geth ipc")
-// 	}
-// 	ctx := context.Background()
-
-// 	blockHash := "0x96a3e88d84bc3538f2d9e61fbcab154a227d51e586fb4f7d404105257bcf0277"
-// 	aBlock, err := client.BlockByHash(ctx, common.HexToHash(blockHash))
-// 	if err != nil {
-// 		log.Fatal(fmt.Sprintf("Failed to get block %s", blockHash))
-// 	} else {
-// 		fmt.Println(fmt.Sprintf("Block number of %s: %s", blockHash, aBlock.Number()))
-// 	}
-
-// 	address := "0xa7046014126a840e0420c77196982fb7499f9778"
-// 	amount, err := client.BalanceAt(ctx, common.HexToAddress(address), nil)
-// 	if err != nil {
-// 		log.Fatal("Failed to get balance of address")
-// 	} else {
-// 		fmt.Println(fmt.Sprintf("Balance of address %s: %s", address, amount))
-// 	}
-// 	// latest block
-// 	aBlock, err = client.BlockByNumber(ctx, nil)
-// 	if err != nil {
-// 		log.Fatal("Failed to get balance of address")
-// 	} else {
-// 		fmt.Println(fmt.Sprintf("Latest block number: %s", aBlock.Number()))
-// 	}
-
-// 	latestBlock := aBlock.Number()
-// 	for i := big.NewInt(int64(1)); i.Cmp(latestBlock) < 0; i = i.Add(i, big.NewInt(int64(1))) {
-// 		// aBlock = client.
-// 		printBlockDetail(client, ctx, i)
-// 	}
-
-// 	blockHeaderChannel := make(chan *types.Header)
-// 	client.SubscribeNewHead(ctx, blockHeaderChannel)
-// 	fmt.Println("Waiting for new block hearders...")
-// 	for {
-// 		receivedHeader := <-blockHeaderChannel
-// 		blockNumber := receivedHeader.Number
-// 		fmt.Println(fmt.Sprintf("Found block number received from SubscribeNewHead: %s", blockNumber))
-// 		printBlockDetail(client, ctx, blockNumber)
-// 	}
-
-// }
-
-// func printBlockDetail(client *ethclient.Client, ctx context.Context, i *big.Int) {
-// 	aBlock, _ := client.BlockByNumber(ctx, i)
-// 	if len(aBlock.Transactions()) > 0 {
-// 		fmt.Println(fmt.Sprintf("There are transactions in block %s", aBlock.Number()))
-// 		for index, tx := range aBlock.Transactions() {
-// 			sender, _ := client.TransactionSender(ctx, tx, aBlock.Hash(), uint(index+100))
-// 			fmt.Println(fmt.Sprintf("Hash %s --- To %s --- Value %d -- Sender %s", tx.Hash().String(), tx.To().String(), tx.Value(), sender.String()))
-// 		}
-// 	}
-// }

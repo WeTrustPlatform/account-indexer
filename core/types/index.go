@@ -13,7 +13,7 @@ import (
 // Index data for Address LevelDB
 // Value can be negative or positive
 type AddressIndex struct {
-	Address       string
+	AddressSequence
 	TxHash        string
 	Value         big.Int
 	Time          big.Int
@@ -21,10 +21,16 @@ type AddressIndex struct {
 	CoupleAddress string
 }
 
+// AddressSequence In same block, 1 address can stay in multiple transactions, especially the "to"
+type AddressSequence struct {
+	Address  string
+	Sequence uint8
+}
+
 // BlockIndex index data for Block LevelDB
 type BlockIndex struct {
 	BlockNumber string
-	Addresses   []string
+	Addresses   []AddressSequence
 }
 
 func (index AddressIndex) String() string {

@@ -12,7 +12,11 @@ type StringMarshaller struct {
 
 // MarshallBlockDBValue marshall a blockIndex to []byte so that we store it as value in Block db
 func (sm StringMarshaller) MarshallBlockDBValue(blockIndex types.BlockIndex) []byte {
-	value := strings.Join(blockIndex.Addresses, "_")
+	addresses := []string{}
+	for _, item := range blockIndex.Addresses {
+		addresses = append(addresses, item.Address)
+	}
+	value := strings.Join(addresses, "_")
 	return []byte(value)
 }
 

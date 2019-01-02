@@ -15,10 +15,14 @@ func TestByteMarshallerBlock(t *testing.T) {
 	address1 := "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e"
 	address2 := "0x7FA2B1C6E0B8B8805Bd56eC171aD8A8fbDEA3a44"
 	blockIndex := types.BlockIndex{
-		Addresses: []string{address1, address2},
+		BlockNumber: "3000000",
+		Addresses: []types.AddressSequence{
+			types.AddressSequence{Address: address1, Sequence: 1},
+			types.AddressSequence{Address: address2, Sequence: 2},
+		},
 	}
 	encoded := bm.MarshallBlockDBValue(blockIndex)
-	if len(encoded) != gethcommon.AddressLength*2 {
+	if len(encoded) != (gethcommon.AddressLength+1)*2 {
 		t.Error("Encoded array length is not correct")
 	}
 	// 84 as in StringMarshaller
@@ -31,11 +35,14 @@ func TestByteMarshallerBlock(t *testing.T) {
 	if len(addresses) != 2 {
 		t.Error("Decoded address array length is not correct")
 	}
-	if strings.ToUpper(addresses[0]) != strings.ToUpper(address1) {
-		t.Error("Encoded address1 is not correct")
-	}
-	if strings.ToUpper(addresses[1]) != strings.ToUpper(address2) {
-		t.Error("Encoded address2 is not correct")
+
+	for i, address := range addresses {
+		if !strings.EqualFold(address.Address, blockIndex.Addresses[i].Address) {
+			t.Error("Encoded address is not correct")
+		}
+		if address.Sequence != blockIndex.Addresses[i].Sequence {
+			t.Error("Sequence is not correct")
+		}
 	}
 }
 
@@ -43,7 +50,8 @@ func TestByteMarshallAddressKey(t *testing.T) {
 	bm := ByteMarshaller{}
 	address := "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e"
 	blockNumber := "3000000"
-	addressKey := bm.MarshallAddressKeyStr(address, blockNumber)
+	sequence := uint8(1)
+	addressKey := bm.MarshallAddressKeyStr(address, blockNumber, sequence)
 	addressRst, blockNumberRst := bm.UnmarshallAddressKey(addressKey)
 	if strings.ToUpper(address) != strings.ToUpper(addressRst) {
 		t.Error("Unmarshalled address is wrong")

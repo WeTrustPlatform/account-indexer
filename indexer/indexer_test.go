@@ -22,7 +22,7 @@ var blockDetail = types.BLockDetail{
 		},
 		types.TransactionDetail{
 			From:   "from2",
-			To:     "to2",
+			To:     "to1", // This demonstrates 2 transactions with same "to" address, Sequence should be increased
 			TxHash: "0xtx2",
 			Value:  *big.NewInt(222),
 		},
@@ -31,32 +31,48 @@ var blockDetail = types.BLockDetail{
 
 var expectedIndexes = []types.AddressIndex{
 	types.AddressIndex{
-		Address:     "from1",
-		TxHash:      "0xtx1",
-		Value:       *big.NewInt(-111),
-		Time:        blockTime,
-		BlockNumber: *big.NewInt(2018),
+		AddressSequence: types.AddressSequence{
+			Address:  "from1",
+			Sequence: 1,
+		},
+		TxHash:        "0xtx1",
+		Value:         *big.NewInt(-111),
+		Time:          blockTime,
+		BlockNumber:   *big.NewInt(2018),
+		CoupleAddress: "to1",
 	},
 	types.AddressIndex{
-		Address:     "to1",
-		TxHash:      "0xtx1",
-		Value:       *big.NewInt(111),
-		Time:        blockTime,
-		BlockNumber: *big.NewInt(2018),
+		AddressSequence: types.AddressSequence{
+			Address:  "to1",
+			Sequence: 1,
+		},
+		TxHash:        "0xtx1",
+		Value:         *big.NewInt(111),
+		Time:          blockTime,
+		BlockNumber:   *big.NewInt(2018),
+		CoupleAddress: "from1",
 	},
 	types.AddressIndex{
-		Address:     "from2",
-		TxHash:      "0xtx2",
-		Value:       *big.NewInt(-222),
-		Time:        blockTime,
-		BlockNumber: *big.NewInt(2018),
+		AddressSequence: types.AddressSequence{
+			Address:  "from2",
+			Sequence: 1,
+		},
+		TxHash:        "0xtx2",
+		Value:         *big.NewInt(-222),
+		Time:          blockTime,
+		BlockNumber:   *big.NewInt(2018),
+		CoupleAddress: "to1",
 	},
 	types.AddressIndex{
-		Address:     "to2",
-		TxHash:      "0xtx2",
-		Value:       *big.NewInt(222),
-		Time:        blockTime,
-		BlockNumber: *big.NewInt(2018),
+		AddressSequence: types.AddressSequence{
+			Address:  "to1",
+			Sequence: 2,
+		},
+		TxHash:        "0xtx2",
+		Value:         *big.NewInt(222),
+		Time:          blockTime,
+		BlockNumber:   *big.NewInt(2018),
+		CoupleAddress: "from2",
 	},
 }
 
@@ -118,7 +134,7 @@ func TestCreateIndexData(t *testing.T) {
 	if blockIndex.BlockNumber != "2018" {
 		t.Error("BlockIndex - BlockNumber is not correct")
 	}
-	if !reflect.DeepEqual(blockIndex.Addresses, []string{"from1", "to1", "from2", "to2"}) {
+	if !reflect.DeepEqual(blockIndex.Addresses, []string{"from1", "to1", "from2"}) {
 		t.Error("BlockIndex - Addresses is not correct")
 	}
 }

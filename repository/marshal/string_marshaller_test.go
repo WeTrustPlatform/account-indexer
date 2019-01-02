@@ -11,7 +11,10 @@ import (
 var now = *big.NewInt(time.Now().Unix())
 
 var index = types.AddressIndex{
-	Address:     "0xF58b12474c084B3Bcd32B991ea1BABdf0d67c109",
+	AddressSequence: types.AddressSequence{
+		Address:  "0xF58b12474c084B3Bcd32B991ea1BABdf0d67c109",
+		Sequence: 1,
+	},
 	TxHash:      "0xaf27ec30685cbb8acb995051825b7651801beb3101c5d62d0ae00e78a2801543",
 	Value:       *big.NewInt(100),
 	Time:        now,

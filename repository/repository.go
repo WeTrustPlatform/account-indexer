@@ -13,7 +13,7 @@ import (
 type Repository interface {
 	Store(indexData []types.AddressIndex, blockIndex types.BlockIndex)
 	Get(address string) []types.AddressIndex
-	HandleReorg(blockIndex string, reorgAddresses []string)
+	HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence)
 }
 
 // LevelDBRepo implementation of Repository
@@ -79,10 +79,10 @@ func (repo *LevelDBRepo) Get(address string) []types.AddressIndex {
 }
 
 // HandleReorg handle reorg scenario: get block again
-func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []string) {
+func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence) {
 	batch := new(leveldb.Batch)
 	for _, address := range reorgAddresses {
-		addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address, blockIndex)
+		addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address.Address, blockIndex, address.Sequence)
 		batch.Delete([]byte(addressIndexKey))
 	}
 	err := repo.addressDB.Write(batch, nil)
