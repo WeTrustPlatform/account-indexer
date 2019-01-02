@@ -61,12 +61,6 @@ func index(ctx *cli.Context) {
 	}
 	defer blockDB.Close()
 
-	// fetcher, err := indexer.NewChainFetch(ipcPath)
-	// if err != nil {
-	// 	log.Fatal("Can't connect to IPC server", err)
-	// 	return
-	// }
-
 	indexer := indexer.Indexer{
 		// Fetcher: fetcher,
 		IpcPath: ipcPath,
