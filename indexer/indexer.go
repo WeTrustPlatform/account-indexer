@@ -27,28 +27,6 @@ type Range struct {
 	To *big.Int
 }
 
-// DivideRange performance states that having > 2 goroutines have same performance
-// so let's go with 2 goroutines
-// To and From are inclusive
-func DivideRange(parent Range) (Range, Range) {
-	minusFrom := new(big.Int)
-	minusFrom = minusFrom.Neg(parent.From)
-	distance := new(big.Int)
-	distance = distance.Add(parent.To, minusFrom)
-	distance = distance.Div(distance, big.NewInt(2))
-	middle := new(big.Int)
-	middle = middle.Add(parent.From, distance)
-	middlePlus1 := new(big.Int)
-	middlePlus1 = middlePlus1.Add(middle, big.NewInt(1))
-	to := new(big.Int)
-	to = to.Set(parent.To)
-	range1From := new(big.Int)
-	range1From = range1From.Set(parent.From)
-	range1 := Range{From: range1From, To: middle}
-	range2 := Range{From: middlePlus1, To: to}
-	return range1, range2
-}
-
 // Index Entry point
 func (indexer *Indexer) Index() {
 	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
@@ -59,24 +37,41 @@ func (indexer *Indexer) Index() {
 		return
 	}
 	allBatches := indexer.Repo.GetAllBatchStatuses()
+	ranges := []Range{}
 	if len(allBatches) == 0 {
-		// index from genesis
-		indexer.IndexFromGenesis(latestBlock)
+		// Ethereum mainnet has genesis block as 0
+		genesisBlock := big.NewInt(0)
+		range1, range2 := DivideRange(Range{genesisBlock, latestBlock})
+		ranges = append(ranges, range1, range2)
 	} else {
 		allBatches := indexer.Repo.GetAllBatchStatuses()
 		for _, batch := range allBatches {
 			if batch.To.Cmp(batch.Current) > 0 {
-				go indexer.indexByRange(Range{From: batch.Current, To: batch.To}, "From "+batch.Current.String()+";To "+batch.To.String())
+				ranges = append(ranges, Range{From: batch.Current, To: batch.To})
 			}
 		}
 		// Get latest block in block database
 		lastNewHeadBlockInDB := indexer.Repo.GetLastNewHeadBlockInDB()
 		if lastNewHeadBlockInDB != nil {
-			go indexer.indexByRange(Range{From: lastNewHeadBlockInDB, To: latestBlock}, "From "+lastNewHeadBlockInDB.String()+" to latest block")
+			ranges = append(ranges, Range{From: lastNewHeadBlockInDB, To: latestBlock})
 		}
 	}
 
-	// go indexer.RealtimeIndex(fetcher)
+	wg := sync.WaitGroup{}
+	wg.Add(len(ranges) + 1)
+	for _, rg := range ranges {
+		_rg := rg
+		go func() {
+			defer wg.Done()
+			indexer.indexByRange(_rg, ""+_rg.From.String()+"-"+_rg.To.String()+":")
+		}()
+	}
+	go func() {
+		defer wg.Done()
+		indexer.RealtimeIndex(fetcher)
+	}()
+
+	wg.Wait()
 }
 
 // RealtimeIndex newHead subscribe
@@ -92,7 +87,7 @@ func (indexer *Indexer) RealtimeIndex(fetcher fetcher.Fetch) {
 	}
 }
 
-// IndexFromGenesis index from block 1
+// IndexFromGenesis index from block 0
 func (indexer *Indexer) IndexFromGenesis(latestBlock *big.Int) {
 	start := time.Now()
 	// Ethereum mainnet has genesis block as 0
@@ -122,7 +117,7 @@ func (indexer *Indexer) indexByRange(rg Range, tag string) {
 	fmt.Println("indexByRange, tag=" + tag)
 	fmt.Println(rg)
 	for i := 0; i < 5; i++ {
-		fmt.Println(5 - i)
+		fmt.Printf("Tag: %v, time to start: %v seconds \n", tag, (5 - i))
 		time.Sleep(time.Second)
 	}
 	start := time.Now()
@@ -138,7 +133,7 @@ func (indexer *Indexer) indexByRange(rg Range, tag string) {
 		// fmt.Println("indexer: Received BlockDetail " + blockNumber.String())
 		blockDetail, err := fetcher.FetchABlock(blockNumber)
 		if err == nil {
-			fmt.Println(tag + " indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
+			// fmt.Println(tag + " indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
 			isBatch := true
 			indexer.processBlock(blockDetail, isBatch)
 			batchStatus := types.BatchStatus{
@@ -161,7 +156,7 @@ func (indexer *Indexer) indexByRange(rg Range, tag string) {
 func (indexer *Indexer) processBlock(blockDetail types.BLockDetail, isBatch bool) {
 	addressIndex, blockIndex := indexer.CreateIndexData(blockDetail)
 	indexer.Repo.Store(addressIndex, blockIndex, isBatch)
-	fmt.Println("indexer: Saved block " + blockDetail.BlockNumber.String() + " to Repository already")
+	// fmt.Println("indexer: Saved block " + blockDetail.BlockNumber.String() + " to Repository already")
 }
 
 // CreateIndexData transforms blockchain data to our index data
@@ -215,4 +210,26 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 		blockIndex.Addresses = append(blockIndex.Addresses, types.AddressSequence{Address: k, Sequence: v})
 	}
 	return addressIndex, blockIndex
+}
+
+// DivideRange performance states that having > 2 goroutines have same performance
+// so let's go with 2 goroutines
+// To and From are inclusive
+func DivideRange(parent Range) (Range, Range) {
+	minusFrom := new(big.Int)
+	minusFrom = minusFrom.Neg(parent.From)
+	distance := new(big.Int)
+	distance = distance.Add(parent.To, minusFrom)
+	distance = distance.Div(distance, big.NewInt(2))
+	middle := new(big.Int)
+	middle = middle.Add(parent.From, distance)
+	middlePlus1 := new(big.Int)
+	middlePlus1 = middlePlus1.Add(middle, big.NewInt(1))
+	to := new(big.Int)
+	to = to.Set(parent.To)
+	range1From := new(big.Int)
+	range1From = range1From.Set(parent.From)
+	range1 := Range{From: range1From, To: middle}
+	range2 := Range{From: middlePlus1, To: to}
+	return range1, range2
 }
