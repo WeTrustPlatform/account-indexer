@@ -19,6 +19,7 @@ type Repository interface {
 	GetFirstNewHeadBlockInDB() *big.Int
 	GetAllBatchStatuses() []types.BatchStatus
 	UpdateBatch(batch types.BatchStatus)
+	ReplaceBatch(from *big.Int, newTo *big.Int)
 }
 
 // LevelDBRepo implementation of Repository
@@ -155,4 +156,33 @@ func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) {
 	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
 	value := repo.marshaller.MarshallBatchValue(batch.UpdatedAt, batch.Current)
 	repo.batchDB.Put(key, value, nil)
+}
+
+func (repo *LevelDBRepo) ReplaceBatch(from *big.Int, newTo *big.Int) {
+	iter := repo.batchDB.NewIterator(nil, nil)
+	defer iter.Release()
+	for iter.Next() {
+		key := iter.Key()
+		value := iter.Value()
+		batch := repo.getBatchStatus(key, value)
+		if batch.From.Cmp(from) == 0 {
+			repo.replaceBatch(batch, newTo)
+			break
+		}
+	}
+}
+
+func (repo *LevelDBRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) {
+	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
+	repo.batchDB.Delete(key, nil)
+	batch.To = newTo
+	repo.UpdateBatch(batch)
+}
+
+func (repo *LevelDBRepo) getBatchStatus(key []byte, value []byte) types.BatchStatus {
+	batch := repo.marshaller.UnmarshallBatchKey(key)
+	batchValue := repo.marshaller.UnmarshallBatchValue(value)
+	batch.Current = batchValue.Current
+	batch.UpdatedAt = batchValue.UpdatedAt
+	return batch
 }

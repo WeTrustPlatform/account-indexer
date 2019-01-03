@@ -37,33 +37,46 @@ func (indexer *Indexer) Index() {
 		return
 	}
 	allBatches := indexer.Repo.GetAllBatchStatuses()
-	ranges := []Range{}
+	batches := []types.BatchStatus{}
 	if len(allBatches) == 0 {
 		// Ethereum mainnet has genesis block as 0
 		genesisBlock := big.NewInt(0)
 		range1, range2 := DivideRange(Range{genesisBlock, latestBlock})
-		ranges = append(ranges, range1, range2)
+		batches = append(batches, types.BatchStatus{From: range1.From, To: range1.To}, types.BatchStatus{From: range2.From, To: range2.To})
 	} else {
-		allBatches := indexer.Repo.GetAllBatchStatuses()
-		for _, batch := range allBatches {
-			if batch.To.Cmp(batch.Current) > 0 {
-				ranges = append(ranges, Range{From: batch.Current, To: batch.To})
-			}
-		}
 		// Get latest block in block database
 		lastNewHeadBlockInDB := indexer.Repo.GetLastNewHeadBlockInDB()
-		if lastNewHeadBlockInDB != nil {
-			ranges = append(ranges, Range{From: lastNewHeadBlockInDB, To: latestBlock})
+		allBatches := indexer.Repo.GetAllBatchStatuses()
+		found := false
+		for _, batch := range allBatches {
+			if batch.To.Cmp(batch.Current) > 0 {
+				if lastNewHeadBlockInDB != nil && lastNewHeadBlockInDB.Cmp(batch.From) == 0 {
+					batch.To = latestBlock
+					indexer.Repo.ReplaceBatch(batch.From, latestBlock)
+					found = true
+					fmt.Println("Updated batch with from " + batch.From.String())
+				}
+				batches = append(batches, batch)
+			}
 		}
+		if lastNewHeadBlockInDB != nil && !found {
+			batch := types.BatchStatus{From: lastNewHeadBlockInDB, To: latestBlock}
+			batches = append(batches, batch)
+		}
+
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(len(ranges) + 1)
-	for _, rg := range ranges {
-		_rg := rg
+	wg.Add(len(batches) + 1)
+	for _, bt := range batches {
+		_bt := bt
 		go func() {
 			defer wg.Done()
-			indexer.indexByRange(_rg, ""+_rg.From.String()+"-"+_rg.To.String()+":")
+			current := ""
+			if _bt.Current != nil {
+				current = _bt.Current.String()
+			}
+			indexer.batchIndex(_bt, ""+_bt.From.String()+"-"+_bt.To.String()+"-"+current+":")
 		}()
 	}
 	go func() {
@@ -87,42 +100,19 @@ func (indexer *Indexer) RealtimeIndex(fetcher fetcher.Fetch) {
 	}
 }
 
-// IndexFromGenesis index from block 0
-func (indexer *Indexer) IndexFromGenesis(latestBlock *big.Int) {
-	start := time.Now()
-	// Ethereum mainnet has genesis block as 0
-	genesisBlock := big.NewInt(0)
-	range1, range2 := DivideRange(Range{genesisBlock, latestBlock})
-
-	// https://nathanleclaire.com/blog/2014/02/15/how-to-wait-for-all-goroutines-to-finish-executing-before-continuing/
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		indexer.indexByRange(range1, "1")
-	}()
-	go func() {
-		defer wg.Done()
-		indexer.indexByRange(range2, "2")
-	}()
-
-	wg.Wait()
-	duration := time.Since(start)
-	s := fmt.Sprintf("%f", duration.Minutes())
-	fmt.Println("Index " + latestBlock.String() + " block took " + s + " minutes")
-}
-
 // from: inclusive, to: exclusive
-func (indexer *Indexer) indexByRange(rg Range, tag string) {
+func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 	fmt.Println("indexByRange, tag=" + tag)
-	fmt.Println(rg)
 	for i := 0; i < 5; i++ {
 		fmt.Printf("Tag: %v, time to start: %v seconds \n", tag, (5 - i))
 		time.Sleep(time.Second)
 	}
 	start := time.Now()
-	from := rg.From
-	to := rg.To
+	from := batch.Current
+	if from == nil {
+		from = batch.To
+	}
+	to := batch.To
 	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
 	if err != nil {
 		log.Fatal("Can't connect to IPC server", err)
@@ -130,15 +120,14 @@ func (indexer *Indexer) indexByRange(rg Range, tag string) {
 	}
 	blockNumber := new(big.Int)
 	for blockNumber.Set(from); blockNumber.Cmp(to) <= 0; blockNumber = blockNumber.Add(blockNumber, big.NewInt(int64(1))) {
-		// fmt.Println("indexer: Received BlockDetail " + blockNumber.String())
 		blockDetail, err := fetcher.FetchABlock(blockNumber)
 		if err == nil {
 			// fmt.Println(tag + " indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
 			isBatch := true
 			indexer.processBlock(blockDetail, isBatch)
 			batchStatus := types.BatchStatus{
-				From:      rg.From,
-				To:        rg.To,
+				From:      batch.From,
+				To:        batch.To,
 				Current:   blockNumber,
 				UpdatedAt: big.NewInt(time.Now().UnixNano()),
 			}
