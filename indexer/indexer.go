@@ -110,7 +110,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 	start := time.Now()
 	from := batch.Current
 	if from == nil {
-		from = batch.To
+		from = batch.From
 	}
 	to := batch.To
 	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
