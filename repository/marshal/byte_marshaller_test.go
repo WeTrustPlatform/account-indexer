@@ -119,3 +119,13 @@ func TestMarshallBatchKey(t *testing.T) {
 		t.Error("To is not correct")
 	}
 }
+
+func TestMarshallBlockKey(t *testing.T) {
+	bm := ByteMarshaller{}
+	blockNumberStr := "3000000"
+	key := bm.MarshallBlockKey(blockNumberStr)
+	blockNumber := bm.UnmarshallBlockKey(key)
+	if blockNumber.String() != blockNumberStr {
+		t.Error("Marshall/Unmarshall for block key is not correct")
+	}
+}

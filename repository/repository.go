@@ -62,7 +62,7 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 		fmt.Println("Cannot write to address leveldb")
 	}
 	if !isBatch {
-		err = repo.blockDB.Put([]byte(blockIndex.BlockNumber), repo.marshaller.MarshallBlockDBValue(blockIndex), nil)
+		err = repo.blockDB.Put(repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber), repo.marshaller.MarshallBlockDBValue(blockIndex), nil)
 		if err != nil {
 			// TODO
 			fmt.Println("Cannot write to block leveldb")
@@ -112,9 +112,8 @@ func (repo *LevelDBRepo) GetLastNewHeadBlockInDB() *big.Int {
 		return nil
 	}
 	key := iter.Key()
-	result := new(big.Int)
-	result.SetBytes(key)
-	return result
+	blockNumber := repo.marshaller.UnmarshallBlockKey(key)
+	return blockNumber
 }
 
 // GetFirstNewHeadBlockInDB first saved block in newHead block DB
@@ -126,9 +125,8 @@ func (repo *LevelDBRepo) GetFirstNewHeadBlockInDB() *big.Int {
 		return nil
 	}
 	key := iter.Key()
-	result := new(big.Int)
-	result.SetBytes(key)
-	return result
+	blockNumber := repo.marshaller.UnmarshallBlockKey(key)
+	return blockNumber
 }
 
 // GetAllBatchStatuses get all batches

@@ -52,12 +52,13 @@ func DivideRange(parent Range) (Range, Range) {
 // Index Entry point
 func (indexer *Indexer) Index() {
 	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
-	allBatches := indexer.Repo.GetAllBatchStatuses()
+
 	latestBlock, err := fetcher.GetLatestBlock()
 	if err != nil {
-		log.Fatal("Can't get latest block, check IPC server", err)
+		log.Fatal("Can't get latest block, check IPC server. Error:", err)
 		return
 	}
+	allBatches := indexer.Repo.GetAllBatchStatuses()
 	if len(allBatches) == 0 {
 		// index from genesis
 		indexer.IndexFromGenesis(latestBlock)
@@ -75,7 +76,7 @@ func (indexer *Indexer) Index() {
 		}
 	}
 
-	go indexer.RealtimeIndex(fetcher)
+	// go indexer.RealtimeIndex(fetcher)
 }
 
 // RealtimeIndex newHead subscribe
@@ -94,14 +95,10 @@ func (indexer *Indexer) RealtimeIndex(fetcher fetcher.Fetch) {
 // IndexFromGenesis index from block 1
 func (indexer *Indexer) IndexFromGenesis(latestBlock *big.Int) {
 	start := time.Now()
-	// TODO: change 1 to genesis block
-	range1, range2 := DivideRange(Range{big.NewInt(1), latestBlock})
-	fmt.Println(range1)
-	fmt.Println(range2)
-	for i := 0; i < 5; i++ {
-		fmt.Println(5 - i)
-		time.Sleep(time.Second)
-	}
+	// Ethereum mainnet has genesis block as 0
+	genesisBlock := big.NewInt(0)
+	range1, range2 := DivideRange(Range{genesisBlock, latestBlock})
+
 	// https://nathanleclaire.com/blog/2014/02/15/how-to-wait-for-all-goroutines-to-finish-executing-before-continuing/
 	wg := sync.WaitGroup{}
 	wg.Add(2)
@@ -122,6 +119,12 @@ func (indexer *Indexer) IndexFromGenesis(latestBlock *big.Int) {
 
 // from: inclusive, to: exclusive
 func (indexer *Indexer) indexByRange(rg Range, tag string) {
+	fmt.Println("indexByRange, tag=" + tag)
+	fmt.Println(rg)
+	for i := 0; i < 5; i++ {
+		fmt.Println(5 - i)
+		time.Sleep(time.Second)
+	}
 	start := time.Now()
 	from := rg.From
 	to := rg.To

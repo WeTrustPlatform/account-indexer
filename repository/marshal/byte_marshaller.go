@@ -153,3 +153,14 @@ func (bm ByteMarshaller) UnmarshallBatchKey(key []byte) types.BatchStatus {
 	to.SetString(toStr, 10)
 	return types.BatchStatus{From: from, To: to}
 }
+
+func (bm ByteMarshaller) MarshallBlockKey(blockNumber string) []byte {
+	return []byte(blockNumber)
+}
+
+func (bm ByteMarshaller) UnmarshallBlockKey(key []byte) *big.Int {
+	blockNumber := string(key)
+	result := new(big.Int)
+	result.SetString(blockNumber, 10)
+	return result
+}
