@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository"
@@ -52,7 +53,7 @@ func newApp() *cli.App {
 func index(ctx *cli.Context) {
 	ipcPath := ctx.GlobalString(ipcFlag.Name)
 	dbPath := ctx.GlobalString(dbFlag.Name)
-	fmt.Println(fmt.Sprintf("ipcPath=%s \n dbPath=%s", ipcPath, dbPath))
+	fmt.Println(fmt.Sprintf("%v ipcPath=%s \n dbPath=%s\n", time.Now(), ipcPath, dbPath))
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)
 	if err != nil {
 		log.Fatal("Can't connect to LevelDB", err)
