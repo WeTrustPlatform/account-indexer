@@ -11,21 +11,24 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 
 	"os"
+	"os/user"
 
 	cli "gopkg.in/urfave/cli.v1"
 )
 
 var (
-	app     = newApp()
+	app    = newApp()
+	usr, _ = user.Current()
+
 	ipcFlag = cli.StringFlag{
 		Name:  "ipc",
 		Usage: "ipc file path",
-		Value: "/Users/tuyennguyen/working_dir/geth_private_network_data_dir/geth.ipc",
+		Value: usr.HomeDir + "/working_dir/geth_private_network_data_dir/geth.ipc",
 	}
 	dbFlag = cli.StringFlag{
 		Name:  "db",
 		Usage: "leveldb file path",
-		Value: "/Users/tuyennguyen/working_dir/geth_indexer_leveldb",
+		Value: usr.HomeDir + "/working_dir/geth_indexer_leveldb",
 	}
 
 	indexerFlags = []cli.Flag{
