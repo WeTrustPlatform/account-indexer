@@ -133,8 +133,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 			}
 			indexer.Repo.UpdateBatch(batchStatus)
 		} else {
-			fmt.Println(tag + " indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
-			// TODO: log warning
+			log.Fatal(tag + " indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
 		}
 	}
 	duration := time.Since(start)

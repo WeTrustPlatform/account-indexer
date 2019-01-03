@@ -3,6 +3,7 @@ package fetcher
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/big"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
@@ -60,7 +61,7 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, erro
 	ctx := context.Background()
 	aBlock, err := cf.Client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
-		fmt.Println("RealtimeFetch BlockByNumber returns error " + err.Error())
+		log.Fatal("RealtimeFetch BlockByNumber returns error " + err.Error())
 		return types.BLockDetail{}, err
 	}
 	// fmt.Println(fmt.Sprintf("Found block number received from SubscribeNewHead: %s", blockNumber))
