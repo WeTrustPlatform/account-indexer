@@ -145,7 +145,7 @@ func TestDivideRange(t *testing.T) {
 	if range1.From.String() != "2" || range1.To.String() != "4" {
 		t.Error("Range1 is not correct")
 	}
-	if range2.From.String() != "4" || range2.To.String() != "8" {
+	if range2.From.String() != "5" || range2.To.String() != "7" {
 		t.Error("Range2 is not correct")
 	}
 }

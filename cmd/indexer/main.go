@@ -60,15 +60,20 @@ func index(ctx *cli.Context) {
 		log.Fatal("Can't connect to LevelDB", err)
 	}
 	defer blockDB.Close()
-
+	batchDB, err := leveldb.OpenFile(dbPath+"_batch", nil)
+	if err != nil {
+		log.Fatal("Can't connect to LevelDB", err)
+	}
+	defer batchDB.Close()
 	indexer := indexer.Indexer{
 		// Fetcher: fetcher,
 		IpcPath: ipcPath,
-		Repo:    repository.NewLevelDBRepo(addressDB, blockDB),
+		Repo:    repository.NewLevelDBRepo(addressDB, blockDB, batchDB),
 		// Repo: nil,
 	}
 	// indexer.RealtimeIndex()
-	indexer.IndexFromGenesis()
+	// indexer.IndexFromGenesis()
+	indexer.Index()
 }
 
 func main() {

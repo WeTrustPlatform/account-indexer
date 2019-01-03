@@ -7,6 +7,10 @@ import (
 )
 
 type Marshaller interface {
+	MarshallBatchValue(updatedAt *big.Int, currentBlock *big.Int) []byte
+	UnmarshallBatchValue(value []byte) types.BatchStatus
+	MarshallBatchKey(from *big.Int, to *big.Int) []byte
+	UnmarshallBatchKey(value []byte) types.BatchStatus
 	MarshallBlockDBValue(blockIndex types.BlockIndex) []byte
 	UnmarshallBlockDBValue(value []byte) []types.AddressSequence
 	MarshallAddressKey(index types.AddressIndex) []byte

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/repository/marshal"
@@ -11,38 +12,46 @@ import (
 
 // Repository to store index data
 type Repository interface {
-	Store(indexData []types.AddressIndex, blockIndex types.BlockIndex)
+	Store(indexData []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool)
 	Get(address string) []types.AddressIndex
 	HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence)
+	GetLastNewHeadBlockInDB() *big.Int
+	GetFirstNewHeadBlockInDB() *big.Int
+	GetAllBatchStatuses() []types.BatchStatus
+	UpdateBatch(batch types.BatchStatus)
 }
 
 // LevelDBRepo implementation of Repository
 type LevelDBRepo struct {
 	addressDB  *leveldb.DB
 	blockDB    *leveldb.DB
+	batchDB    *leveldb.DB
 	marshaller marshal.Marshaller
 }
 
 // NewLevelDBRepo create an instance of LevelDBRepo
-func NewLevelDBRepo(addressDB *leveldb.DB, blockDB *leveldb.DB) *LevelDBRepo {
-	// return &LevelDBRepo{addressDB: addressDB, blockDB: blockDB, marshaller: marshal.StringMarshaller{}}
-	return &LevelDBRepo{addressDB: addressDB, blockDB: blockDB, marshaller: marshal.ByteMarshaller{}}
+func NewLevelDBRepo(addressDB *leveldb.DB, blockDB *leveldb.DB, batchDB *leveldb.DB) *LevelDBRepo {
+	return &LevelDBRepo{
+		addressDB:  addressDB,
+		blockDB:    blockDB,
+		batchDB:    batchDB,
+		marshaller: marshal.ByteMarshaller{},
+	}
 }
 
 // Store implements Repository
-func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.BlockIndex) {
+func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool) {
 	batch := new(leveldb.Batch)
-	reorgAddressesByteArr, _ := repo.blockDB.Get([]byte(blockIndex.BlockNumber), nil)
-	// if err != nil {
-	// 	// not found is also an error so ignorning it
-	// 	fmt.Println("Cannot access block leveldb, error=" + err.Error())
-	// }
-	if reorgAddressesByteArr != nil {
-		reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(reorgAddressesByteArr)
-		if reorgAddresses != nil {
-			repo.HandleReorg(blockIndex.BlockNumber, reorgAddresses)
+	if !isBatch {
+		reorgAddressesByteArr, _ := repo.blockDB.Get([]byte(blockIndex.BlockNumber), nil)
+		if reorgAddressesByteArr != nil {
+			reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(reorgAddressesByteArr)
+			if reorgAddresses != nil {
+				repo.HandleReorg(blockIndex.BlockNumber, reorgAddresses)
+			}
 		}
 	}
+
 	for _, item := range indexData {
 		// fmt.Println(item)
 		batch.Put(repo.marshaller.MarshallAddressKey(item), repo.marshaller.MarshallAddressValue(item))
@@ -52,10 +61,12 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 		// TODO
 		fmt.Println("Cannot write to address leveldb")
 	}
-	err = repo.blockDB.Put([]byte(blockIndex.BlockNumber), repo.marshaller.MarshallBlockDBValue(blockIndex), nil)
-	if err != nil {
-		// TODO
-		fmt.Println("Cannot write to block leveldb")
+	if !isBatch {
+		err = repo.blockDB.Put([]byte(blockIndex.BlockNumber), repo.marshaller.MarshallBlockDBValue(blockIndex), nil)
+		if err != nil {
+			// TODO
+			fmt.Println("Cannot write to block leveldb")
+		}
 	}
 }
 
@@ -90,4 +101,60 @@ func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.A
 		// TODO
 		fmt.Println("Cannot remove old address index")
 	}
+}
+
+// GetLastNewHeadBlockInDB latest saved block in newHead block DB
+func (repo *LevelDBRepo) GetLastNewHeadBlockInDB() *big.Int {
+	iter := repo.blockDB.NewIterator(nil, nil)
+	defer iter.Release()
+	hasLast := iter.Last()
+	if !hasLast {
+		return nil
+	}
+	key := iter.Key()
+	result := new(big.Int)
+	result.SetBytes(key)
+	return result
+}
+
+// GetFirstNewHeadBlockInDB first saved block in newHead block DB
+func (repo *LevelDBRepo) GetFirstNewHeadBlockInDB() *big.Int {
+	iter := repo.blockDB.NewIterator(nil, nil)
+	defer iter.Release()
+	hasFirst := iter.First()
+	if !hasFirst {
+		return nil
+	}
+	key := iter.Key()
+	result := new(big.Int)
+	result.SetBytes(key)
+	return result
+}
+
+// GetAllBatchStatuses get all batches
+func (repo *LevelDBRepo) GetAllBatchStatuses() []types.BatchStatus {
+	iter := repo.batchDB.NewIterator(nil, nil)
+	defer iter.Release()
+	batches := []types.BatchStatus{}
+	for iter.Next() {
+		key := iter.Key()
+		value := iter.Value()
+		batch1 := repo.marshaller.UnmarshallBatchKey(key)
+		batch2 := repo.marshaller.UnmarshallBatchValue(value)
+		batch := types.BatchStatus{
+			From:      batch1.From,
+			To:        batch1.To,
+			UpdatedAt: batch2.UpdatedAt,
+			Current:   batch2.Current,
+		}
+		batches = append(batches, batch)
+	}
+	return batches
+}
+
+// UpdateBatch update a batch
+func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) {
+	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
+	value := repo.marshaller.MarshallBatchValue(batch.UpdatedAt, batch.Current)
+	repo.batchDB.Put(key, value, nil)
 }

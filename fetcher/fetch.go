@@ -17,12 +17,14 @@ type EthClient interface {
 	SubscribeNewHead(ctx context.Context, ch chan<- *gethtypes.Header) (ethereum.Subscription, error)
 	BlockByNumber(ctx context.Context, number *big.Int) (*gethtypes.Block, error)
 	TransactionSender(ctx context.Context, tx *gethtypes.Transaction, block common.Hash, index uint) (common.Address, error)
+	HeaderByNumber(ctx context.Context, number *big.Int) (*gethtypes.Header, error)
 }
 
 // Fetch the interface to interact with blockchain
 type Fetch interface {
 	RealtimeFetch(ch chan<- types.BLockDetail)
 	FetchABlock(blockNumber *big.Int) (types.BLockDetail, error)
+	GetLatestBlock() (*big.Int, error)
 }
 
 // ChainFetch the real implementation
@@ -53,6 +55,7 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- types.BLockDetail) {
 	}
 }
 
+// FetchABlock fetch a block by block number
 func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, error) {
 	ctx := context.Background()
 	aBlock, err := cf.Client.BlockByNumber(ctx, blockNumber)
@@ -81,4 +84,16 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, erro
 		Transactions: transactions,
 	}
 	return blockDetail, nil
+}
+
+// GetLatestBlock get latest known block by geth node
+func (cf *ChainFetch) GetLatestBlock() (*big.Int, error) {
+	ctx := context.Background()
+	// nil means latest known header according to ethclient doc
+	header, err := cf.Client.HeaderByNumber(ctx, nil)
+	if err != nil {
+		return big.NewInt(-1), err
+	}
+	blockNumber := header.Number
+	return blockNumber, nil
 }

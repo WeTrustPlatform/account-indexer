@@ -2,6 +2,7 @@ package marshal
 
 import (
 	"math/big"
+	"strings"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
@@ -110,4 +111,45 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 		Value:         *txValueBI,
 	}
 	return result
+}
+
+// MarshallBatchValue value of key-value init batch status database
+func (bm ByteMarshaller) MarshallBatchValue(updatedAt *big.Int, currentBlock *big.Int) []byte {
+	// 8 byte
+	timeByteArr := updatedAt.Bytes()
+	blockNumberByteArr := currentBlock.Bytes()
+	result := append(timeByteArr, blockNumberByteArr...)
+	return result
+}
+
+// UnmarshallBatchValue unmarshal value of key-value init batch status database
+func (bm ByteMarshaller) UnmarshallBatchValue(value []byte) types.BatchStatus {
+	timestamp := new(big.Int)
+	timestamp.SetBytes(value[:TIMESTAMP_BYTE_LENGTH])
+	currentBlock := new(big.Int)
+	currentBlock.SetBytes(value[TIMESTAMP_BYTE_LENGTH:])
+	return types.BatchStatus{
+		UpdatedAt: timestamp,
+		Current:   currentBlock,
+	}
+}
+
+func (bm ByteMarshaller) MarshallBatchKey(from *big.Int, to *big.Int) []byte {
+	fromStr := blockNumberWidPad(from.String())
+	toStr := blockNumberWidPad(to.String())
+	keyStr := fromStr + "_" + toStr
+	return []byte(keyStr)
+}
+
+func (bm ByteMarshaller) UnmarshallBatchKey(key []byte) types.BatchStatus {
+	keyStr := string(key)
+	keyArr := strings.Split(keyStr, "_")
+	// TODO: handle error
+	fromStr := keyArr[0]
+	toStr := keyArr[1]
+	from := new(big.Int)
+	from.SetString(fromStr, 10)
+	to := new(big.Int)
+	to.SetString(toStr, 10)
+	return types.BatchStatus{From: from, To: to}
 }

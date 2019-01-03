@@ -91,3 +91,31 @@ func TestByteMarshallAddressValue(t *testing.T) {
 		t.Error("Unmarshalled tx value is not correct")
 	}
 }
+
+func TestMarshallBatchValue(t *testing.T) {
+	bm := ByteMarshaller{}
+	updatedAt := big.NewInt(time.Now().UnixNano())
+	currentBlock := big.NewInt(3000000)
+	value := bm.MarshallBatchValue(updatedAt, currentBlock)
+	batchStatus := bm.UnmarshallBatchValue(value)
+	if batchStatus.UpdatedAt.Cmp(updatedAt) != 0 {
+		t.Error("UpdatedAt is not cortrect")
+	}
+	if batchStatus.Current.Cmp(currentBlock) != 0 {
+		t.Error("Current block is not correct")
+	}
+}
+
+func TestMarshallBatchKey(t *testing.T) {
+	bm := ByteMarshaller{}
+	from := big.NewInt(2)
+	to := big.NewInt(100000)
+	key := bm.MarshallBatchKey(from, to)
+	batchStatus := bm.UnmarshallBatchKey(key)
+	if batchStatus.From.Cmp(from) != 0 {
+		t.Error("From is not correct")
+	}
+	if batchStatus.To.Cmp(to) != 0 {
+		t.Error("To is not correct")
+	}
+}

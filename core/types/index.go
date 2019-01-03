@@ -33,6 +33,15 @@ type BlockIndex struct {
 	Addresses   []AddressSequence
 }
 
+// InitBatchStatus the init batch status
+type BatchStatus struct {
+	// Block information for each batch
+	From      *big.Int
+	To        *big.Int
+	Current   *big.Int
+	UpdatedAt *big.Int
+}
+
 func (index AddressIndex) String() string {
 	return fmt.Sprintf("address %s, tx hash: %s, value: %s, time: %v, block: %v", index.Address, index.TxHash, index.Value.String(), index.Time, index.BlockNumber)
 }
