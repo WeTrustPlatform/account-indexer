@@ -11,9 +11,9 @@ func TestFindByKeyPrefix(t *testing.T) {
 	db := memdb.New(comparer.DefaultComparer, 0)
 	dao := NewMemDbDAO(db)
 	keyValues := []KeyValue{
-		KeyValue{key: []byte("key1"), value: []byte("value1")},
-		KeyValue{key: []byte("key2"), value: []byte("value2")},
-		KeyValue{key: []byte("strange_key1"), value: []byte("strange_value1")},
+		KeyValue{Key: []byte("key1"), Value: []byte("value1")},
+		KeyValue{Key: []byte("key2"), Value: []byte("value2")},
+		KeyValue{Key: []byte("strange_key1"), Value: []byte("strange_value1")},
 	}
 	err := dao.BatchPut(keyValues)
 	if err != nil {
