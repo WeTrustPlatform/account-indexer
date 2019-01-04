@@ -30,7 +30,9 @@ type Range struct {
 // Index Entry point
 func (indexer *Indexer) Index() {
 	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
-
+	if err != nil {
+		log.Fatal("IPC path is not correct")
+	}
 	latestBlock, err := fetcher.GetLatestBlock()
 	if err != nil {
 		log.Fatal("Can't get latest block, check IPC server. Error:", err)
