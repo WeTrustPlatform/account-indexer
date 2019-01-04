@@ -75,7 +75,7 @@ func index(ctx *cli.Context) {
 		IpcPath: ipcPath,
 		Repo:    repo,
 	}
-	indexer.Index()
+	go indexer.Index()
 	server := http.NewServer(repo)
 	server.Start()
 }

@@ -36,6 +36,7 @@ func (indexer *Indexer) Index() {
 		log.Fatal("Can't get latest block, check IPC server. Error:", err)
 		return
 	}
+	fmt.Println("IPC path is correct, latestBlock=" + latestBlock.String())
 	allBatches := indexer.Repo.GetAllBatchStatuses()
 	batches := []types.BatchStatus{}
 	if len(allBatches) == 0 {
