@@ -4,13 +4,14 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 const (
-	TIMESTAMP_BYTE_LENGTH = 8
+	TIMESTAMP_BYTE_LENGTH = 4
 )
 
 // ByteMarshaller marshal data using byte array
@@ -69,14 +70,19 @@ func (bm ByteMarshaller) MarshallAddressKeyStr(address string, blockNumber strin
 	return result
 }
 
+func (bm ByteMarshaller) MarshallAddressKeyPrefix(address string) []byte {
+	resultByteArr, _ := hexutil.Decode(address)
+	return resultByteArr
+}
+
 // MarshallAddressValue create LevelDB value
 func (bm ByteMarshaller) MarshallAddressValue(index types.AddressIndex) []byte {
 	// 32 byte
 	txHashByteArr, _ := hexutil.Decode(index.TxHash)
 	// 20 byte
 	addressByteArr, _ := hexutil.Decode(index.CoupleAddress)
-	// 8 byte
-	timeByteArr := index.Time.Bytes()
+	// 4 byte
+	timeByteArr := common.MarshallTime(&index.Time)
 	valueByteArr := []byte(index.Value.String())
 	result := append(txHashByteArr, addressByteArr...)
 	result = append(result, timeByteArr...)
@@ -99,10 +105,10 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 	addressLength := gethcommon.AddressLength
 	txHash := hexutil.Encode(value[:hashLength])
 	address := hexutil.Encode(value[hashLength : hashLength+addressLength])
-	timestamp := new(big.Int)
-	timestamp.SetBytes(value[hashLength+addressLength : hashLength+addressLength+TIMESTAMP_BYTE_LENGTH])
-	txValue := string(value[hashLength+addressLength+TIMESTAMP_BYTE_LENGTH:])
+	timestamp := common.UnmarshallTimeToInt(value[hashLength+addressLength : hashLength+addressLength+TIMESTAMP_BYTE_LENGTH])
 	txValueBI := new(big.Int)
+	txValue := string(value[hashLength+addressLength+TIMESTAMP_BYTE_LENGTH:])
+
 	txValueBI.SetString(txValue, 10)
 	result := types.AddressIndex{
 		TxHash:        txHash,
@@ -115,8 +121,8 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 
 // MarshallBatchValue value of key-value init batch status database
 func (bm ByteMarshaller) MarshallBatchValue(updatedAt *big.Int, currentBlock *big.Int) []byte {
-	// 8 byte
-	timeByteArr := updatedAt.Bytes()
+	// 4 byte
+	timeByteArr := common.MarshallTime(updatedAt)
 	blockNumberByteArr := currentBlock.Bytes()
 	result := append(timeByteArr, blockNumberByteArr...)
 	return result
@@ -124,8 +130,7 @@ func (bm ByteMarshaller) MarshallBatchValue(updatedAt *big.Int, currentBlock *bi
 
 // UnmarshallBatchValue unmarshal value of key-value init batch status database
 func (bm ByteMarshaller) UnmarshallBatchValue(value []byte) types.BatchStatus {
-	timestamp := new(big.Int)
-	timestamp.SetBytes(value[:TIMESTAMP_BYTE_LENGTH])
+	timestamp := common.UnmarshallTimeToInt(value[:TIMESTAMP_BYTE_LENGTH])
 	currentBlock := new(big.Int)
 	currentBlock.SetBytes(value[TIMESTAMP_BYTE_LENGTH:])
 	return types.BatchStatus{

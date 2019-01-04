@@ -32,6 +32,7 @@ var transactions = []*gethtypes.Transaction{
 
 func (mec MockEthClient) SubscribeNewHead(ctx context.Context, ch chan<- *gethtypes.Header) (ethereum.Subscription, error) {
 	go func() {
+		time.Sleep(time.Second * 2)
 		ch <- header
 	}()
 	return nil, nil
@@ -46,13 +47,17 @@ func (mec MockEthClient) TransactionSender(ctx context.Context, tx *gethtypes.Tr
 	return from, nil
 }
 
+func (mec MockEthClient) HeaderByNumber(ctx context.Context, number *big.Int) (*gethtypes.Header, error) {
+	return header, nil
+}
+
 func TestFetchData(t *testing.T) {
 	fetcher := ChainFetch{
 		Client: MockEthClient{},
 	}
 	indexerChannel := make(chan types.BLockDetail)
 	go fetcher.RealtimeFetch(indexerChannel)
-	time.Sleep(time.Second * 1)
+	// time.Sleep(time.Second * 1)
 	blockDetail := <-indexerChannel
 	if blockDetail.BlockNumber.Uint64() != header.Number.Uint64() {
 		t.Error("Test failed: Block number is not the same:", blockDetail.BlockNumber, header.Number)

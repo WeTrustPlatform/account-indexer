@@ -134,9 +134,14 @@ func TestCreateIndexData(t *testing.T) {
 	if blockIndex.BlockNumber != "2018" {
 		t.Error("BlockIndex - BlockNumber is not correct")
 	}
-	if !reflect.DeepEqual(blockIndex.Addresses, []string{"from1", "to1", "from2"}) {
-		t.Error("BlockIndex - Addresses is not correct")
+
+	if blockIndex.Addresses[0].Address != "from1" || blockIndex.Addresses[0].Sequence != 1 {
+		t.Error("Address is not correct")
 	}
+	// TODO: for loop
+	// if !reflect.DeepEqual(blockIndex.Addresses, []string{"from1", "to1", "from2"}) {
+	// 	t.Error("BlockIndex - Addresses is not correct")
+	// }
 }
 
 func TestDivideRange(t *testing.T) {

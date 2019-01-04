@@ -13,13 +13,14 @@ import (
 // Repository to store index data
 type Repository interface {
 	Store(indexData []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool)
-	Get(address string) []types.AddressIndex
+	GetTransactionByAddress(address string) []types.AddressIndex
 	HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence)
 	GetLastNewHeadBlockInDB() *big.Int
 	GetFirstNewHeadBlockInDB() *big.Int
 	GetAllBatchStatuses() []types.BatchStatus
 	UpdateBatch(batch types.BatchStatus)
 	ReplaceBatch(from *big.Int, newTo *big.Int)
+	GetLastFiveBlocks() []types.BlockIndex
 }
 
 // LevelDBRepo implementation of Repository
@@ -40,6 +41,26 @@ func NewLevelDBRepo(addressDB *leveldb.DB, blockDB *leveldb.DB, batchDB *leveldb
 	}
 }
 
+func (repo *LevelDBRepo) GetLastFiveBlocks() []types.BlockIndex {
+	iter := repo.blockDB.NewIterator(nil, nil)
+	defer iter.Release()
+	iter.Last()
+	result := []types.BlockIndex{}
+	count := 0
+	for iter.Prev() && count < 5 {
+		count++
+		key := iter.Key()
+		value := iter.Value()
+		blockNumber := repo.marshaller.UnmarshallBlockKey(key)
+		reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(value)
+		result = append(result, types.BlockIndex{
+			BlockNumber: blockNumber.String(),
+			Addresses:   reorgAddresses,
+		})
+	}
+	return result
+}
+
 // Store implements Repository
 func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool) {
 	batch := new(leveldb.Batch)
@@ -54,8 +75,9 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 	}
 
 	for _, item := range indexData {
-		// fmt.Println(item)
-		batch.Put(repo.marshaller.MarshallAddressKey(item), repo.marshaller.MarshallAddressValue(item))
+		key := repo.marshaller.MarshallAddressKey(item)
+		value := repo.marshaller.MarshallAddressValue(item)
+		batch.Put(key, value)
 	}
 	err := repo.addressDB.Write(batch, nil)
 	if err != nil {
@@ -72,14 +94,17 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 }
 
 // Get get transaction list from an address
-func (repo *LevelDBRepo) Get(address string) []types.AddressIndex {
+func (repo *LevelDBRepo) GetTransactionByAddress(address string) []types.AddressIndex {
 	result := []types.AddressIndex{}
-	iter := repo.addressDB.NewIterator(util.BytesPrefix([]byte(address)), nil)
+	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
+	iter := repo.addressDB.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		value := iter.Value()
 		addressIndex := repo.marshaller.UnmarshallAddressValue(value)
 		addressIndex.Address = address
-		// missing block index, do we need it?
+		key := iter.Key()
+		_, blockNumber := repo.marshaller.UnmarshallAddressKey(key)
+		addressIndex.BlockNumber = *blockNumber
 		result = append(result, addressIndex)
 	}
 	iter.Release()

@@ -62,7 +62,7 @@ func TestByteMarshallAddressKey(t *testing.T) {
 }
 
 func TestByteMarshallAddressValue(t *testing.T) {
-	blockTime := big.NewInt(time.Now().UnixNano())
+	blockTime := big.NewInt(time.Now().Unix())
 	blockNumber := big.NewInt(6000000)
 	value := big.NewInt(1000000000)
 	bm := ByteMarshaller{}
@@ -94,7 +94,7 @@ func TestByteMarshallAddressValue(t *testing.T) {
 
 func TestMarshallBatchValue(t *testing.T) {
 	bm := ByteMarshaller{}
-	updatedAt := big.NewInt(time.Now().UnixNano())
+	updatedAt := big.NewInt(time.Now().Unix())
 	currentBlock := big.NewInt(3000000)
 	value := bm.MarshallBatchValue(updatedAt, currentBlock)
 	batchStatus := bm.UnmarshallBatchValue(value)

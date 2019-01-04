@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/WeTrustPlatform/account-indexer/http"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/ethereum/go-ethereum/console"
@@ -69,15 +70,14 @@ func index(ctx *cli.Context) {
 		log.Fatal("Can't connect to LevelDB", err)
 	}
 	defer batchDB.Close()
+	repo := repository.NewLevelDBRepo(addressDB, blockDB, batchDB)
 	indexer := indexer.Indexer{
-		// Fetcher: fetcher,
 		IpcPath: ipcPath,
-		Repo:    repository.NewLevelDBRepo(addressDB, blockDB, batchDB),
-		// Repo: nil,
+		Repo:    repo,
 	}
-	// indexer.RealtimeIndex()
-	// indexer.IndexFromGenesis()
 	indexer.Index()
+	server := http.NewServer(repo)
+	server.Start()
 }
 
 func main() {
