@@ -3,7 +3,6 @@ package http
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/repository"
@@ -70,7 +69,7 @@ func (server HttpServer) getBatchStatus(c *gin.Context) {
 			current = batch.Current.String()
 		}
 		key := fmt.Sprintf("From %v, To %v", batch.From.String(), batch.To.String())
-		updatedAt := time.Unix(0, int64(batch.UpdatedAt.Uint64()))
+		updatedAt := common.UnmarshallIntToTime(batch.UpdatedAt)
 		value := fmt.Sprintf("Current %v, Updated At %v", current, updatedAt)
 		response[key] = value
 	}
