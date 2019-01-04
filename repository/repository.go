@@ -117,8 +117,11 @@ func (repo *LevelDBRepo) GetTransactionByAddress(address string) []types.Address
 func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence) {
 	batch := new(leveldb.Batch)
 	for _, address := range reorgAddresses {
-		addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address.Address, blockIndex, address.Sequence)
-		batch.Delete([]byte(addressIndexKey))
+		// Block database save address and max sequence as value
+		for i := uint8(1); i <= address.Sequence; i++ {
+			addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address.Address, blockIndex, i)
+			batch.Delete([]byte(addressIndexKey))
+		}
 	}
 	err := repo.addressDB.Write(batch, nil)
 	if err != nil {

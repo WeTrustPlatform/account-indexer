@@ -161,7 +161,6 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 	sequenceMap := map[string]uint8{}
 
 	for _, transaction := range blockDetail.Transactions {
-		// TODO: resolve pointer issue
 		posValue := transaction.Value
 		negValue := transaction.Value.Mul(&posValue, big.NewInt(-1))
 		to := transaction.To
