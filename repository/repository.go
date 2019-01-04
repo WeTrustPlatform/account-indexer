@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"fmt"
+	"log"
 	"math/big"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
@@ -81,14 +81,12 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 	}
 	err := repo.addressDB.Write(batch, nil)
 	if err != nil {
-		// TODO
-		fmt.Println("Cannot write to address leveldb")
+		log.Fatal("Cannot write to address leveldb")
 	}
 	if !isBatch {
 		err = repo.blockDB.Put(repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber), repo.marshaller.MarshallBlockDBValue(blockIndex), nil)
 		if err != nil {
-			// TODO
-			fmt.Println("Cannot write to block leveldb")
+			log.Fatal("Cannot write to block leveldb")
 		}
 	}
 }
@@ -110,7 +108,7 @@ func (repo *LevelDBRepo) GetTransactionByAddress(address string) []types.Address
 	iter.Release()
 	err := iter.Error()
 	if err != nil {
-		fmt.Println("Cannot get address info from address DB")
+		log.Fatal("Cannot get address info from address DB")
 	}
 	return result
 }
@@ -124,8 +122,7 @@ func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.A
 	}
 	err := repo.addressDB.Write(batch, nil)
 	if err != nil {
-		// TODO
-		fmt.Println("Cannot remove old address index")
+		log.Fatal("Cannot remove old address index")
 	}
 }
 

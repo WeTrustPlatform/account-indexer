@@ -25,7 +25,6 @@ var marshaller = StringMarshaller{}
 
 func TestMarshallKey(t *testing.T) {
 	addressKeyByte := marshaller.MarshallAddressKey(index)
-	// fmt.Println(len(addressKeyByte))
 	addressKeyStr := string(addressKeyByte)
 	if addressKeyStr != "0XF58B12474C084B3BCD32B991EA1BABDF0D67C109_0000002018" {
 		t.Error("Address key is not correct")

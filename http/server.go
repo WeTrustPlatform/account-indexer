@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
@@ -32,7 +33,7 @@ func (server HttpServer) Start() {
 
 func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 	account := c.Param("accountNumber")
-	fmt.Printf("Getting transactions for account %v\n", account)
+	log.Printf("Getting transactions for account %v\n", account)
 	addressIndexes := server.repo.GetTransactionByAddress(account)
 	response := map[string]string{}
 	for _, index := range addressIndexes {
@@ -44,7 +45,7 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 
 func (server HttpServer) getBlock(c *gin.Context) {
 	blocks := server.repo.GetLastFiveBlocks()
-	fmt.Printf("Number of found blocks : %v \n", len(blocks))
+	log.Printf("Number of found blocks : %v \n", len(blocks))
 	response := map[string]string{}
 	for _, block := range blocks {
 		response[block.BlockNumber] = fmt.Sprintf("%v", block.Addresses)

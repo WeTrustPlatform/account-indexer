@@ -2,7 +2,6 @@ package fetcher
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/big"
 
@@ -44,11 +43,11 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- types.BLockDetail) {
 	ctx := context.Background()
 	blockHeaderChannel := make(chan *gethtypes.Header)
 	go cf.Client.SubscribeNewHead(ctx, blockHeaderChannel)
-	fmt.Println("RealtimeFetch Waiting for new block hearders...")
+	log.Println("RealtimeFetch Waiting for new block hearders...")
 	for {
 		receivedHeader := <-blockHeaderChannel
 		blockNumber := receivedHeader.Number
-		fmt.Println("RealtimeFetch received block number " + blockNumber.String())
+		log.Println("RealtimeFetch received block number " + blockNumber.String())
 		blockDetail, err := cf.FetchABlock(blockNumber)
 		if err != nil {
 			ch <- blockDetail
@@ -64,12 +63,12 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, erro
 		log.Fatal("RealtimeFetch BlockByNumber returns error " + err.Error())
 		return types.BLockDetail{}, err
 	}
-	// fmt.Println(fmt.Sprintf("Found block number received from SubscribeNewHead: %s", blockNumber))
+	// log.Println(fmt.Sprintf("Found block number received from SubscribeNewHead: %s", blockNumber))
 	transactions := []types.TransactionDetail{}
 	if len(aBlock.Transactions()) > 0 {
 		for index, tx := range aBlock.Transactions() {
 			sender, _ := cf.Client.TransactionSender(ctx, tx, aBlock.Hash(), uint(index))
-			// fmt.Println(fmt.Sprintf("Hash %s --- Value %d -- Sender %s", tx.Hash().String(), tx.Value(), sender.String()))
+			// log.Println(fmt.Sprintf("Hash %s --- Value %d -- Sender %s", tx.Hash().String(), tx.Value(), sender.String()))
 			// Some transactions have nil To, for example Contract creation
 			to := ""
 			if tx.To() != nil {

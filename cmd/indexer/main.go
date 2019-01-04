@@ -54,7 +54,7 @@ func newApp() *cli.App {
 func index(ctx *cli.Context) {
 	ipcPath := ctx.GlobalString(ipcFlag.Name)
 	dbPath := ctx.GlobalString(dbFlag.Name)
-	fmt.Println(fmt.Sprintf("%v ipcPath=%s \n dbPath=%s\n", time.Now(), ipcPath, dbPath))
+	log.Println(fmt.Sprintf("%v ipcPath=%s \n dbPath=%s\n", time.Now(), ipcPath, dbPath))
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)
 	if err != nil {
 		log.Fatal("Can't connect to LevelDB", err)
