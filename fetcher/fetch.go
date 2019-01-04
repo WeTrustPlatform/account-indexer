@@ -49,8 +49,10 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- types.BLockDetail) {
 		blockNumber := receivedHeader.Number
 		log.Println("RealtimeFetch received block number " + blockNumber.String())
 		blockDetail, err := cf.FetchABlock(blockNumber)
-		if err != nil {
+		if err == nil {
 			ch <- blockDetail
+		} else {
+			log.Fatal("Cannot get block detail for block " + blockNumber.String())
 		}
 	}
 }

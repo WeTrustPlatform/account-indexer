@@ -41,28 +41,8 @@ func NewLevelDBRepo(addressDB *leveldb.DB, blockDB *leveldb.DB, batchDB *leveldb
 	}
 }
 
-func (repo *LevelDBRepo) GetLastFiveBlocks() []types.BlockIndex {
-	iter := repo.blockDB.NewIterator(nil, nil)
-	defer iter.Release()
-	iter.Last()
-	result := []types.BlockIndex{}
-	count := 0
-	for iter.Prev() && count < 5 {
-		count++
-		key := iter.Key()
-		value := iter.Value()
-		blockNumber := repo.marshaller.UnmarshallBlockKey(key)
-		reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(value)
-		result = append(result, types.BlockIndex{
-			BlockNumber: blockNumber.String(),
-			Addresses:   reorgAddresses,
-		})
-	}
-	return result
-}
-
 // Store implements Repository
-func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool) {
+func (repo *LevelDBRepo) Store(addressIndex []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool) {
 	batch := new(leveldb.Batch)
 	if !isBatch {
 		reorgAddressesByteArr, _ := repo.blockDB.Get([]byte(blockIndex.BlockNumber), nil)
@@ -74,7 +54,8 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 		}
 	}
 
-	for _, item := range indexData {
+	// AddressDB: write in batch
+	for _, item := range addressIndex {
 		key := repo.marshaller.MarshallAddressKey(item)
 		value := repo.marshaller.MarshallAddressValue(item)
 		batch.Put(key, value)
@@ -83,6 +64,8 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 	if err != nil {
 		log.Fatal("Cannot write to address leveldb")
 	}
+
+	// BlockDB: write a single record
 	if !isBatch {
 		err = repo.blockDB.Put(repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber), repo.marshaller.MarshallBlockDBValue(blockIndex), nil)
 		if err != nil {
@@ -91,7 +74,7 @@ func (repo *LevelDBRepo) Store(indexData []types.AddressIndex, blockIndex types.
 	}
 }
 
-// Get get transaction list from an address
+// GetTransactionByAddress main thing for this indexer
 func (repo *LevelDBRepo) GetTransactionByAddress(address string) []types.AddressIndex {
 	result := []types.AddressIndex{}
 	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
@@ -210,4 +193,25 @@ func (repo *LevelDBRepo) getBatchStatus(key []byte, value []byte) types.BatchSta
 	batch.Current = batchValue.Current
 	batch.UpdatedAt = batchValue.UpdatedAt
 	return batch
+}
+
+// GetLastFiveBlocks this is mainly for the server to show the status
+func (repo *LevelDBRepo) GetLastFiveBlocks() []types.BlockIndex {
+	iter := repo.blockDB.NewIterator(nil, nil)
+	defer iter.Release()
+	iter.Last()
+	result := []types.BlockIndex{}
+	count := 0
+	for iter.Prev() && count < 5 {
+		count++
+		key := iter.Key()
+		value := iter.Value()
+		blockNumber := repo.marshaller.UnmarshallBlockKey(key)
+		reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(value)
+		result = append(result, types.BlockIndex{
+			BlockNumber: blockNumber.String(),
+			Addresses:   reorgAddresses,
+		})
+	}
+	return result
 }
