@@ -69,10 +69,15 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, erro
 	if len(aBlock.Transactions()) > 0 {
 		for index, tx := range aBlock.Transactions() {
 			sender, _ := cf.Client.TransactionSender(ctx, tx, aBlock.Hash(), uint(index))
-			// fmt.Println(fmt.Sprintf("Hash %s --- To %s --- Value %d -- Sender %s", tx.Hash().String(), tx.To().String(), tx.Value(), sender.String()))
+			// fmt.Println(fmt.Sprintf("Hash %s --- Value %d -- Sender %s", tx.Hash().String(), tx.Value(), sender.String()))
+			// Some transactions have nil To, for example Contract creation
+			to := ""
+			if tx.To() != nil {
+				to = tx.To().String()
+			}
 			transaction := types.TransactionDetail{
 				From:   sender.String(),
-				To:     tx.To().String(),
+				To:     to,
 				TxHash: tx.Hash().String(),
 				Value:  *tx.Value(),
 			}

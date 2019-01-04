@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
 	"github.com/WeTrustPlatform/account-indexer/repository"
@@ -163,39 +164,44 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 		// TODO: resolve pointer issue
 		posValue := transaction.Value
 		negValue := transaction.Value.Mul(&posValue, big.NewInt(-1))
+		to := transaction.To
+		isNilTo := false
+		if to == "" {
+			to = common.AddressZero
+			isNilTo = true
+		}
 
 		fromIndex := types.AddressIndex{
 			TxHash:        transaction.TxHash,
 			Value:         *negValue,
 			Time:          blockDetail.Time,
 			BlockNumber:   blockDetail.BlockNumber,
-			CoupleAddress: transaction.To,
-		}
-
-		toIndex := types.AddressIndex{
-			TxHash:        transaction.TxHash,
-			Value:         posValue,
-			Time:          blockDetail.Time,
-			BlockNumber:   blockDetail.BlockNumber,
-			CoupleAddress: transaction.From,
+			CoupleAddress: to,
 		}
 		if _, ok := sequenceMap[transaction.From]; !ok {
 			sequenceMap[transaction.From] = 0
-			// blockIndex.Addresses = append(blockIndex.Addresses, transaction.From)
 		}
 		sequenceMap[transaction.From]++
-
-		if _, ok := sequenceMap[transaction.To]; !ok {
-			sequenceMap[transaction.To] = 0
-			// blockIndex.Addresses = append(blockIndex.Addresses, transaction.To)
-		}
-		sequenceMap[transaction.To]++
-
 		fromIndex.Address = transaction.From
 		fromIndex.Sequence = sequenceMap[transaction.From]
-		toIndex.Address = transaction.To
-		toIndex.Sequence = sequenceMap[transaction.To]
-		addressIndex = append(addressIndex, fromIndex, toIndex)
+		addressIndex = append(addressIndex, fromIndex)
+
+		if !isNilTo {
+			toIndex := types.AddressIndex{
+				TxHash:        transaction.TxHash,
+				Value:         posValue,
+				Time:          blockDetail.Time,
+				BlockNumber:   blockDetail.BlockNumber,
+				CoupleAddress: transaction.From,
+			}
+			if _, ok := sequenceMap[transaction.To]; !ok {
+				sequenceMap[transaction.To] = 0
+			}
+			sequenceMap[transaction.To]++
+			toIndex.Address = transaction.To
+			toIndex.Sequence = sequenceMap[transaction.To]
+			addressIndex = append(addressIndex, toIndex)
+		}
 	}
 	for k, v := range sequenceMap {
 		blockIndex.Addresses = append(blockIndex.Addresses, types.AddressSequence{Address: k, Sequence: v})
