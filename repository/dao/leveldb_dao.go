@@ -16,14 +16,14 @@ func NewLevelDbDAO(db *leveldb.DB) LevelDbDAO {
 }
 
 func (ld LevelDbDAO) Put(record KeyValue) error {
-	err := ld.db.Put(record.key, record.value, nil)
+	err := ld.db.Put(record.Key, record.Value, nil)
 	return err
 }
 
 func (ld LevelDbDAO) BatchPut(records []KeyValue) error {
 	batch := new(leveldb.Batch)
 	for _, item := range records {
-		batch.Put(item.key, item.value)
+		batch.Put(item.Key, item.Value)
 	}
 	err := ld.db.Write(batch, nil)
 	return err
@@ -48,7 +48,7 @@ func (ld LevelDbDAO) FindByKeyPrefix(prefix []byte) ([]KeyValue, error) {
 	defer iter.Release()
 	result := []KeyValue{}
 	for iter.Next() {
-		keyValue := KeyValue{key: iter.Key(), value: iter.Value()}
+		keyValue := CopyKeyValue(iter.Key(), iter.Value())
 		result = append(result, keyValue)
 	}
 	err := iter.Error()
@@ -60,7 +60,7 @@ func (ld LevelDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 	if err != nil {
 		return nil, err
 	}
-	result := KeyValue{key: key, value: value}
+	result := KeyValue{Key: key, Value: value}
 	return &result, nil
 }
 
@@ -69,9 +69,9 @@ func (ld LevelDbDAO) GetNFirstRecords(n int) []KeyValue {
 	defer iter.Release()
 	count := 0
 	result := []KeyValue{}
-	for iter.Next() && count < n {
+	for count < n && iter.Next() {
 		count++
-		result = append(result, KeyValue{key: iter.Key(), value: iter.Value()})
+		result = append(result, CopyKeyValue(iter.Key(), iter.Value()))
 	}
 	return result
 }
@@ -85,9 +85,12 @@ func (ld LevelDbDAO) GetNLastRecords(n int) []KeyValue {
 	if !hasLast {
 		return result
 	}
-	for iter.Prev() && count < n {
+
+	for count < n && iter.Prev() {
 		count++
-		result = append(result, KeyValue{key: iter.Key(), value: iter.Value()})
+		key := iter.Key()
+		value := iter.Value()
+		result = append(result, CopyKeyValue(key, value))
 	}
 	return result
 }
@@ -97,7 +100,7 @@ func (ld LevelDbDAO) GetAllRecords() []KeyValue {
 	defer iter.Release()
 	result := []KeyValue{}
 	for iter.Next() {
-		result = append(result, KeyValue{key: iter.Key(), value: iter.Value()})
+		result = append(result, CopyKeyValue(iter.Key(), iter.Value()))
 	}
 	return result
 }

@@ -14,13 +14,13 @@ func NewMemDbDAO(db *memdb.DB) MemDbDAO {
 }
 
 func (md MemDbDAO) Put(record KeyValue) error {
-	err := md.db.Put(record.key, record.value)
+	err := md.db.Put(record.Key, record.Value)
 	return err
 }
 
 func (md MemDbDAO) BatchPut(records []KeyValue) error {
 	for _, item := range records {
-		err := md.db.Put(item.key, item.value)
+		err := md.db.Put(item.Key, item.Value)
 		if err != nil {
 			return err
 		}
@@ -51,7 +51,7 @@ func (md MemDbDAO) FindByKeyPrefix(prefix []byte) ([]KeyValue, error) {
 		key := iter.Key()
 		value := iter.Value()
 		if startsWith(key, prefix) {
-			result = append(result, KeyValue{key: key, value: value})
+			result = append(result, CopyKeyValue(key, value))
 		}
 	}
 	return result, nil
@@ -78,7 +78,7 @@ func (md MemDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &KeyValue{key: key, value: value}, nil
+	return &KeyValue{Key: key, Value: value}, nil
 }
 
 func (md MemDbDAO) GetNFirstRecords(n int) []KeyValue {
@@ -89,7 +89,7 @@ func (md MemDbDAO) GetNFirstRecords(n int) []KeyValue {
 	for iter.Next() && count < n {
 		key := iter.Key()
 		value := iter.Value()
-		result = append(result, KeyValue{key: key, value: value})
+		result = append(result, CopyKeyValue(key, value))
 		count++
 	}
 	return result
@@ -106,7 +106,7 @@ func (md MemDbDAO) GetNLastRecords(n int) []KeyValue {
 	for iter.Prev() && count < n {
 		key := iter.Key()
 		value := iter.Value()
-		result = append(result, KeyValue{key: key, value: value})
+		result = append(result, CopyKeyValue(key, value))
 		count++
 	}
 	return result
@@ -119,7 +119,7 @@ func (md MemDbDAO) GetAllRecords() []KeyValue {
 	for iter.Next() {
 		key := iter.Key()
 		value := iter.Value()
-		result = append(result, KeyValue{key: key, value: value})
+		result = append(result, CopyKeyValue(key, value))
 	}
 	return result
 }

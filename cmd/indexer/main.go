@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/WeTrustPlatform/account-indexer/repository/dao"
+
 	"github.com/WeTrustPlatform/account-indexer/http"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository"
@@ -70,7 +72,7 @@ func index(ctx *cli.Context) {
 		log.Fatal("Can't connect to LevelDB", err)
 	}
 	defer batchDB.Close()
-	repo := repository.NewLevelDBRepo(addressDB, blockDB, batchDB)
+	repo := repository.NewLevelDBRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB), dao.NewLevelDbDAO(batchDB))
 	indexer := indexer.Indexer{
 		IpcPath: ipcPath,
 		Repo:    repo,

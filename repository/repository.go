@@ -5,9 +5,8 @@ import (
 	"math/big"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/repository/dao"
 	"github.com/WeTrustPlatform/account-indexer/repository/marshal"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 // Repository to store index data
@@ -25,29 +24,28 @@ type Repository interface {
 
 // LevelDBRepo implementation of Repository
 type LevelDBRepo struct {
-	addressDB  *leveldb.DB
-	blockDB    *leveldb.DB
-	batchDB    *leveldb.DB
+	addressDAO dao.KeyValueDAO
+	blockDAO   dao.KeyValueDAO
+	batchDAO   dao.KeyValueDAO
 	marshaller marshal.Marshaller
 }
 
 // NewLevelDBRepo create an instance of LevelDBRepo
-func NewLevelDBRepo(addressDB *leveldb.DB, blockDB *leveldb.DB, batchDB *leveldb.DB) *LevelDBRepo {
+func NewLevelDBRepo(addressDAO dao.KeyValueDAO, blockDAO dao.KeyValueDAO, batchDAO dao.KeyValueDAO) *LevelDBRepo {
 	return &LevelDBRepo{
-		addressDB:  addressDB,
-		blockDB:    blockDB,
-		batchDB:    batchDB,
+		addressDAO: addressDAO,
+		blockDAO:   blockDAO,
+		batchDAO:   batchDAO,
 		marshaller: marshal.ByteMarshaller{},
 	}
 }
 
 // Store implements Repository
 func (repo *LevelDBRepo) Store(addressIndex []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool) {
-	batch := new(leveldb.Batch)
 	if !isBatch {
-		reorgAddressesByteArr, _ := repo.blockDB.Get([]byte(blockIndex.BlockNumber), nil)
-		if reorgAddressesByteArr != nil {
-			reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(reorgAddressesByteArr)
+		oldBlock, err := repo.blockDAO.FindByKey([]byte(blockIndex.BlockNumber))
+		if err == nil && oldBlock != nil {
+			reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(oldBlock.Value)
 			if reorgAddresses != nil {
 				repo.HandleReorg(blockIndex.BlockNumber, reorgAddresses)
 			}
@@ -55,19 +53,23 @@ func (repo *LevelDBRepo) Store(addressIndex []types.AddressIndex, blockIndex typ
 	}
 
 	// AddressDB: write in batch
+	keyValues := []dao.KeyValue{}
 	for _, item := range addressIndex {
 		key := repo.marshaller.MarshallAddressKey(item)
 		value := repo.marshaller.MarshallAddressValue(item)
-		batch.Put(key, value)
+		keyValue := dao.NewKeyValue(key, value)
+		keyValues = append(keyValues, keyValue)
 	}
-	err := repo.addressDB.Write(batch, nil)
+	err := repo.addressDAO.BatchPut(keyValues)
 	if err != nil {
 		log.Fatal("Cannot write to address leveldb")
 	}
 
 	// BlockDB: write a single record
 	if !isBatch {
-		err = repo.blockDB.Put(repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber), repo.marshaller.MarshallBlockDBValue(blockIndex), nil)
+		key := repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber)
+		value := repo.marshaller.MarshallBlockDBValue(blockIndex)
+		err = repo.blockDAO.Put(dao.NewKeyValue(key, value))
 		if err != nil {
 			log.Fatal("Cannot write to block leveldb")
 		}
@@ -76,37 +78,33 @@ func (repo *LevelDBRepo) Store(addressIndex []types.AddressIndex, blockIndex typ
 
 // GetTransactionByAddress main thing for this indexer
 func (repo *LevelDBRepo) GetTransactionByAddress(address string) []types.AddressIndex {
-	result := []types.AddressIndex{}
 	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
-	iter := repo.addressDB.NewIterator(util.BytesPrefix(prefix), nil)
-	for iter.Next() {
-		value := iter.Value()
+	result := []types.AddressIndex{}
+	keyValues, _ := repo.addressDAO.FindByKeyPrefix(prefix)
+	for _, keyValue := range keyValues {
+		value := keyValue.Value
 		addressIndex := repo.marshaller.UnmarshallAddressValue(value)
 		addressIndex.Address = address
-		key := iter.Key()
+		key := keyValue.Key
 		_, blockNumber := repo.marshaller.UnmarshallAddressKey(key)
 		addressIndex.BlockNumber = *blockNumber
 		result = append(result, addressIndex)
 	}
-	iter.Release()
-	err := iter.Error()
-	if err != nil {
-		log.Fatal("Cannot get address info from address DB")
-	}
+
 	return result
 }
 
 // HandleReorg handle reorg scenario: get block again
 func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence) {
-	batch := new(leveldb.Batch)
+	keys := [][]byte{}
 	for _, address := range reorgAddresses {
 		// Block database save address and max sequence as value
 		for i := uint8(1); i <= address.Sequence; i++ {
 			addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address.Address, blockIndex, i)
-			batch.Delete([]byte(addressIndexKey))
+			keys = append(keys, addressIndexKey)
 		}
 	}
-	err := repo.addressDB.Write(batch, nil)
+	err := repo.addressDAO.BatchDelete(keys)
 	if err != nil {
 		log.Fatal("Cannot remove old address index")
 	}
@@ -114,38 +112,33 @@ func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.A
 
 // GetLastNewHeadBlockInDB latest saved block in newHead block DB
 func (repo *LevelDBRepo) GetLastNewHeadBlockInDB() *big.Int {
-	iter := repo.blockDB.NewIterator(nil, nil)
-	defer iter.Release()
-	hasLast := iter.Last()
-	if !hasLast {
+	lastBlocks := repo.blockDAO.GetNLastRecords(1)
+	if len(lastBlocks) <= 0 {
 		return nil
 	}
-	key := iter.Key()
+	key := lastBlocks[0].Key
 	blockNumber := repo.marshaller.UnmarshallBlockKey(key)
 	return blockNumber
 }
 
 // GetFirstNewHeadBlockInDB first saved block in newHead block DB
 func (repo *LevelDBRepo) GetFirstNewHeadBlockInDB() *big.Int {
-	iter := repo.blockDB.NewIterator(nil, nil)
-	defer iter.Release()
-	hasFirst := iter.First()
-	if !hasFirst {
+	lastBlocks := repo.blockDAO.GetNFirstRecords(1)
+	if len(lastBlocks) <= 0 {
 		return nil
 	}
-	key := iter.Key()
+	key := lastBlocks[0].Key
 	blockNumber := repo.marshaller.UnmarshallBlockKey(key)
 	return blockNumber
 }
 
 // GetAllBatchStatuses get all batches
 func (repo *LevelDBRepo) GetAllBatchStatuses() []types.BatchStatus {
-	iter := repo.batchDB.NewIterator(nil, nil)
-	defer iter.Release()
+	keyValues := repo.batchDAO.GetAllRecords()
 	batches := []types.BatchStatus{}
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
+	for _, keyValue := range keyValues {
+		key := keyValue.Key
+		value := keyValue.Value
 		batch1 := repo.marshaller.UnmarshallBatchKey(key)
 		batch2 := repo.marshaller.UnmarshallBatchValue(value)
 		batch := types.BatchStatus{
@@ -163,26 +156,25 @@ func (repo *LevelDBRepo) GetAllBatchStatuses() []types.BatchStatus {
 func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) {
 	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
 	value := repo.marshaller.MarshallBatchValue(batch.UpdatedAt, batch.Current)
-	repo.batchDB.Put(key, value, nil)
+	repo.batchDAO.Put(dao.NewKeyValue(key, value))
 }
 
 func (repo *LevelDBRepo) ReplaceBatch(from *big.Int, newTo *big.Int) {
-	iter := repo.batchDB.NewIterator(nil, nil)
-	defer iter.Release()
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		batch := repo.getBatchStatus(key, value)
-		if batch.From.Cmp(from) == 0 {
-			repo.replaceBatch(batch, newTo)
-			break
-		}
+	fromByteArr := repo.marshaller.MarshallBatchKeyFrom(from)
+	keyValues, err := repo.batchDAO.FindByKeyPrefix(fromByteArr)
+	if err != nil || len(keyValues) <= 0 {
+		return
 	}
+	keyValue := keyValues[0]
+	key := keyValue.Key
+	value := keyValue.Value
+	batch := repo.getBatchStatus(key, value)
+	repo.replaceBatch(batch, newTo)
 }
 
 func (repo *LevelDBRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) {
 	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
-	repo.batchDB.Delete(key, nil)
+	repo.batchDAO.DeleteByKey(key)
 	batch.To = newTo
 	repo.UpdateBatch(batch)
 }
@@ -197,15 +189,11 @@ func (repo *LevelDBRepo) getBatchStatus(key []byte, value []byte) types.BatchSta
 
 // GetLastFiveBlocks this is mainly for the server to show the status
 func (repo *LevelDBRepo) GetLastFiveBlocks() []types.BlockIndex {
-	iter := repo.blockDB.NewIterator(nil, nil)
-	defer iter.Release()
-	iter.Last()
+	keyValues := repo.blockDAO.GetNLastRecords(5)
 	result := []types.BlockIndex{}
-	count := 0
-	for iter.Prev() && count < 5 {
-		count++
-		key := iter.Key()
-		value := iter.Value()
+	for _, keyValue := range keyValues {
+		key := keyValue.Key
+		value := keyValue.Value
 		blockNumber := repo.marshaller.UnmarshallBlockKey(key)
 		reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(value)
 		result = append(result, types.BlockIndex{

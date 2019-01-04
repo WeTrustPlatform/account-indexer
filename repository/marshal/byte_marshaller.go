@@ -146,6 +146,11 @@ func (bm ByteMarshaller) MarshallBatchKey(from *big.Int, to *big.Int) []byte {
 	return []byte(keyStr)
 }
 
+func (bm ByteMarshaller) MarshallBatchKeyFrom(from *big.Int) []byte {
+	fromStr := blockNumberWidPad(from.String())
+	return []byte(fromStr)
+}
+
 func (bm ByteMarshaller) UnmarshallBatchKey(key []byte) types.BatchStatus {
 	keyStr := string(key)
 	keyArr := strings.Split(keyStr, "_")
