@@ -13,12 +13,12 @@ type TransactionDetail struct {
 	From   string
 	To     string
 	TxHash string
-	Value  big.Int
+	Value  *big.Int
 }
 
 // BLockDetail data received from blockchain
 type BLockDetail struct {
-	BlockNumber  big.Int
-	Time         big.Int
+	BlockNumber  *big.Int
+	Time         *big.Int
 	Transactions []TransactionDetail
 }

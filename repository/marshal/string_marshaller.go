@@ -62,8 +62,8 @@ func (sm StringMarshaller) UnmarshallAddressValue(value []byte) types.AddressInd
 	time := stringToBigInt(valueArr[2])
 	return types.AddressIndex{
 		TxHash: txHash,
-		Value:  *txValue,
-		Time:   *time,
+		Value:  txValue,
+		Time:   time,
 	}
 }
 

@@ -80,14 +80,14 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, erro
 				From:   sender.String(),
 				To:     to,
 				TxHash: tx.Hash().String(),
-				Value:  *tx.Value(),
+				Value:  tx.Value(),
 			}
 			transactions = append(transactions, transaction)
 		}
 	}
 	blockDetail := types.BLockDetail{
-		BlockNumber:  *aBlock.Number(),
-		Time:         *aBlock.Time(),
+		BlockNumber:  aBlock.Number(),
+		Time:         aBlock.Time(),
 		Transactions: transactions,
 	}
 	return blockDetail, nil

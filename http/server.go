@@ -37,7 +37,7 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 	addressIndexes := server.repo.GetTransactionByAddress(account)
 	response := map[string]string{}
 	for _, index := range addressIndexes {
-		txTime := common.UnmarshallIntToTime(&index.Time)
+		txTime := common.UnmarshallIntToTime(index.Time)
 		response[index.TxHash] = fmt.Sprintf("Value: %v, Time: %v, BlockNumber: %v, CoupleAddress: %v", index.Value.String(), txTime, index.BlockNumber.String(), index.CoupleAddress)
 	}
 	c.JSON(http.StatusOK, response)

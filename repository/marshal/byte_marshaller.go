@@ -82,7 +82,7 @@ func (bm ByteMarshaller) MarshallAddressValue(index types.AddressIndex) []byte {
 	// 20 byte
 	addressByteArr, _ := hexutil.Decode(index.CoupleAddress)
 	// 4 byte
-	timeByteArr := common.MarshallTime(&index.Time)
+	timeByteArr := common.MarshallTime(index.Time)
 	valueByteArr := []byte(index.Value.String())
 	result := append(txHashByteArr, addressByteArr...)
 	result = append(result, timeByteArr...)
@@ -113,8 +113,8 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 	result := types.AddressIndex{
 		TxHash:        txHash,
 		CoupleAddress: address,
-		Time:          *timestamp,
-		Value:         *txValueBI,
+		Time:          timestamp,
+		Value:         txValueBI,
 	}
 	return result
 }

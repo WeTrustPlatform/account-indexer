@@ -15,9 +15,9 @@ import (
 type AddressIndex struct {
 	AddressSequence
 	TxHash        string
-	Value         big.Int
-	Time          big.Int
-	BlockNumber   big.Int
+	Value         *big.Int
+	Time          *big.Int
+	BlockNumber   *big.Int
 	CoupleAddress string
 }
 

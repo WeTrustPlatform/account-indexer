@@ -167,7 +167,8 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 
 	for _, transaction := range blockDetail.Transactions {
 		posValue := transaction.Value
-		negValue := transaction.Value.Mul(&posValue, big.NewInt(-1))
+		negValue := new(big.Int)
+		negValue = negValue.Mul(posValue, big.NewInt(-1))
 		to := transaction.To
 		isNilTo := false
 		if to == "" {
@@ -177,7 +178,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 
 		fromIndex := types.AddressIndex{
 			TxHash:        transaction.TxHash,
-			Value:         *negValue,
+			Value:         negValue,
 			Time:          blockDetail.Time,
 			BlockNumber:   blockDetail.BlockNumber,
 			CoupleAddress: to,

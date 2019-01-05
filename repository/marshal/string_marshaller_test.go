@@ -8,7 +8,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 )
 
-var now = *big.NewInt(time.Now().Unix())
+var now = big.NewInt(time.Now().Unix())
 
 var index = types.AddressIndex{
 	AddressSequence: types.AddressSequence{
@@ -16,9 +16,9 @@ var index = types.AddressIndex{
 		Sequence: 1,
 	},
 	TxHash:      "0xaf27ec30685cbb8acb995051825b7651801beb3101c5d62d0ae00e78a2801543",
-	Value:       *big.NewInt(100),
+	Value:       big.NewInt(100),
 	Time:        now,
-	BlockNumber: *big.NewInt(2018),
+	BlockNumber: big.NewInt(2018),
 }
 
 var marshaller = StringMarshaller{}

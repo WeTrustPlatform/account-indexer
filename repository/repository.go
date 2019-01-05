@@ -94,7 +94,7 @@ func (repo *LevelDBRepo) GetTransactionByAddress(address string) []types.Address
 		addressIndex.Address = address
 		key := keyValue.Key
 		_, blockNumber := repo.marshaller.UnmarshallAddressKey(key)
-		addressIndex.BlockNumber = *blockNumber
+		addressIndex.BlockNumber = blockNumber
 		result = append(result, addressIndex)
 	}
 

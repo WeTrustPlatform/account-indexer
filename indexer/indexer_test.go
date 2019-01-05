@@ -15,22 +15,22 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/memdb"
 )
 
-var blockTime = *big.NewInt(time.Now().UnixNano())
+var blockTime = big.NewInt(time.Now().UnixNano())
 var blockDetail = types.BLockDetail{
-	BlockNumber: *big.NewInt(2018),
+	BlockNumber: big.NewInt(2018),
 	Time:        blockTime,
 	Transactions: []types.TransactionDetail{
 		types.TransactionDetail{
 			From:   "from1",
 			To:     "to1",
 			TxHash: "0xtx1",
-			Value:  *big.NewInt(111),
+			Value:  big.NewInt(111),
 		},
 		types.TransactionDetail{
 			From:   "from2",
 			To:     "to1", // This demonstrates 2 transactions with same "to" address, Sequence should be increased
 			TxHash: "0xtx2",
-			Value:  *big.NewInt(222),
+			Value:  big.NewInt(222),
 		},
 	},
 }
@@ -42,9 +42,9 @@ var expectedIndexes = []types.AddressIndex{
 			Sequence: 1,
 		},
 		TxHash:        "0xtx1",
-		Value:         *big.NewInt(-111),
+		Value:         big.NewInt(-111),
 		Time:          blockTime,
-		BlockNumber:   *big.NewInt(2018),
+		BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "to1",
 	},
 	types.AddressIndex{
@@ -53,9 +53,9 @@ var expectedIndexes = []types.AddressIndex{
 			Sequence: 1,
 		},
 		TxHash:        "0xtx1",
-		Value:         *big.NewInt(111),
+		Value:         big.NewInt(111),
 		Time:          blockTime,
-		BlockNumber:   *big.NewInt(2018),
+		BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "from1",
 	},
 	types.AddressIndex{
@@ -64,9 +64,9 @@ var expectedIndexes = []types.AddressIndex{
 			Sequence: 1,
 		},
 		TxHash:        "0xtx2",
-		Value:         *big.NewInt(-222),
+		Value:         big.NewInt(-222),
 		Time:          blockTime,
-		BlockNumber:   *big.NewInt(2018),
+		BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "to1",
 	},
 	types.AddressIndex{
@@ -75,9 +75,9 @@ var expectedIndexes = []types.AddressIndex{
 			Sequence: 2,
 		},
 		TxHash:        "0xtx2",
-		Value:         *big.NewInt(222),
+		Value:         big.NewInt(222),
 		Time:          blockTime,
-		BlockNumber:   *big.NewInt(2018),
+		BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "from2",
 	},
 }
@@ -141,13 +141,15 @@ func TestCreateIndexData(t *testing.T) {
 		t.Error("BlockIndex - BlockNumber is not correct")
 	}
 
-	if blockIndex.Addresses[0].Address != "from1" || blockIndex.Addresses[0].Sequence != 1 {
-		t.Error("Address is not correct")
+	// blockIndex is not ordered due to map
+	blockIndexAddresses := map[string]uint8{}
+	for _, addressSequence := range blockIndex.Addresses {
+		blockIndexAddresses[addressSequence.Address] = addressSequence.Sequence
 	}
-	// TODO: for loop
-	// if !reflect.DeepEqual(blockIndex.Addresses, []string{"from1", "to1", "from2"}) {
-	// 	t.Error("BlockIndex - Addresses is not correct")
-	// }
+
+	if blockIndexAddresses["from1"] != uint8(1) || blockIndexAddresses["from2"] != uint8(1) || blockIndexAddresses["to1"] != uint8(2) {
+		t.Error("BlockIndex - address sequences is not correct")
+	}
 }
 
 func TestDivideRange(t *testing.T) {

@@ -68,10 +68,10 @@ func TestByteMarshallAddressValue(t *testing.T) {
 	bm := ByteMarshaller{}
 	addressIndex := types.AddressIndex{
 		CoupleAddress: "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e",
-		BlockNumber:   *blockNumber,
+		BlockNumber:   blockNumber,
 		TxHash:        "0x9bdbd233827534e48cc23801d145c64c4f4bab6b2c4c74a54673633e4c6c1591",
-		Value:         *value,
-		Time:          *blockTime,
+		Value:         value,
+		Time:          blockTime,
 	}
 	indexValue := bm.MarshallAddressValue(addressIndex)
 	addressIndex2 := bm.UnmarshallAddressValue(indexValue)
