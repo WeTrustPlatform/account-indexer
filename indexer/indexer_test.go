@@ -35,8 +35,8 @@ var blockDetail = types.BLockDetail{
 	},
 }
 
-var expectedIndexes = []types.AddressIndex{
-	types.AddressIndex{
+var expectedIndexes = []*types.AddressIndex{
+	&types.AddressIndex{
 		AddressSequence: types.AddressSequence{
 			Address:  "from1",
 			Sequence: 1,
@@ -47,7 +47,7 @@ var expectedIndexes = []types.AddressIndex{
 		BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "to1",
 	},
-	types.AddressIndex{
+	&types.AddressIndex{
 		AddressSequence: types.AddressSequence{
 			Address:  "to1",
 			Sequence: 1,
@@ -58,7 +58,7 @@ var expectedIndexes = []types.AddressIndex{
 		BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "from1",
 	},
-	types.AddressIndex{
+	&types.AddressIndex{
 		AddressSequence: types.AddressSequence{
 			Address:  "from2",
 			Sequence: 1,
@@ -69,7 +69,7 @@ var expectedIndexes = []types.AddressIndex{
 		BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "to1",
 	},
-	types.AddressIndex{
+	&types.AddressIndex{
 		AddressSequence: types.AddressSequence{
 			Address:  "to1",
 			Sequence: 2,
@@ -190,7 +190,7 @@ func TestGetBatches(t *testing.T) {
 		BlockNumber: big.NewInt(800).String(),
 		Addresses:   []types.AddressSequence{},
 	}
-	repo.SaveBlockIndex(blockIndex)
+	repo.SaveBlockIndex(&blockIndex)
 	// Test: should add a new batch from latest block in DB to latest block in blockchain
 	latestBlock := big.NewInt(900)
 	batches := indexer.getBatches(latestBlock)

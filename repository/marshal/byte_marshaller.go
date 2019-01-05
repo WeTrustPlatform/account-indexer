@@ -19,7 +19,7 @@ type ByteMarshaller struct {
 }
 
 // MarshallBlockDBValue marshall a blockIndex to []byte so that we store it as value in Block db
-func (bm ByteMarshaller) MarshallBlockDBValue(blockIndex types.BlockIndex) []byte {
+func (bm ByteMarshaller) MarshallBlockDBValue(blockIndex *types.BlockIndex) []byte {
 	length := len(blockIndex.Addresses)
 	// address1_seq1_address2_seq2
 	result := make([]byte, length*(gethcommon.AddressLength+1))
@@ -53,7 +53,7 @@ func (bm ByteMarshaller) UnmarshallBlockDBValue(value []byte) []types.AddressSeq
 }
 
 // MarshallAddressKey create LevelDB key
-func (bm ByteMarshaller) MarshallAddressKey(index types.AddressIndex) []byte {
+func (bm ByteMarshaller) MarshallAddressKey(index *types.AddressIndex) []byte {
 	return bm.MarshallAddressKeyStr(index.Address, index.BlockNumber.String(), index.Sequence)
 }
 
@@ -76,7 +76,7 @@ func (bm ByteMarshaller) MarshallAddressKeyPrefix(address string) []byte {
 }
 
 // MarshallAddressValue create LevelDB value
-func (bm ByteMarshaller) MarshallAddressValue(index types.AddressIndex) []byte {
+func (bm ByteMarshaller) MarshallAddressValue(index *types.AddressIndex) []byte {
 	// 32 byte
 	txHashByteArr, _ := hexutil.Decode(index.TxHash)
 	// 20 byte

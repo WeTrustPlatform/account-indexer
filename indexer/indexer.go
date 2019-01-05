@@ -157,9 +157,9 @@ func (indexer *Indexer) processBlock(blockDetail types.BLockDetail, isBatch bool
 }
 
 // CreateIndexData transforms blockchain data to our index data
-func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.AddressIndex, types.BlockIndex) {
-	addressIndex := make([]types.AddressIndex, 0, 2*len(blockDetail.Transactions))
-	blockIndex := types.BlockIndex{
+func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]*types.AddressIndex, *types.BlockIndex) {
+	addressIndex := make([]*types.AddressIndex, 0, 2*len(blockDetail.Transactions))
+	blockIndex := &types.BlockIndex{
 		BlockNumber: blockDetail.BlockNumber.String(),
 		Addresses:   []types.AddressSequence{},
 	}
@@ -189,7 +189,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 		sequenceMap[transaction.From]++
 		fromIndex.Address = transaction.From
 		fromIndex.Sequence = sequenceMap[transaction.From]
-		addressIndex = append(addressIndex, fromIndex)
+		addressIndex = append(addressIndex, &fromIndex)
 
 		if !isNilTo {
 			toIndex := types.AddressIndex{
@@ -205,7 +205,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]types.
 			sequenceMap[transaction.To]++
 			toIndex.Address = transaction.To
 			toIndex.Sequence = sequenceMap[transaction.To]
-			addressIndex = append(addressIndex, toIndex)
+			addressIndex = append(addressIndex, &toIndex)
 		}
 	}
 	for k, v := range sequenceMap {

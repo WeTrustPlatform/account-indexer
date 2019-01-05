@@ -12,14 +12,14 @@ type Marshaller interface {
 	MarshallBatchKey(from *big.Int, to *big.Int) []byte
 	MarshallBatchKeyFrom(from *big.Int) []byte
 	UnmarshallBatchKey(value []byte) types.BatchStatus
-	MarshallBlockDBValue(blockIndex types.BlockIndex) []byte
+	MarshallBlockDBValue(blockIndex *types.BlockIndex) []byte
 	UnmarshallBlockDBValue(value []byte) []types.AddressSequence
 	MarshallBlockKey(blockNumber string) []byte
 	UnmarshallBlockKey(key []byte) *big.Int
-	MarshallAddressKey(index types.AddressIndex) []byte
+	MarshallAddressKey(index *types.AddressIndex) []byte
 	MarshallAddressKeyPrefix(address string) []byte
 	MarshallAddressKeyStr(address string, blockNumber string, sequence uint8) []byte
-	MarshallAddressValue(index types.AddressIndex) []byte
+	MarshallAddressValue(index *types.AddressIndex) []byte
 	UnmarshallAddressKey(key []byte) (string, *big.Int)
 	UnmarshallAddressValue(value []byte) types.AddressIndex
 }

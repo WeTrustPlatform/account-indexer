@@ -11,7 +11,7 @@ import (
 
 // Repository to store index data
 type Repository interface {
-	Store(indexData []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool)
+	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool)
 	GetTransactionByAddress(address string) []types.AddressIndex
 	GetLastNewHeadBlockInDB() *big.Int
 	GetFirstNewHeadBlockInDB() *big.Int
@@ -40,7 +40,7 @@ func NewLevelDBRepo(addressDAO dao.KeyValueDAO, blockDAO dao.KeyValueDAO, batchD
 }
 
 // Store implements Repository
-func (repo *LevelDBRepo) Store(addressIndex []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool) {
+func (repo *LevelDBRepo) Store(addressIndex []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) {
 	if !isBatch {
 		oldBlock, err := repo.blockDAO.FindByKey([]byte(blockIndex.BlockNumber))
 		if err == nil && oldBlock != nil {
@@ -60,7 +60,7 @@ func (repo *LevelDBRepo) Store(addressIndex []types.AddressIndex, blockIndex typ
 	}
 }
 
-func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []types.AddressIndex) {
+func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) {
 	keyValues := []dao.KeyValue{}
 	for _, item := range addressIndex {
 		key := repo.marshaller.MarshallAddressKey(item)
@@ -74,7 +74,7 @@ func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []types.AddressIndex) {
 	}
 }
 
-func (repo *LevelDBRepo) SaveBlockIndex(blockIndex types.BlockIndex) {
+func (repo *LevelDBRepo) SaveBlockIndex(blockIndex *types.BlockIndex) {
 	key := repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber)
 	value := repo.marshaller.MarshallBlockDBValue(blockIndex)
 	err := repo.blockDAO.Put(dao.NewKeyValue(key, value))

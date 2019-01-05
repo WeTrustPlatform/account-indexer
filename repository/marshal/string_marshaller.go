@@ -11,7 +11,7 @@ type StringMarshaller struct {
 }
 
 // MarshallBlockDBValue marshall a blockIndex to []byte so that we store it as value in Block db
-func (sm StringMarshaller) MarshallBlockDBValue(blockIndex types.BlockIndex) []byte {
+func (sm StringMarshaller) MarshallBlockDBValue(blockIndex *types.BlockIndex) []byte {
 	addresses := []string{}
 	for _, item := range blockIndex.Addresses {
 		addresses = append(addresses, item.Address)
@@ -28,7 +28,7 @@ func (sm StringMarshaller) UnmarshallBlockDBValue(value []byte) []string {
 }
 
 // MarshallAddressKey create LevelDB key
-func (sm StringMarshaller) MarshallAddressKey(index types.AddressIndex) []byte {
+func (sm StringMarshaller) MarshallAddressKey(index *types.AddressIndex) []byte {
 	return sm.MarshallAddressKeyStr(index.Address, index.BlockNumber.String())
 }
 
@@ -40,7 +40,7 @@ func (sm StringMarshaller) MarshallAddressKeyStr(address string, blockNumber str
 }
 
 // MarshallAddressValue create LevelDB value
-func (sm StringMarshaller) MarshallAddressValue(index types.AddressIndex) []byte {
+func (sm StringMarshaller) MarshallAddressValue(index *types.AddressIndex) []byte {
 	value := index.TxHash + "_" + index.Value.String() + "_" + index.Time.String()
 	return []byte(value)
 }

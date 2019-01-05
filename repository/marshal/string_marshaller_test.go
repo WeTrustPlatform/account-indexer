@@ -10,7 +10,7 @@ import (
 
 var now = big.NewInt(time.Now().Unix())
 
-var index = types.AddressIndex{
+var index = &types.AddressIndex{
 	AddressSequence: types.AddressSequence{
 		Address:  "0xF58b12474c084B3Bcd32B991ea1BABdf0d67c109",
 		Sequence: 1,

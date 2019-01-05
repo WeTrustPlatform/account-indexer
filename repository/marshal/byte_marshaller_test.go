@@ -14,7 +14,7 @@ func TestByteMarshallerBlock(t *testing.T) {
 	bm := ByteMarshaller{}
 	address1 := "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e"
 	address2 := "0x7FA2B1C6E0B8B8805Bd56eC171aD8A8fbDEA3a44"
-	blockIndex := types.BlockIndex{
+	blockIndex := &types.BlockIndex{
 		BlockNumber: "3000000",
 		Addresses: []types.AddressSequence{
 			types.AddressSequence{Address: address1, Sequence: 1},
@@ -66,7 +66,7 @@ func TestByteMarshallAddressValue(t *testing.T) {
 	blockNumber := big.NewInt(6000000)
 	value := big.NewInt(1000000000)
 	bm := ByteMarshaller{}
-	addressIndex := types.AddressIndex{
+	addressIndex := &types.AddressIndex{
 		CoupleAddress: "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e",
 		BlockNumber:   blockNumber,
 		TxHash:        "0x9bdbd233827534e48cc23801d145c64c4f4bab6b2c4c74a54673633e4c6c1591",
