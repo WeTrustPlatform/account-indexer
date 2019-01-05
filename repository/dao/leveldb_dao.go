@@ -86,7 +86,11 @@ func (ld LevelDbDAO) GetNLastRecords(n int) []KeyValue {
 		return result
 	}
 
-	for count < n && iter.Prev() {
+	key := iter.Key()
+	value := iter.Value()
+	result = append(result, CopyKeyValue(key, value))
+
+	for count < (n-1) && iter.Prev() {
 		count++
 		key := iter.Key()
 		value := iter.Value()

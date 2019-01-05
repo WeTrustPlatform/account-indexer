@@ -1,33 +1,74 @@
 package dao
 
 import (
+	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"github.com/syndtr/goleveldb/leveldb/comparer"
 	"github.com/syndtr/goleveldb/leveldb/memdb"
 )
 
-func TestFindByKeyPrefix(t *testing.T) {
+var keyValues = []KeyValue{
+	KeyValue{Key: []byte("key1"), Value: []byte("value1")},
+	KeyValue{Key: []byte("key2"), Value: []byte("value2")},
+	KeyValue{Key: []byte("strange_key1"), Value: []byte("strange_value1")},
+}
+
+type MemDbDAOTestSuite struct {
+	suite.Suite
+	dao MemDbDAO
+}
+
+func TestMemDbDAO(t *testing.T) {
+	suite.Run(t, new(MemDbDAOTestSuite))
+}
+
+func (suite *MemDbDAOTestSuite) SetupTest() {
 	db := memdb.New(comparer.DefaultComparer, 0)
-	dao := NewMemDbDAO(db)
-	keyValues := []KeyValue{
-		KeyValue{Key: []byte("key1"), Value: []byte("value1")},
-		KeyValue{Key: []byte("key2"), Value: []byte("value2")},
-		KeyValue{Key: []byte("strange_key1"), Value: []byte("strange_value1")},
-	}
-	err := dao.BatchPut(keyValues)
-	if err != nil {
-		t.Error("BatchPut failed with error: " + err.Error())
-		return
-	}
-	prefixFound, err := dao.FindByKeyPrefix([]byte("key"))
-	if err != nil {
-		t.Error("FindByKeyPrefix failed with error: " + err.Error())
-		return
-	}
-	if len(prefixFound) != 2 {
-		t.Error("FindByKeyPrefix failed because len is not correct")
-		return
-	}
-	// TODO: test other functions
+	suite.dao = NewMemDbDAO(db)
+	err := suite.dao.BatchPut(keyValues)
+	assert.Nil(suite.T(), err)
+}
+
+func (suite *MemDbDAOTestSuite) TestFindByKeyPrefix() {
+	prefixFound, err := suite.dao.FindByKeyPrefix([]byte("key"))
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), 2, len(prefixFound), "Found items by prefix should be 2")
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], prefixFound[0]))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[1], prefixFound[1]))
+}
+
+func (suite *MemDbDAOTestSuite) TestBatchDelete() {
+	key1 := []byte("key1")
+	key2 := []byte("key2")
+	keys := [][]byte{key1, key2}
+	err := suite.dao.BatchDelete(keys)
+	assert.Nil(suite.T(), err)
+	all := suite.dao.GetAllRecords()
+	assert.Equal(suite.T(), 1, len(all), "After BatchDelete, it should has 1 item")
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[2], all[0]))
+}
+
+func (suite *MemDbDAOTestSuite) TestFindByKey() {
+	key := []byte("key1")
+	kv, err := suite.dao.FindByKey(key)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), keyValues[0].Key, kv.Key)
+	assert.Equal(suite.T(), keyValues[0].Value, kv.Value)
+}
+
+func (suite *MemDbDAOTestSuite) TestGetNFirstRecords() {
+	result := suite.dao.GetNFirstRecords(2)
+	assert.Equal(suite.T(), 2, len(result), "Found items by prGetNFirstRecordsefix should be 2")
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], result[0]))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[1], result[1]))
+}
+
+func (suite *MemDbDAOTestSuite) TestGetNLastRecords() {
+	result := suite.dao.GetNLastRecords(2)
+	assert.Equal(suite.T(), 2, len(result), "Found items by GetNLastRecords should be 2")
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[2], result[0]))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[1], result[1]))
 }

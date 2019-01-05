@@ -78,7 +78,8 @@ func (md MemDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &KeyValue{Key: key, Value: value}, nil
+	kv := CopyKeyValue(key, value)
+	return &kv, nil
 }
 
 func (md MemDbDAO) GetNFirstRecords(n int) []KeyValue {
@@ -102,8 +103,13 @@ func (md MemDbDAO) GetNLastRecords(n int) []KeyValue {
 	if !iter.Last() {
 		return result
 	}
+
+	key := iter.Key()
+	value := iter.Value()
+	result = append(result, CopyKeyValue(key, value))
+
 	count := 0
-	for iter.Prev() && count < n {
+	for count < (n-1) && iter.Prev() {
 		key := iter.Key()
 		value := iter.Value()
 		result = append(result, CopyKeyValue(key, value))
