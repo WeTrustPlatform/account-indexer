@@ -6,7 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/WeTrustPlatform/account-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/repository/dao"
+	"github.com/syndtr/goleveldb/leveldb/comparer"
+	"github.com/syndtr/goleveldb/leveldb/memdb"
 )
 
 var blockTime = *big.NewInt(time.Now().UnixNano())
@@ -153,4 +159,56 @@ func TestDivideRange(t *testing.T) {
 	if range2.From.String() != "5" || range2.To.String() != "7" {
 		t.Error("Range2 is not correct")
 	}
+}
+
+func TestGetBatches(t *testing.T) {
+	blockDB := memdb.New(comparer.DefaultComparer, 0)
+	blockDAO := dao.NewMemDbDAO(blockDB)
+	batchDB := memdb.New(comparer.DefaultComparer, 0)
+	batchDAO := dao.NewMemDbDAO(batchDB)
+	repo := repository.NewLevelDBRepo(nil, blockDAO, batchDAO)
+	indexer := Indexer{IpcPath: "", Repo: repo}
+	// init data
+	batch1 := types.BatchStatus{
+		From:      big.NewInt(0),
+		To:        big.NewInt(350),
+		Current:   big.NewInt(200),
+		UpdatedAt: big.NewInt(time.Now().Unix()),
+	}
+	batch2 := types.BatchStatus{
+		From:      big.NewInt(351),
+		To:        big.NewInt(700),
+		Current:   big.NewInt(550),
+		UpdatedAt: big.NewInt(time.Now().Unix()),
+	}
+	repo.UpdateBatch(batch1)
+	repo.UpdateBatch(batch2)
+
+	blockIndex := types.BlockIndex{
+		BlockNumber: big.NewInt(800).String(),
+		Addresses:   []types.AddressSequence{},
+	}
+	repo.SaveBlockIndex(blockIndex)
+	// Test: should add a new batch from latest block in DB to latest block in blockchain
+	latestBlock := big.NewInt(900)
+	batches := indexer.getBatches(latestBlock)
+	assert.Equal(t, 3, len(batches), "Should add 1 batch")
+	newBatch := batches[2]
+	assert.Equal(t, big.NewInt(800), newBatch.From, "NewBatch From should be correct")
+	assert.Equal(t, latestBlock, newBatch.To, "NewBatch To should be correct")
+
+	// Init data next, assuming batch stop at 850
+	current := big.NewInt(850)
+	newBatch.Current = current
+	newBatch.UpdatedAt = big.NewInt(time.Now().Unix())
+	repo.UpdateBatch(newBatch)
+
+	// Test: should not add a new batch, reuse the last batch with updated "To"
+	latestBlock = big.NewInt(1000)
+	batches = indexer.getBatches(latestBlock)
+	assert.Equal(t, 3, len(batches), "Should not add 1 batch")
+	newBatch = batches[2]
+	assert.Equal(t, big.NewInt(800), newBatch.From, "NewBatch From should be correct")
+	assert.Equal(t, latestBlock, newBatch.To, "NewBatch To should be correct")
+	assert.Equal(t, current, newBatch.Current, "NewBatch Current should be correct")
 }

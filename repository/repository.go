@@ -13,7 +13,6 @@ import (
 type Repository interface {
 	Store(indexData []types.AddressIndex, blockIndex types.BlockIndex, isBatch bool)
 	GetTransactionByAddress(address string) []types.AddressIndex
-	HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence)
 	GetLastNewHeadBlockInDB() *big.Int
 	GetFirstNewHeadBlockInDB() *big.Int
 	GetAllBatchStatuses() []types.BatchStatus
@@ -53,6 +52,15 @@ func (repo *LevelDBRepo) Store(addressIndex []types.AddressIndex, blockIndex typ
 	}
 
 	// AddressDB: write in batch
+	repo.SaveAddressIndex(addressIndex)
+
+	// BlockDB: write a single record
+	if !isBatch {
+		repo.SaveBlockIndex(blockIndex)
+	}
+}
+
+func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []types.AddressIndex) {
 	keyValues := []dao.KeyValue{}
 	for _, item := range addressIndex {
 		key := repo.marshaller.MarshallAddressKey(item)
@@ -64,15 +72,14 @@ func (repo *LevelDBRepo) Store(addressIndex []types.AddressIndex, blockIndex typ
 	if err != nil {
 		log.Fatal("Cannot write to address leveldb")
 	}
+}
 
-	// BlockDB: write a single record
-	if !isBatch {
-		key := repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber)
-		value := repo.marshaller.MarshallBlockDBValue(blockIndex)
-		err = repo.blockDAO.Put(dao.NewKeyValue(key, value))
-		if err != nil {
-			log.Fatal("Cannot write to block leveldb")
-		}
+func (repo *LevelDBRepo) SaveBlockIndex(blockIndex types.BlockIndex) {
+	key := repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber)
+	value := repo.marshaller.MarshallBlockDBValue(blockIndex)
+	err := repo.blockDAO.Put(dao.NewKeyValue(key, value))
+	if err != nil {
+		log.Fatal("Cannot write to block leveldb")
 	}
 }
 

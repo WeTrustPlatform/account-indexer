@@ -40,6 +40,31 @@ func (indexer *Indexer) Index() {
 		return
 	}
 	log.Println("IPC path is correct, latestBlock=" + latestBlock.String())
+	batches := indexer.getBatches(latestBlock)
+	wg := sync.WaitGroup{}
+	wg.Add(len(batches) + 1)
+	// index batches
+	for _, bt := range batches {
+		_bt := bt
+		go func() {
+			defer wg.Done()
+			current := ""
+			if _bt.Current != nil {
+				current = _bt.Current.String()
+			}
+			indexer.batchIndex(_bt, ""+_bt.From.String()+"-"+_bt.To.String()+"-"+current+":")
+		}()
+	}
+	// index realtime
+	go func() {
+		defer wg.Done()
+		indexer.RealtimeIndex(fetcher)
+	}()
+
+	wg.Wait()
+}
+
+func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 	allBatches := indexer.Repo.GetAllBatchStatuses()
 	batches := []types.BatchStatus{}
 	if len(allBatches) == 0 {
@@ -67,28 +92,8 @@ func (indexer *Indexer) Index() {
 			batch := types.BatchStatus{From: lastNewHeadBlockInDB, To: latestBlock}
 			batches = append(batches, batch)
 		}
-
 	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(len(batches) + 1)
-	for _, bt := range batches {
-		_bt := bt
-		go func() {
-			defer wg.Done()
-			current := ""
-			if _bt.Current != nil {
-				current = _bt.Current.String()
-			}
-			indexer.batchIndex(_bt, ""+_bt.From.String()+"-"+_bt.To.String()+"-"+current+":")
-		}()
-	}
-	go func() {
-		defer wg.Done()
-		indexer.RealtimeIndex(fetcher)
-	}()
-
-	wg.Wait()
+	return batches
 }
 
 // RealtimeIndex newHead subscribe
