@@ -138,7 +138,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 				From:      batch.From,
 				To:        batch.To,
 				Current:   blockNumber,
-				UpdatedAt: big.NewInt(time.Now().UnixNano()),
+				UpdatedAt: big.NewInt(time.Now().Unix()),
 			}
 			indexer.Repo.UpdateBatch(batchStatus)
 		} else {
