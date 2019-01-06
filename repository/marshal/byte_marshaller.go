@@ -1,6 +1,7 @@
 package marshal
 
 import (
+	"bytes"
 	"math/big"
 	"strings"
 
@@ -59,15 +60,17 @@ func (bm ByteMarshaller) MarshallAddressKey(index *types.AddressIndex) []byte {
 
 // MarshallAddressKeyStr create LevelDB key
 func (bm ByteMarshaller) MarshallAddressKeyStr(address string, blockNumber string, sequence uint8) []byte {
+	buf := &bytes.Buffer{}
 	blockNumberBI := new(big.Int)
 	blockNumberBI.SetString(blockNumber, 10)
 	// 20 bytes
 	resultByteArr, _ := hexutil.Decode(address)
+	buf.Write(resultByteArr)
 	// 1 byte for sequence
-	result := append(resultByteArr, sequence)
+	buf.WriteByte(sequence)
 	blockNumberByteArr := blockNumberBI.Bytes()
-	result = append(result, blockNumberByteArr...)
-	return result
+	buf.Write(blockNumberByteArr)
+	return buf.Bytes()
 }
 
 func (bm ByteMarshaller) MarshallAddressKeyPrefix(address string) []byte {
@@ -77,17 +80,19 @@ func (bm ByteMarshaller) MarshallAddressKeyPrefix(address string) []byte {
 
 // MarshallAddressValue create LevelDB value
 func (bm ByteMarshaller) MarshallAddressValue(index *types.AddressIndex) []byte {
+	buf := &bytes.Buffer{}
 	// 32 byte
 	txHashByteArr, _ := hexutil.Decode(index.TxHash)
+	buf.Write(txHashByteArr)
 	// 20 byte
 	addressByteArr, _ := hexutil.Decode(index.CoupleAddress)
+	buf.Write(addressByteArr)
 	// 4 byte
 	timeByteArr := common.MarshallTime(index.Time)
+	buf.Write(timeByteArr)
 	valueByteArr := []byte(index.Value.String())
-	result := append(txHashByteArr, addressByteArr...)
-	result = append(result, timeByteArr...)
-	result = append(result, valueByteArr...)
-	return result
+	buf.Write(valueByteArr)
+	return buf.Bytes()
 }
 
 // UnmarshallAddressKey LevelDB key to address_blockNumber
@@ -121,11 +126,13 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 
 // MarshallBatchValue value of key-value init batch status database
 func (bm ByteMarshaller) MarshallBatchValue(updatedAt *big.Int, currentBlock *big.Int) []byte {
+	buf := &bytes.Buffer{}
 	// 4 byte
 	timeByteArr := common.MarshallTime(updatedAt)
+	buf.Write(timeByteArr)
 	blockNumberByteArr := currentBlock.Bytes()
-	result := append(timeByteArr, blockNumberByteArr...)
-	return result
+	buf.Write(blockNumberByteArr)
+	return buf.Bytes()
 }
 
 // UnmarshallBatchValue unmarshal value of key-value init batch status database
