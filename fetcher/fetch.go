@@ -22,8 +22,8 @@ type EthClient interface {
 
 // Fetch the interface to interact with blockchain
 type Fetch interface {
-	RealtimeFetch(ch chan<- types.BLockDetail)
-	FetchABlock(blockNumber *big.Int) (types.BLockDetail, error)
+	RealtimeFetch(ch chan<- *types.BLockDetail)
+	FetchABlock(blockNumber *big.Int) (*types.BLockDetail, error)
 	GetLatestBlock() (*big.Int, error)
 }
 
@@ -39,7 +39,7 @@ func NewChainFetch(ipcPath string) (*ChainFetch, error) {
 }
 
 // RealtimeFetch fetch data from blockchain
-func (cf *ChainFetch) RealtimeFetch(ch chan<- types.BLockDetail) {
+func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 	ctx := context.Background()
 	blockHeaderChannel := make(chan *gethtypes.Header)
 	go cf.Client.SubscribeNewHead(ctx, blockHeaderChannel)
@@ -58,12 +58,12 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- types.BLockDetail) {
 }
 
 // FetchABlock fetch a block by block number
-func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, error) {
+func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, error) {
 	ctx := context.Background()
 	aBlock, err := cf.Client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
 		log.Fatal("RealtimeFetch BlockByNumber returns error " + err.Error())
-		return types.BLockDetail{}, err
+		return &types.BLockDetail{}, err
 	}
 	// log.Println(fmt.Sprintf("Found block number received from SubscribeNewHead: %s", blockNumber))
 	transactions := []types.TransactionDetail{}
@@ -90,7 +90,7 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, erro
 		Time:         aBlock.Time(),
 		Transactions: transactions,
 	}
-	return blockDetail, nil
+	return &blockDetail, nil
 }
 
 // GetLatestBlock get latest known block by geth node

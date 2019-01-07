@@ -98,7 +98,7 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 
 // RealtimeIndex newHead subscribe
 func (indexer *Indexer) RealtimeIndex(fetcher fetcher.Fetch) {
-	indexerChannel := make(chan types.BLockDetail)
+	indexerChannel := make(chan *types.BLockDetail)
 	// go indexer.Fetcher.RealtimeFetch(indexerChannel)
 	go fetcher.RealtimeFetch(indexerChannel)
 	for {
@@ -150,14 +150,14 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 	log.Println(tag + " is done in " + s + " minutes")
 }
 
-func (indexer *Indexer) processBlock(blockDetail types.BLockDetail, isBatch bool) {
+func (indexer *Indexer) processBlock(blockDetail *types.BLockDetail, isBatch bool) {
 	addressIndex, blockIndex := indexer.CreateIndexData(blockDetail)
 	indexer.Repo.Store(addressIndex, blockIndex, isBatch)
 	// log.Println("indexer: Saved block " + blockDetail.BlockNumber.String() + " to Repository already")
 }
 
 // CreateIndexData transforms blockchain data to our index data
-func (indexer *Indexer) CreateIndexData(blockDetail types.BLockDetail) ([]*types.AddressIndex, *types.BlockIndex) {
+func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*types.AddressIndex, *types.BlockIndex) {
 	addressIndex := make([]*types.AddressIndex, 0, 2*len(blockDetail.Transactions))
 	blockIndex := &types.BlockIndex{
 		BlockNumber: blockDetail.BlockNumber.String(),
