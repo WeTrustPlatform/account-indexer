@@ -14,17 +14,17 @@ import (
 // Value can be negative or positive
 type AddressIndex struct {
 	AddressSequence
-	TxHash        string
-	Value         *big.Int
-	Time          *big.Int
-	BlockNumber   *big.Int
-	CoupleAddress string
+	TxHash        string   `json:"hash"`
+	Value         *big.Int `json:"value"`
+	Time          *big.Int `json:"time"`
+	BlockNumber   *big.Int `json:"blockNumber"`
+	CoupleAddress string   `json:"coupleAddress"`
 }
 
 // AddressSequence In same block, 1 address can stay in multiple transactions, especially the "to"
 type AddressSequence struct {
-	Address  string
-	Sequence uint8
+	Address  string `json:"address"`
+	Sequence uint8  `json:"sequence"`
 }
 
 // BlockIndex index data for Block LevelDB
