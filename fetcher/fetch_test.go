@@ -56,7 +56,7 @@ func SkipTestFetchData(t *testing.T) {
 	fetcher := ChainFetch{
 		Client: MockEthClient{},
 	}
-	indexerChannel := make(chan types.BLockDetail)
+	indexerChannel := make(chan *types.BLockDetail)
 	go fetcher.RealtimeFetch(indexerChannel)
 	// time.Sleep(time.Second * 1)
 	blockDetail := <-indexerChannel

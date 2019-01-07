@@ -128,7 +128,7 @@ func (mr MockRepo) Get(address string) []types.AddressIndex {
 func TestCreateIndexData(t *testing.T) {
 
 	indexer := Indexer{}
-	addressIndex, blockIndex := indexer.CreateIndexData(blockDetail)
+	addressIndex, blockIndex := indexer.CreateIndexData(&blockDetail)
 	if len(addressIndex) != len(expectedIndexes) {
 		t.Error("Length of addressIndex is {}, expect {}", len(addressIndex), len(expectedIndexes))
 	}
