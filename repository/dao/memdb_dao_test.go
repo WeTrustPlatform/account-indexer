@@ -33,11 +33,22 @@ func (suite *MemDbDAOTestSuite) SetupTest() {
 }
 
 func (suite *MemDbDAOTestSuite) TestFindByKeyPrefix() {
-	prefixFound, err := suite.dao.FindByKeyPrefix([]byte("key"))
-	assert.Nil(suite.T(), err)
+	total, prefixFound := suite.dao.FindByKeyPrefix([]byte("key"), true, 10, 0)
+	assert.Equal(suite.T(), 2, total)
 	assert.Equal(suite.T(), 2, len(prefixFound), "Found items by prefix should be 2")
 	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], prefixFound[0]))
 	assert.True(suite.T(), reflect.DeepEqual(keyValues[1], prefixFound[1]))
+
+	total, prefixFound = suite.dao.FindByKeyPrefix([]byte("key"), true, 1, 0)
+	assert.Equal(suite.T(), 2, total)
+	assert.Equal(suite.T(), 1, len(prefixFound), "Found items by prefix should be 1")
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], prefixFound[0]))
+
+	total, prefixFound = suite.dao.FindByKeyPrefix([]byte("key"), false, 10, 0)
+	assert.Equal(suite.T(), 2, total)
+	assert.Equal(suite.T(), 2, len(prefixFound), "Found items by prefix should be 2")
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[1], prefixFound[0]))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], prefixFound[1]))
 }
 
 func (suite *MemDbDAOTestSuite) TestBatchDelete() {

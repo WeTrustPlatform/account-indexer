@@ -6,7 +6,7 @@ type KeyValueDAO interface {
 	BatchPut(records []KeyValue) error
 	BatchDelete(keys [][]byte) error
 	DeleteByKey(key []byte) error
-	FindByKeyPrefix(prefix []byte) ([]KeyValue, error)
+	FindByKeyPrefix(prefix []byte, asc bool, rows int, start int) (int, []KeyValue)
 	FindByKey(key []byte) (*KeyValue, error)
 	GetNFirstRecords(n int) []KeyValue
 	GetNLastRecords(n int) []KeyValue

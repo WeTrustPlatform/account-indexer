@@ -2,6 +2,7 @@ package dao
 
 import (
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -15,11 +16,13 @@ func NewLevelDbDAO(db *leveldb.DB) LevelDbDAO {
 	return LevelDbDAO{db: db}
 }
 
+// Put put a single KeyValue
 func (ld LevelDbDAO) Put(record KeyValue) error {
 	err := ld.db.Put(record.Key, record.Value, nil)
 	return err
 }
 
+// BatchPut put an array in batch
 func (ld LevelDbDAO) BatchPut(records []KeyValue) error {
 	batch := new(leveldb.Batch)
 	for _, item := range records {
@@ -29,6 +32,7 @@ func (ld LevelDbDAO) BatchPut(records []KeyValue) error {
 	return err
 }
 
+// BatchDelete delete by key array
 func (ld LevelDbDAO) BatchDelete(keys [][]byte) error {
 	batch := new(leveldb.Batch)
 	for _, key := range keys {
@@ -38,23 +42,56 @@ func (ld LevelDbDAO) BatchDelete(keys [][]byte) error {
 	return err
 }
 
+// DeleteByKey delete by a key
 func (ld LevelDbDAO) DeleteByKey(key []byte) error {
 	err := ld.db.Delete(key, nil)
 	return err
 }
 
-func (ld LevelDbDAO) FindByKeyPrefix(prefix []byte) ([]KeyValue, error) {
+// FindByKeyPrefix find by a key prefix
+func (ld LevelDbDAO) FindByKeyPrefix(prefix []byte, asc bool, rows int, start int) (int, []KeyValue) {
 	iter := ld.db.NewIterator(util.BytesPrefix(prefix), nil)
 	defer iter.Release()
-	result := []KeyValue{}
-	for iter.Next() {
-		keyValue := CopyKeyValue(iter.Key(), iter.Value())
-		result = append(result, keyValue)
-	}
-	err := iter.Error()
-	return result, err
+	return findByKeyPrefix(iter, asc, rows, start)
 }
 
+func findByKeyPrefix(iter iterator.Iterator, asc bool, rows int, start int) (int, []KeyValue) {
+	result := []KeyValue{}
+	count := 0
+	total := 0
+
+	addToResult := func() bool {
+		if total >= start && count < rows {
+			keyValue := CopyKeyValue(iter.Key(), iter.Value())
+			result = append(result, keyValue)
+			count++
+		}
+		shouldCont := count < rows
+		return shouldCont
+	}
+
+	fn := iter.Next
+	if !asc {
+		fn = iter.Prev
+		hasLast := iter.Last()
+		if !hasLast {
+			return 0, result
+		}
+		addToResult()
+		total++
+	}
+
+	// handle different for asc and desc!!
+	for fn() {
+		addToResult()
+		total++
+	}
+
+	// err := iter.Error()
+	return total, result
+}
+
+// FindByKey find by a key
 func (ld LevelDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 	value, err := ld.db.Get(key, nil)
 	if err != nil {
@@ -64,9 +101,14 @@ func (ld LevelDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 	return &result, nil
 }
 
+// GetNFirstRecords get n first records
 func (ld LevelDbDAO) GetNFirstRecords(n int) []KeyValue {
 	iter := ld.db.NewIterator(nil, nil)
 	defer iter.Release()
+	return getNFirstRecords(iter, n)
+}
+
+func getNFirstRecords(iter iterator.Iterator, n int) []KeyValue {
 	count := 0
 	result := []KeyValue{}
 	for count < n && iter.Next() {
@@ -76,13 +118,16 @@ func (ld LevelDbDAO) GetNFirstRecords(n int) []KeyValue {
 	return result
 }
 
+// GetNLastRecords get n last records
 func (ld LevelDbDAO) GetNLastRecords(n int) []KeyValue {
 	iter := ld.db.NewIterator(nil, nil)
 	defer iter.Release()
-	count := 0
+	return getNLastRecords(iter, n)
+}
+
+func getNLastRecords(iter iterator.Iterator, n int) []KeyValue {
 	result := []KeyValue{}
-	hasLast := iter.Last()
-	if !hasLast {
+	if !iter.Last() {
 		return result
 	}
 
@@ -90,18 +135,24 @@ func (ld LevelDbDAO) GetNLastRecords(n int) []KeyValue {
 	value := iter.Value()
 	result = append(result, CopyKeyValue(key, value))
 
+	count := 0
 	for count < (n-1) && iter.Prev() {
-		count++
 		key := iter.Key()
 		value := iter.Value()
 		result = append(result, CopyKeyValue(key, value))
+		count++
 	}
 	return result
 }
 
+// GetAllRecords get all records
 func (ld LevelDbDAO) GetAllRecords() []KeyValue {
 	iter := ld.db.NewIterator(nil, nil)
 	defer iter.Release()
+	return getAllRecords(iter)
+}
+
+func getAllRecords(iter iterator.Iterator) []KeyValue {
 	result := []KeyValue{}
 	for iter.Next() {
 		result = append(result, CopyKeyValue(iter.Key(), iter.Value()))

@@ -4,10 +4,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/http/types"
 	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	DEFAULT_ROWS = 10
 )
 
 type HttpServer struct {
@@ -33,10 +39,27 @@ func (server HttpServer) Start() {
 
 func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 	account := c.Param("accountNumber")
+	// rows: max result returned
+	rowsStr := c.Query("rows")
+	// 0-based index
+	startStr := c.Query("start")
+	rows, err := strconv.Atoi(rowsStr)
+	if err != nil {
+		rows = DEFAULT_ROWS
+	}
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
 	log.Printf("Getting transactions for account %v\n", account)
-	addressIndexes := server.repo.GetTransactionByAddress(account)
-	// addressIndexes automatically marshalled using json.Marshall()
-	c.JSON(http.StatusOK, addressIndexes)
+	total, addressIndexes := server.repo.GetTransactionByAddress(account, rows, start)
+	// response automatically marshalled using json.Marshall()
+	response := types.EITransactionsByAccount{
+		Total:   total,
+		Start:   start,
+		Indexes: addressIndexes,
+	}
+	c.JSON(http.StatusOK, response)
 }
 
 func (server HttpServer) getBlock(c *gin.Context) {

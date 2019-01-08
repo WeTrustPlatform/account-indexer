@@ -2,6 +2,7 @@ package dao
 
 import (
 	"github.com/syndtr/goleveldb/leveldb/memdb"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 // MemDbDAO an in-memory dao implementation using memdb package of leveldb
@@ -43,34 +44,10 @@ func (md MemDbDAO) DeleteByKey(key []byte) error {
 	return err
 }
 
-func (md MemDbDAO) FindByKeyPrefix(prefix []byte) ([]KeyValue, error) {
-	iter := md.db.NewIterator(nil)
+func (md MemDbDAO) FindByKeyPrefix(prefix []byte, asc bool, rows int, start int) (int, []KeyValue) {
+	iter := md.db.NewIterator(util.BytesPrefix(prefix))
 	defer iter.Release()
-	result := []KeyValue{}
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		if startsWith(key, prefix) {
-			result = append(result, CopyKeyValue(key, value))
-		}
-	}
-	return result, nil
-}
-
-func startsWith(parent []byte, child []byte) bool {
-	if len(parent) < len(child) {
-		return false
-	}
-	for index, value := range parent {
-		if index < len(child) {
-			if child[index] != value {
-				return false
-			}
-		} else {
-			break
-		}
-	}
-	return true
+	return findByKeyPrefix(iter, asc, rows, start)
 }
 
 func (md MemDbDAO) FindByKey(key []byte) (*KeyValue, error) {
@@ -85,47 +62,17 @@ func (md MemDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 func (md MemDbDAO) GetNFirstRecords(n int) []KeyValue {
 	iter := md.db.NewIterator(nil)
 	defer iter.Release()
-	result := []KeyValue{}
-	count := 0
-	for iter.Next() && count < n {
-		key := iter.Key()
-		value := iter.Value()
-		result = append(result, CopyKeyValue(key, value))
-		count++
-	}
-	return result
+	return getNFirstRecords(iter, n)
 }
 
 func (md MemDbDAO) GetNLastRecords(n int) []KeyValue {
 	iter := md.db.NewIterator(nil)
 	defer iter.Release()
-	result := []KeyValue{}
-	if !iter.Last() {
-		return result
-	}
-
-	key := iter.Key()
-	value := iter.Value()
-	result = append(result, CopyKeyValue(key, value))
-
-	count := 0
-	for count < (n-1) && iter.Prev() {
-		key := iter.Key()
-		value := iter.Value()
-		result = append(result, CopyKeyValue(key, value))
-		count++
-	}
-	return result
+	return getNLastRecords(iter, n)
 }
 
 func (md MemDbDAO) GetAllRecords() []KeyValue {
 	iter := md.db.NewIterator(nil)
 	defer iter.Release()
-	result := []KeyValue{}
-	for iter.Next() {
-		key := iter.Key()
-		value := iter.Value()
-		result = append(result, CopyKeyValue(key, value))
-	}
-	return result
+	return getAllRecords(iter)
 }

@@ -12,7 +12,7 @@ import (
 // Repository to store index data
 type Repository interface {
 	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool)
-	GetTransactionByAddress(address string) []types.AddressIndex
+	GetTransactionByAddress(address string, rows int, start int) (int, []types.AddressIndex)
 	GetLastNewHeadBlockInDB() *big.Int
 	GetFirstNewHeadBlockInDB() *big.Int
 	GetAllBatchStatuses() []types.BatchStatus
@@ -84,10 +84,11 @@ func (repo *LevelDBRepo) SaveBlockIndex(blockIndex *types.BlockIndex) {
 }
 
 // GetTransactionByAddress main thing for this indexer
-func (repo *LevelDBRepo) GetTransactionByAddress(address string) []types.AddressIndex {
+func (repo *LevelDBRepo) GetTransactionByAddress(address string, rows int, start int) (int, []types.AddressIndex) {
 	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
 	result := []types.AddressIndex{}
-	keyValues, _ := repo.addressDAO.FindByKeyPrefix(prefix)
+	asc := false
+	total, keyValues := repo.addressDAO.FindByKeyPrefix(prefix, asc, rows, start)
 	for _, keyValue := range keyValues {
 		value := keyValue.Value
 		addressIndex := repo.marshaller.UnmarshallAddressValue(value)
@@ -98,7 +99,7 @@ func (repo *LevelDBRepo) GetTransactionByAddress(address string) []types.Address
 		result = append(result, addressIndex)
 	}
 
-	return result
+	return total, result
 }
 
 // HandleReorg handle reorg scenario: get block again
@@ -168,8 +169,9 @@ func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) {
 
 func (repo *LevelDBRepo) ReplaceBatch(from *big.Int, newTo *big.Int) {
 	fromByteArr := repo.marshaller.MarshallBatchKeyFrom(from)
-	keyValues, err := repo.batchDAO.FindByKeyPrefix(fromByteArr)
-	if err != nil || len(keyValues) <= 0 {
+	asc := true
+	_, keyValues := repo.batchDAO.FindByKeyPrefix(fromByteArr, asc, 0, 0)
+	if len(keyValues) <= 0 {
 		return
 	}
 	keyValue := keyValues[0]
