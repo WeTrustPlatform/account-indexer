@@ -3,6 +3,7 @@ package http
 import (
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
@@ -12,7 +13,9 @@ import (
 )
 
 const (
-	DEFAULT_ROWS = 10
+	DEFAULT_ROWS    = 10
+	ADMIN_USER_NAME = "userName"
+	ADMIN_PASSWORD  = "password"
 )
 
 type HttpServer struct {
@@ -31,7 +34,9 @@ func (server HttpServer) Start() {
 		api.GET("/account/:accountNumber", server.getTransactionsByAccount)
 	}
 
-	admin := router.Group("/admin")
+	admin := router.Group("/admin", gin.BasicAuth(gin.Accounts{
+		os.Getenv(ADMIN_USER_NAME): os.Getenv(ADMIN_PASSWORD),
+	}))
 	{
 		admin.GET("/batch/status", server.getBatchStatus)
 		// admin.POST("/batch/restart", server.restartBatch)
