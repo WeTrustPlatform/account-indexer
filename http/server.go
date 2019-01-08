@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -72,16 +71,19 @@ func (server HttpServer) getBlock(c *gin.Context) {
 
 func (server HttpServer) getBatchStatus(c *gin.Context) {
 	batchStatuses := server.repo.GetAllBatchStatuses()
-	response := map[string]string{}
+	response := []types.EIBatchStatus{}
 	for _, batch := range batchStatuses {
 		current := ""
 		if batch.Current != nil {
 			current = batch.Current.String()
 		}
-		key := fmt.Sprintf("From %v, To %v", batch.From.String(), batch.To.String())
-		updatedAt := common.UnmarshallIntToTime(batch.UpdatedAt)
-		value := fmt.Sprintf("Current %v, Updated At %v", current, updatedAt)
-		response[key] = value
+		eiBatch := types.EIBatchStatus{
+			From:      batch.From,
+			To:        batch.To,
+			Current:   current,
+			UpdatedAt: common.UnmarshallIntToTime(batch.UpdatedAt),
+		}
+		response = append(response, eiBatch)
 	}
 	c.JSON(http.StatusOK, response)
 }

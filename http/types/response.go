@@ -1,6 +1,9 @@
 package types
 
 import (
+	"math/big"
+	"time"
+
 	coreTypes "github.com/WeTrustPlatform/account-indexer/core/types"
 )
 
@@ -16,4 +19,12 @@ type EIBlocks struct {
 	Total   int                    `json:"numFound"`
 	Start   int                    `json:"start"`
 	Indexes []coreTypes.BlockIndex `json:"data"`
+}
+
+// EIBatchStatus batch status
+type EIBatchStatus struct {
+	From      *big.Int  `json:"from"`
+	To        *big.Int  `json:"to"`
+	Current   string    `json:"current"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
