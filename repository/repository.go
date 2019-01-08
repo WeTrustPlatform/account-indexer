@@ -18,7 +18,7 @@ type Repository interface {
 	GetAllBatchStatuses() []types.BatchStatus
 	UpdateBatch(batch types.BatchStatus)
 	ReplaceBatch(from *big.Int, newTo *big.Int)
-	GetLastFiveBlocks() []types.BlockIndex
+	GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex)
 }
 
 // LevelDBRepo implementation of Repository
@@ -196,19 +196,33 @@ func (repo *LevelDBRepo) getBatchStatus(key []byte, value []byte) types.BatchSta
 	return batch
 }
 
-// GetLastFiveBlocks this is mainly for the server to show the status
-func (repo *LevelDBRepo) GetLastFiveBlocks() []types.BlockIndex {
-	keyValues := repo.blockDAO.GetNLastRecords(5)
+// GetBlocks by blockNumber. blockNumber = blank => latest block
+func (repo *LevelDBRepo) GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex) {
 	result := []types.BlockIndex{}
-	for _, keyValue := range keyValues {
+	makeBlockIndex := func(keyValue *dao.KeyValue) types.BlockIndex {
 		key := keyValue.Key
 		value := keyValue.Value
 		blockNumber := repo.marshaller.UnmarshallBlockKey(key)
 		reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(value)
-		result = append(result, types.BlockIndex{
+		return types.BlockIndex{
 			BlockNumber: blockNumber.String(),
 			Addresses:   reorgAddresses,
-		})
+		}
 	}
-	return result
+
+	if len(blockNumber) > 0 {
+		key := repo.marshaller.MarshallBlockKey(blockNumber)
+		keyValue, err := repo.blockDAO.FindByKey(key)
+		if err != nil {
+			return 0, result
+		}
+		result := append(result, makeBlockIndex(keyValue))
+		return 1, result
+	}
+	total, keyValues := repo.blockDAO.FindByKeyPrefix([]byte(""), false, rows, start)
+
+	for _, keyValue := range keyValues {
+		result = append(result, makeBlockIndex(&keyValue))
+	}
+	return total, result
 }

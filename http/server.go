@@ -24,14 +24,20 @@ func NewServer(repo repository.Repository) HttpServer {
 	return HttpServer{repo: repo}
 }
 
-// StartServer start http server
+// Start start http server
 func (server HttpServer) Start() {
 	router := gin.Default()
 	api := router.Group("/api")
 	{
-		api.GET("/batchstatus", server.getBatchStatus)
-		api.GET("/block", server.getBlock)
 		api.GET("/account/:accountNumber", server.getTransactionsByAccount)
+	}
+
+	admin := router.Group("/admin")
+	{
+		admin.GET("/batch/status", server.getBatchStatus)
+		// admin.POST("/batch/restart", server.restartBatch)
+		admin.GET("/block/:blockNumber", server.getBlock)
+		admin.GET("/block", server.getBlock)
 	}
 	// Start and run the server
 	router.Run(":3000")
@@ -39,18 +45,7 @@ func (server HttpServer) Start() {
 
 func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 	account := c.Param("accountNumber")
-	// rows: max result returned
-	rowsStr := c.Query("rows")
-	// 0-based index
-	startStr := c.Query("start")
-	rows, err := strconv.Atoi(rowsStr)
-	if err != nil {
-		rows = DEFAULT_ROWS
-	}
-	start, err := strconv.Atoi(startStr)
-	if err != nil {
-		start = 0
-	}
+	rows, start := getPagingQueryParams(c)
 	log.Printf("Getting transactions for account %v\n", account)
 	total, addressIndexes := server.repo.GetTransactionByAddress(account, rows, start)
 	// response automatically marshalled using json.Marshall()
@@ -63,21 +58,16 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 }
 
 func (server HttpServer) getBlock(c *gin.Context) {
-	blocks := server.repo.GetLastFiveBlocks()
-	log.Printf("Number of found blocks : %v \n", len(blocks))
-	response := map[string]string{}
-	for _, block := range blocks {
-		response[block.BlockNumber] = fmt.Sprintf("%v", block.Addresses)
+	blockNumber := c.Param("blockNumber")
+	rows, start := getPagingQueryParams(c)
+	total, blocks := server.repo.GetBlocks(blockNumber, rows, start)
+	response := types.EIBlocks{
+		Total:   total,
+		Start:   start,
+		Indexes: blocks,
 	}
+	log.Printf("Number of found blocks : %v \n", len(blocks))
 	c.JSON(http.StatusOK, response)
-	// blockNumber := c.Param("blockNumber")
-	// if blockNumber == nil {
-	// 	// Get 5 last block
-	// } else if blockNumber == "latest" {
-	// 	// TODO
-	// } else {
-	// 	// TODO: get a specific block number
-	// }
 }
 
 func (server HttpServer) getBatchStatus(c *gin.Context) {
@@ -94,4 +84,21 @@ func (server HttpServer) getBatchStatus(c *gin.Context) {
 		response[key] = value
 	}
 	c.JSON(http.StatusOK, response)
+}
+
+// Return rows, start http query params
+func getPagingQueryParams(c *gin.Context) (int, int) {
+	// rows: max result returned
+	rowsStr := c.Query("rows")
+	// 0-based index
+	startStr := c.Query("start")
+	rows, err := strconv.Atoi(rowsStr)
+	if err != nil {
+		rows = DEFAULT_ROWS
+	}
+	start, err := strconv.Atoi(startStr)
+	if err != nil {
+		start = 0
+	}
+	return rows, start
 }
