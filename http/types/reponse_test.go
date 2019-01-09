@@ -33,6 +33,6 @@ func TestMarshall(t *testing.T) {
 	assert.Nil(t, err)
 	dataStr := string(data)
 	log.Printf("%v \n", dataStr)
-	expectedStr := `{"numFound":10,"start":5,"data":[{"address":"from1","sequence":1,"hash":"0xtx1","value":-111,"time":1546848896,"blockNumber":2018,"coupleAddress":"to1"}]}`
+	expectedStr := `{"numFound":10,"start":5,"data":[{"address":"from1","sequence":1,"tx_hash":"0xtx1","value":-111,"time":1546848896,"blockNumber":2018,"coupleAddress":"to1"}]}`
 	assert.Equal(t, expectedStr, dataStr)
 }

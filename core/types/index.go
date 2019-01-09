@@ -14,7 +14,7 @@ import (
 // Value can be negative or positive
 type AddressIndex struct {
 	AddressSequence
-	TxHash        string   `json:"hash"`
+	TxHash        string   `json:"tx_hash"`
 	Value         *big.Int `json:"value"`
 	Time          *big.Int `json:"time"`
 	BlockNumber   *big.Int `json:"blockNumber"`
