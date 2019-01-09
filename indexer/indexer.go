@@ -103,7 +103,7 @@ func (indexer *Indexer) RealtimeIndex(fetcher fetcher.Fetch) {
 	go fetcher.RealtimeFetch(indexerChannel)
 	for {
 		blockDetail := <-indexerChannel
-		log.Println("indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
+		log.Printf("indexer: Received BlockDetail %v blockTime: %v\n", blockDetail.BlockNumber.String(), common.UnmarshallIntToTime(blockDetail.Time))
 		isBatch := false
 		indexer.processBlock(blockDetail, isBatch)
 	}
@@ -130,19 +130,24 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 	blockNumber := new(big.Int)
 	for blockNumber.Set(from); blockNumber.Cmp(to) <= 0; blockNumber = blockNumber.Add(blockNumber, big.NewInt(int64(1))) {
 		blockDetail, err := fetcher.FetchABlock(blockNumber)
-		if err == nil {
-			// log.Println(tag + " indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
-			isBatch := true
-			indexer.processBlock(blockDetail, isBatch)
-			batchStatus := types.BatchStatus{
-				From:      batch.From,
-				To:        batch.To,
-				Current:   blockNumber,
-				UpdatedAt: big.NewInt(time.Now().Unix()),
-			}
-			indexer.Repo.UpdateBatch(batchStatus)
-		} else {
+		if err != nil {
 			log.Fatal(tag + " indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
+		}
+		// log.Println(tag + " indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
+		isBatch := true
+		err = indexer.processBlock(blockDetail, isBatch)
+		if err != nil {
+			log.Fatal(tag + " indexer: cannot process block " + blockNumber.String() + " , error is " + err.Error())
+		}
+		batchStatus := types.BatchStatus{
+			From:      batch.From,
+			To:        batch.To,
+			Current:   blockNumber,
+			UpdatedAt: big.NewInt(time.Now().Unix()),
+		}
+		err = indexer.Repo.UpdateBatch(batchStatus)
+		if err != nil {
+			log.Fatal(tag + " indexer: cannot update batch for process block " + blockNumber.String() + " , error is " + err.Error())
 		}
 	}
 	duration := time.Since(start)
@@ -150,10 +155,9 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 	log.Println(tag + " is done in " + s + " minutes")
 }
 
-func (indexer *Indexer) processBlock(blockDetail *types.BLockDetail, isBatch bool) {
+func (indexer *Indexer) processBlock(blockDetail *types.BLockDetail, isBatch bool) error {
 	addressIndex, blockIndex := indexer.CreateIndexData(blockDetail)
-	indexer.Repo.Store(addressIndex, blockIndex, isBatch)
-	// log.Println("indexer: Saved block " + blockDetail.BlockNumber.String() + " to Repository already")
+	return indexer.Repo.Store(addressIndex, blockIndex, isBatch)
 }
 
 // CreateIndexData transforms blockchain data to our index data

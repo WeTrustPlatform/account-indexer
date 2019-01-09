@@ -11,13 +11,13 @@ import (
 
 // Repository to store index data
 type Repository interface {
-	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool)
+	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error
 	GetTransactionByAddress(address string, rows int, start int) (int, []types.AddressIndex)
 	GetLastNewHeadBlockInDB() *big.Int
 	GetFirstNewHeadBlockInDB() *big.Int
 	GetAllBatchStatuses() []types.BatchStatus
-	UpdateBatch(batch types.BatchStatus)
-	ReplaceBatch(from *big.Int, newTo *big.Int)
+	UpdateBatch(batch types.BatchStatus) error
+	ReplaceBatch(from *big.Int, newTo *big.Int) error
 	GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex)
 }
 
@@ -40,27 +40,35 @@ func NewLevelDBRepo(addressDAO dao.KeyValueDAO, blockDAO dao.KeyValueDAO, batchD
 }
 
 // Store implements Repository
-func (repo *LevelDBRepo) Store(addressIndex []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) {
+func (repo *LevelDBRepo) Store(addressIndex []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error {
 	if !isBatch {
 		oldBlock, err := repo.blockDAO.FindByKey([]byte(blockIndex.BlockNumber))
 		if err == nil && oldBlock != nil {
 			reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(oldBlock.Value)
-			if reorgAddresses != nil {
-				repo.HandleReorg(blockIndex.BlockNumber, reorgAddresses)
+			if reorgAddresses != nil && len(reorgAddresses) > 0 {
+				err = repo.HandleReorg(blockIndex.BlockNumber, reorgAddresses)
+				if err != nil {
+					log.Fatal("Cannot handle reorg, err=" + err.Error())
+				}
 			}
 		}
 	}
 
 	// AddressDB: write in batch
-	repo.SaveAddressIndex(addressIndex)
+	err := repo.SaveAddressIndex(addressIndex)
+	if err != nil {
+		return err
+	}
 
 	// BlockDB: write a single record
 	if !isBatch {
-		repo.SaveBlockIndex(blockIndex)
+		err = repo.SaveBlockIndex(blockIndex)
 	}
+	return err
 }
 
-func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) {
+// SaveAddressIndex save to address db
+func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) error {
 	keyValues := []dao.KeyValue{}
 	for _, item := range addressIndex {
 		key := repo.marshaller.MarshallAddressKey(item)
@@ -72,21 +80,27 @@ func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) {
 	if err != nil {
 		log.Fatal("Cannot write to address leveldb")
 	}
+	return err
 }
 
-func (repo *LevelDBRepo) SaveBlockIndex(blockIndex *types.BlockIndex) {
+// SaveBlockIndex save to block db
+func (repo *LevelDBRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 	key := repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber)
 	value := repo.marshaller.MarshallBlockDBValue(blockIndex)
 	err := repo.blockDAO.Put(dao.NewKeyValue(key, value))
 	if err != nil {
 		log.Fatal("Cannot write to block leveldb")
 	}
+	return err
 }
 
 // GetTransactionByAddress main thing for this indexer
 func (repo *LevelDBRepo) GetTransactionByAddress(address string, rows int, start int) (int, []types.AddressIndex) {
-	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
 	result := []types.AddressIndex{}
+	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
+	if len(prefix) == 0 {
+		return 0, result
+	}
 	asc := false
 	total, keyValues := repo.addressDAO.FindByKeyPrefix(prefix, asc, rows, start)
 	for _, keyValue := range keyValues {
@@ -103,7 +117,7 @@ func (repo *LevelDBRepo) GetTransactionByAddress(address string, rows int, start
 }
 
 // HandleReorg handle reorg scenario: get block again
-func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence) {
+func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence) error {
 	keys := [][]byte{}
 	for _, address := range reorgAddresses {
 		// Block database save address and max sequence as value
@@ -113,9 +127,7 @@ func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.A
 		}
 	}
 	err := repo.addressDAO.BatchDelete(keys)
-	if err != nil {
-		log.Fatal("Cannot remove old address index")
-	}
+	return err
 }
 
 // GetLastNewHeadBlockInDB latest saved block in newHead block DB
@@ -161,31 +173,32 @@ func (repo *LevelDBRepo) GetAllBatchStatuses() []types.BatchStatus {
 }
 
 // UpdateBatch update a batch
-func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) {
+func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) error {
 	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
 	value := repo.marshaller.MarshallBatchValue(batch.UpdatedAt, batch.Current)
-	repo.batchDAO.Put(dao.NewKeyValue(key, value))
+	return repo.batchDAO.Put(dao.NewKeyValue(key, value))
 }
 
-func (repo *LevelDBRepo) ReplaceBatch(from *big.Int, newTo *big.Int) {
+// ReplaceBatch replace a batch with new "to"
+func (repo *LevelDBRepo) ReplaceBatch(from *big.Int, newTo *big.Int) error {
 	fromByteArr := repo.marshaller.MarshallBatchKeyFrom(from)
 	asc := true
 	_, keyValues := repo.batchDAO.FindByKeyPrefix(fromByteArr, asc, 0, 0)
 	if len(keyValues) <= 0 {
-		return
+		return nil
 	}
 	keyValue := keyValues[0]
 	key := keyValue.Key
 	value := keyValue.Value
 	batch := repo.getBatchStatus(key, value)
-	repo.replaceBatch(batch, newTo)
+	return repo.replaceBatch(batch, newTo)
 }
 
-func (repo *LevelDBRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) {
+func (repo *LevelDBRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) error {
 	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
 	repo.batchDAO.DeleteByKey(key)
 	batch.To = newTo
-	repo.UpdateBatch(batch)
+	return repo.UpdateBatch(batch)
 }
 
 func (repo *LevelDBRepo) getBatchStatus(key []byte, value []byte) types.BatchStatus {
