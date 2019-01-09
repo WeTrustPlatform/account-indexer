@@ -15,7 +15,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/memdb"
 )
 
-var blockTime = big.NewInt(time.Now().UnixNano())
+var blockTime = big.NewInt(time.Now().Unix())
 var blockDetail = types.BLockDetail{
 	BlockNumber: big.NewInt(2018),
 	Time:        blockTime,
@@ -129,17 +129,12 @@ func TestCreateIndexData(t *testing.T) {
 
 	indexer := Indexer{}
 	addressIndex, blockIndex := indexer.CreateIndexData(&blockDetail)
-	if len(addressIndex) != len(expectedIndexes) {
-		t.Error("Length of addressIndex is {}, expect {}", len(addressIndex), len(expectedIndexes))
-	}
+	assert.Equal(t, len(expectedIndexes), len(addressIndex))
 	for i, index := range addressIndex {
-		if !reflect.DeepEqual(index, expectedIndexes[i]) {
-			t.Error("Test failed at {}", i)
-		}
+		assert.True(t, reflect.DeepEqual(index, expectedIndexes[i]))
 	}
-	if blockIndex.BlockNumber != "2018" {
-		t.Error("BlockIndex - BlockNumber is not correct")
-	}
+	assert.Equal(t, "2018", blockIndex.BlockNumber)
+	assert.Equal(t, blockTime, blockIndex.Time)
 
 	// blockIndex is not ordered due to map
 	blockIndexAddresses := map[string]uint8{}

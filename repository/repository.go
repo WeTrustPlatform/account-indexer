@@ -44,11 +44,12 @@ func (repo *LevelDBRepo) Store(addressIndex []*types.AddressIndex, blockIndex *t
 	if !isBatch {
 		oldBlock, err := repo.blockDAO.FindByKey([]byte(blockIndex.BlockNumber))
 		if err == nil && oldBlock != nil {
-			reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(oldBlock.Value)
+			time, reorgAddresses := repo.marshaller.UnmarshallBlockValue(oldBlock.Value)
 			if reorgAddresses != nil && len(reorgAddresses) > 0 {
-				err = repo.HandleReorg(blockIndex.BlockNumber, reorgAddresses)
+				err = repo.HandleReorg(time, reorgAddresses)
 				if err != nil {
-					log.Fatal("Cannot handle reorg, err=" + err.Error())
+					log.Println("Cannot handle reorg, err=" + err.Error())
+					return err
 				}
 			}
 		}
@@ -57,12 +58,16 @@ func (repo *LevelDBRepo) Store(addressIndex []*types.AddressIndex, blockIndex *t
 	// AddressDB: write in batch
 	err := repo.SaveAddressIndex(addressIndex)
 	if err != nil {
+		log.Println("Cannot save address index, err=" + err.Error())
 		return err
 	}
 
 	// BlockDB: write a single record
 	if !isBatch {
 		err = repo.SaveBlockIndex(blockIndex)
+		if err != nil {
+			log.Println("Cannot save block index, err=" + err.Error())
+		}
 	}
 	return err
 }
@@ -86,7 +91,7 @@ func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) er
 // SaveBlockIndex save to block db
 func (repo *LevelDBRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 	key := repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber)
-	value := repo.marshaller.MarshallBlockDBValue(blockIndex)
+	value := repo.marshaller.MarshallBlockValue(blockIndex)
 	err := repo.blockDAO.Put(dao.NewKeyValue(key, value))
 	if err != nil {
 		log.Fatal("Cannot write to block leveldb")
@@ -104,25 +109,30 @@ func (repo *LevelDBRepo) GetTransactionByAddress(address string, rows int, start
 	asc := false
 	total, keyValues := repo.addressDAO.FindByKeyPrefix(prefix, asc, rows, start)
 	for _, keyValue := range keyValues {
-		value := keyValue.Value
-		addressIndex := repo.marshaller.UnmarshallAddressValue(value)
-		addressIndex.Address = address
-		key := keyValue.Key
-		_, blockNumber := repo.marshaller.UnmarshallAddressKey(key)
-		addressIndex.BlockNumber = blockNumber
+		addressIndex := repo.keyValueToAddressIndex(keyValue)
 		result = append(result, addressIndex)
 	}
 
 	return total, result
 }
 
+func (repo *LevelDBRepo) keyValueToAddressIndex(keyValue dao.KeyValue) types.AddressIndex {
+	value := keyValue.Value
+	addressIndex := repo.marshaller.UnmarshallAddressValue(value)
+	key := keyValue.Key
+	address, time := repo.marshaller.UnmarshallAddressKey(key)
+	addressIndex.Address = address
+	addressIndex.Time = time
+	return addressIndex
+}
+
 // HandleReorg handle reorg scenario: get block again
-func (repo *LevelDBRepo) HandleReorg(blockIndex string, reorgAddresses []types.AddressSequence) error {
+func (repo *LevelDBRepo) HandleReorg(time *big.Int, reorgAddresses []types.AddressSequence) error {
 	keys := [][]byte{}
 	for _, address := range reorgAddresses {
 		// Block database save address and max sequence as value
 		for i := uint8(1); i <= address.Sequence; i++ {
-			addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address.Address, blockIndex, i)
+			addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address.Address, time, i)
 			keys = append(keys, addressIndexKey)
 		}
 	}
@@ -216,13 +226,15 @@ func (repo *LevelDBRepo) GetBlocks(blockNumber string, rows int, start int) (int
 		key := keyValue.Key
 		value := keyValue.Value
 		blockNumber := repo.marshaller.UnmarshallBlockKey(key)
-		reorgAddresses := repo.marshaller.UnmarshallBlockDBValue(value)
+		time, reorgAddresses := repo.marshaller.UnmarshallBlockValue(value)
 		return types.BlockIndex{
 			BlockNumber: blockNumber.String(),
 			Addresses:   reorgAddresses,
+			Time:        time,
 		}
 	}
 
+	// there is blockNumber in REST
 	if len(blockNumber) > 0 {
 		key := repo.marshaller.MarshallBlockKey(blockNumber)
 		keyValue, err := repo.blockDAO.FindByKey(key)
@@ -232,6 +244,7 @@ func (repo *LevelDBRepo) GetBlocks(blockNumber string, rows int, start int) (int
 		result := append(result, makeBlockIndex(keyValue))
 		return 1, result
 	}
+	// get some latest blocks
 	total, keyValues := repo.blockDAO.FindByKeyPrefix([]byte(""), false, rows, start)
 
 	for _, keyValue := range keyValues {

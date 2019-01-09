@@ -9,7 +9,7 @@ We use LevelDB key-value database to store all of the data, this is similar to g
 
 ## Address database
 Given an address, we can get all records with ${address} prefix in key.
-${address}${block}${sequence}=${tx_hash}${other_address}${time}${value}
+${address}${time}${sequence}=${tx_hash}${other_address}${blockNumber}${value}
 
 ## Batch Status database
 This is to track the sync status of batch process
@@ -20,6 +20,9 @@ ${from_to}=${time}${block_number}
 ## Block database
 This is used by the "newHead" subscribe to handle Reorg scenario.
 ${block_number}=${address_1}${seq_1}...${address_n}${seq_n}
+
+## Handle Reorg
+If an old block comes again, get time and address sequences from block database, delete respective records from address database
 
 ## Handle Restart
 + If there is no batch status database, run from genesis to latest as a batch, track status at each block processed

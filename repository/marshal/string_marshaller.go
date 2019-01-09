@@ -1,7 +1,6 @@
 package marshal
 
 import (
-	"bytes"
 	"math/big"
 	"strings"
 
@@ -72,16 +71,4 @@ func stringToBigInt(str string) *big.Int {
 	result := new(big.Int)
 	result, _ = result.SetString(str, 10)
 	return result
-}
-
-func blockNumberWidPad(blockNumber string) string {
-	buf := &bytes.Buffer{}
-	if len(blockNumber) < 10 {
-		count := 10 - len(blockNumber)
-		for i := 0; i < count; i++ {
-			buf.WriteString("0")
-		}
-		buf.WriteString(blockNumber)
-	}
-	return buf.String()
 }

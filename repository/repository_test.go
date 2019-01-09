@@ -102,7 +102,7 @@ func TestStoreAndMore(t *testing.T) {
 	assert.Equal(t, 2, total)
 
 	// HandleReorg
-	err = repo.HandleReorg(blockIndex.BlockNumber, blockIndex.Addresses)
+	err = repo.HandleReorg(blockTime, blockIndex.Addresses)
 	assert.Nil(t, err)
 	total, addresses = repo.GetTransactionByAddress(to1, 10, 0)
 	assert.Equal(t, 0, len(addresses))
