@@ -50,6 +50,13 @@ func (md MemDbDAO) FindByKeyPrefix(prefix []byte, asc bool, rows int, start int)
 	return findByKeyPrefix(iter, asc, rows, start)
 }
 
+// FindByRange find by a range
+func (md MemDbDAO) FindByRange(rg *util.Range, asc bool, rows int, start int) (int, []KeyValue) {
+	iter := md.db.NewIterator(rg)
+	defer iter.Release()
+	return findByKeyPrefix(iter, asc, rows, start)
+}
+
 func (md MemDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 	value, err := md.db.Get(key)
 	if err != nil {

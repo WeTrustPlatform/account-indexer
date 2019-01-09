@@ -2,6 +2,7 @@ package common
 
 import (
 	"math/big"
+	"strconv"
 	"time"
 )
 
@@ -30,4 +31,12 @@ func UnmarshallTime(value []byte) time.Time {
 func UnmarshallIntToTime(value *big.Int) time.Time {
 	outTime := time.Unix(int64(value.Uint64()), 0)
 	return outTime
+}
+
+func StrToUnixTimeInt(str string) (*big.Int, error) {
+	i, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return big.NewInt(i), nil
 }

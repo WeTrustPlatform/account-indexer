@@ -55,6 +55,13 @@ func (ld LevelDbDAO) FindByKeyPrefix(prefix []byte, asc bool, rows int, start in
 	return findByKeyPrefix(iter, asc, rows, start)
 }
 
+// FindByRange find by a range
+func (ld LevelDbDAO) FindByRange(rg *util.Range, asc bool, rows int, start int) (int, []KeyValue) {
+	iter := ld.db.NewIterator(rg, nil)
+	defer iter.Release()
+	return findByKeyPrefix(iter, asc, rows, start)
+}
+
 func findByKeyPrefix(iter iterator.Iterator, asc bool, rows int, start int) (int, []KeyValue) {
 	result := []KeyValue{}
 	count := 0

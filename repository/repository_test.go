@@ -88,23 +88,51 @@ func TestStoreAndMore(t *testing.T) {
 	assert.Nil(t, err)
 
 	// GetTransactionByAddress
-	total, addresses := repo.GetTransactionByAddress("wrong address", 10, 0)
+	total, addresses := repo.GetTransactionByAddress("wrong address", 10, 0, nil, nil)
 	assert.Equal(t, 0, len(addresses))
 	assert.Equal(t, 0, total)
 
-	total, addresses = repo.GetTransactionByAddress(to1, 10, 0)
+	assertAddresses := func(asc bool) {
+		// sort is desc, returned sequence is always 0 for now
+		addressIndexes[3].AddressSequence.Sequence = 0
+		addressIndexes[1].AddressSequence.Sequence = 0
+		if asc {
+			assert.True(t, reflect.DeepEqual(*addressIndexes[1], addresses[0]))
+			assert.True(t, reflect.DeepEqual(*addressIndexes[3], addresses[1]))
+		} else {
+			assert.True(t, reflect.DeepEqual(*addressIndexes[3], addresses[0]))
+			assert.True(t, reflect.DeepEqual(*addressIndexes[1], addresses[1]))
+		}
+
+	}
+
+	total, addresses = repo.GetTransactionByAddress(to1, 10, 0, nil, nil)
 	assert.Equal(t, 2, len(addresses))
-	// sort is desc, returned sequence is always 0 for now
-	addressIndexes[3].AddressSequence.Sequence = 0
-	addressIndexes[1].AddressSequence.Sequence = 0
-	assert.True(t, reflect.DeepEqual(*addressIndexes[3], addresses[0]))
-	assert.True(t, reflect.DeepEqual(*addressIndexes[1], addresses[1]))
+	assertAddresses(false)
 	assert.Equal(t, 2, total)
+	// time range includes the transactions
+	fromTime := big.NewInt(time.Now().Unix() - 100)
+	toTime := big.NewInt(time.Now().Unix() + 100)
+	total, addresses = repo.GetTransactionByAddress(to1, 10, 0, fromTime, toTime)
+	assert.Equal(t, 2, len(addresses))
+	assertAddresses(true)
+	assert.Equal(t, 2, total)
+	// edge case
+	total, addresses = repo.GetTransactionByAddress(to1, 10, 0, blockTime, blockTime)
+	assert.Equal(t, 2, len(addresses))
+	assertAddresses(true)
+	assert.Equal(t, 2, total)
+	// time range does not include the transactions
+	fromTime = big.NewInt(time.Now().Unix() + 1)
+	toTime = big.NewInt(time.Now().Unix() + 100)
+	total, addresses = repo.GetTransactionByAddress(to1, 10, 0, fromTime, toTime)
+	assert.Equal(t, 0, len(addresses))
+	assert.Equal(t, 0, total)
 
 	// HandleReorg
 	err = repo.HandleReorg(blockTime, blockIndex.Addresses)
 	assert.Nil(t, err)
-	total, addresses = repo.GetTransactionByAddress(to1, 10, 0)
+	total, addresses = repo.GetTransactionByAddress(to1, 10, 0, nil, nil)
 	assert.Equal(t, 0, len(addresses))
 	assert.Equal(t, 0, total)
 

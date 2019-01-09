@@ -7,12 +7,13 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/repository/dao"
 	"github.com/WeTrustPlatform/account-indexer/repository/marshal"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 // Repository to store index data
 type Repository interface {
 	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error
-	GetTransactionByAddress(address string, rows int, start int) (int, []types.AddressIndex)
+	GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex)
 	GetLastNewHeadBlockInDB() *big.Int
 	GetFirstNewHeadBlockInDB() *big.Int
 	GetAllBatchStatuses() []types.BatchStatus
@@ -100,20 +101,40 @@ func (repo *LevelDBRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 }
 
 // GetTransactionByAddress main thing for this indexer
-func (repo *LevelDBRepo) GetTransactionByAddress(address string, rows int, start int) (int, []types.AddressIndex) {
-	result := []types.AddressIndex{}
+func (repo *LevelDBRepo) GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex) {
+	convertKeyValuesToAddressIndexes := func(keyValues []dao.KeyValue) []types.AddressIndex {
+		result := []types.AddressIndex{}
+		for _, keyValue := range keyValues {
+			addressIndex := repo.keyValueToAddressIndex(keyValue)
+			result = append(result, addressIndex)
+		}
+		return result
+	}
+
+	if fromTime != nil && toTime != nil {
+		// assuming fromTime and toTime is good
+		// make toTime inclusive
+		fromPrefix := repo.marshaller.MarshallAddressKeyPrefix2(address, fromTime)
+		newToTime := new(big.Int)
+		newToTime = newToTime.Add(toTime, big.NewInt(1))
+		toPrefix := repo.marshaller.MarshallAddressKeyPrefix2(address, newToTime)
+		rg := &util.Range{Start: fromPrefix, Limit: toPrefix}
+		asc := true
+		total, keyValues := repo.addressDAO.FindByRange(rg, asc, rows, start)
+		addressIndexes := convertKeyValuesToAddressIndexes(keyValues)
+		return total, addressIndexes
+	}
+	// Search by address as LevelDB prefix
 	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
+	// bad address
 	if len(prefix) == 0 {
-		return 0, result
+		return 0, []types.AddressIndex{}
 	}
 	asc := false
 	total, keyValues := repo.addressDAO.FindByKeyPrefix(prefix, asc, rows, start)
-	for _, keyValue := range keyValues {
-		addressIndex := repo.keyValueToAddressIndex(keyValue)
-		result = append(result, addressIndex)
-	}
+	addressIndexes := convertKeyValuesToAddressIndexes(keyValues)
 
-	return total, result
+	return total, addressIndexes
 }
 
 func (repo *LevelDBRepo) keyValueToAddressIndex(keyValue dao.KeyValue) types.AddressIndex {

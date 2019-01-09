@@ -71,12 +71,7 @@ func (bm ByteMarshaller) MarshallAddressKey(index *types.AddressIndex) []byte {
 // MarshallAddressKeyStr create LevelDB key
 func (bm ByteMarshaller) MarshallAddressKeyStr(address string, time *big.Int, sequence uint8) []byte {
 	buf := &bytes.Buffer{}
-	// 20 bytes
-	resultByteArr, _ := hexutil.Decode(address)
-	buf.Write(resultByteArr)
-	// 4 byte
-	timeByteArr := common.MarshallTime(time)
-	buf.Write(timeByteArr)
+	buf.Write(bm.MarshallAddressKeyPrefix2(address, time))
 	// 1 byte for sequence
 	buf.WriteByte(sequence)
 	return buf.Bytes()
@@ -86,6 +81,18 @@ func (bm ByteMarshaller) MarshallAddressKeyStr(address string, time *big.Int, se
 func (bm ByteMarshaller) MarshallAddressKeyPrefix(address string) []byte {
 	resultByteArr, _ := hexutil.Decode(address)
 	return resultByteArr
+}
+
+// MarshallAddressKeyPrefix2 marshall the address and time which is key prefix of address db
+func (bm ByteMarshaller) MarshallAddressKeyPrefix2(address string, time *big.Int) []byte {
+	buf := &bytes.Buffer{}
+	// 20 bytes
+	resultByteArr, _ := hexutil.Decode(address)
+	buf.Write(resultByteArr)
+	// 4 byte
+	timeByteArr := common.MarshallTime(time)
+	buf.Write(timeByteArr)
+	return buf.Bytes()
 }
 
 // MarshallAddressValue create LevelDB value

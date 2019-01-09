@@ -19,6 +19,7 @@ type Marshaller interface {
 	UnmarshallBlockKey(key []byte) *big.Int
 	MarshallAddressKey(index *types.AddressIndex) []byte
 	MarshallAddressKeyPrefix(address string) []byte
+	MarshallAddressKeyPrefix2(address string, time *big.Int) []byte
 	MarshallAddressKeyStr(address string, time *big.Int, sequence uint8) []byte
 	MarshallAddressValue(index *types.AddressIndex) []byte
 	UnmarshallAddressKey(key []byte) (string, *big.Int)

@@ -2,6 +2,7 @@ package http
 
 import (
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/http/types"
 	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gin-gonic/gin"
 )
 
@@ -49,9 +51,34 @@ func (server HttpServer) Start() {
 
 func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 	account := c.Param("accountNumber")
+	accountByteArr, err := hexutil.Decode(account)
+	if err != nil || len(accountByteArr) == 0 {
+		c.JSON(400, gin.H{"msg": "invalid account " + account})
+		return
+	}
+	fromTimeStr := c.Query("fromTime")
+	var fromTime *big.Int
+	if len(fromTimeStr) > 0 {
+		fromTime, err = common.StrToUnixTimeInt(fromTimeStr)
+		if err != nil {
+			c.JSON(400, gin.H{"msg": "invalid fromTime " + fromTimeStr})
+			return
+		}
+	}
+
+	toTimeStr := c.Query("toTime")
+	var toTime *big.Int
+	if len(toTimeStr) > 0 {
+		toTime, err = common.StrToUnixTimeInt(toTimeStr)
+		if err != nil {
+			c.JSON(400, gin.H{"msg": "invalid toTime " + toTimeStr})
+			return
+		}
+	}
+
 	rows, start := getPagingQueryParams(c)
 	log.Printf("Getting transactions for account %v\n", account)
-	total, addressIndexes := server.repo.GetTransactionByAddress(account, rows, start)
+	total, addressIndexes := server.repo.GetTransactionByAddress(account, rows, start, fromTime, toTime)
 	// response automatically marshalled using json.Marshall()
 	response := types.EITransactionsByAccount{
 		Total:   total,
