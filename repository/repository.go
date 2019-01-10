@@ -46,9 +46,11 @@ func (repo *LevelDBRepo) Store(addressIndex []*types.AddressIndex, blockIndex *t
 	if !isBatch {
 		oldBlock, err := repo.blockDAO.FindByKey([]byte(blockIndex.BlockNumber))
 		if err == nil && oldBlock != nil {
-			time, reorgAddresses := repo.marshaller.UnmarshallBlockValue(oldBlock.Value)
-			if reorgAddresses != nil && len(reorgAddresses) > 0 {
-				err = repo.HandleReorg(time, reorgAddresses)
+			blockIndex := repo.marshaller.UnmarshallBlockValue(oldBlock.Value)
+			if blockIndex.Addresses != nil && len(blockIndex.Addresses) > 0 {
+				blockTime := blockIndex.Time
+				reorgAddresses := blockIndex.Addresses
+				err = repo.HandleReorg(blockTime, reorgAddresses)
 				if err != nil {
 					log.Println("Cannot handle reorg, err=" + err.Error())
 					return err
@@ -149,12 +151,12 @@ func (repo *LevelDBRepo) keyValueToAddressIndex(keyValue dao.KeyValue) types.Add
 }
 
 // HandleReorg handle reorg scenario: get block again
-func (repo *LevelDBRepo) HandleReorg(time *big.Int, reorgAddresses []types.AddressSequence) error {
+func (repo *LevelDBRepo) HandleReorg(blockTime *big.Int, reorgAddresses []types.AddressSequence) error {
 	keys := [][]byte{}
 	for _, address := range reorgAddresses {
 		// Block database save address and max sequence as value
 		for i := uint8(1); i <= address.Sequence; i++ {
-			addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address.Address, time, i)
+			addressIndexKey := repo.marshaller.MarshallAddressKeyStr(address.Address, blockTime, i)
 			keys = append(keys, addressIndexKey)
 		}
 	}
@@ -257,12 +259,9 @@ func (repo *LevelDBRepo) GetBlocks(blockNumber string, rows int, start int) (int
 		key := keyValue.Key
 		value := keyValue.Value
 		blockNumber := repo.marshaller.UnmarshallBlockKey(key)
-		time, reorgAddresses := repo.marshaller.UnmarshallBlockValue(value)
-		return types.BlockIndex{
-			BlockNumber: blockNumber.String(),
-			Addresses:   reorgAddresses,
-			Time:        time,
-		}
+		blockIndex := repo.marshaller.UnmarshallBlockValue(value)
+		blockIndex.BlockNumber = blockNumber.String()
+		return blockIndex
 	}
 
 	// there is blockNumber in REST

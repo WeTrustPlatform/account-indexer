@@ -31,7 +31,9 @@ type AddressSequence struct {
 type BlockIndex struct {
 	BlockNumber string
 	Addresses   []AddressSequence
-	Time        *big.Int
+	// block time
+	Time      *big.Int
+	CreatedAt *big.Int
 }
 
 // BatchStatus the init batch status

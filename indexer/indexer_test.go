@@ -186,6 +186,8 @@ func TestGetBatches(t *testing.T) {
 	blockIndex := types.BlockIndex{
 		BlockNumber: big.NewInt(800).String(),
 		Addresses:   []types.AddressSequence{},
+		Time:        big.NewInt(time.Now().Unix()),
+		CreatedAt:   big.NewInt(time.Now().Unix()),
 	}
 	repo.SaveBlockIndex(&blockIndex)
 	// Test: should add a new batch from latest block in DB to latest block in blockchain

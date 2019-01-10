@@ -16,39 +16,27 @@ func TestByteMarshallerBlock(t *testing.T) {
 	address1 := "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e"
 	address2 := "0x7FA2B1C6E0B8B8805Bd56eC171aD8A8fbDEA3a44"
 	blockTime := big.NewInt(time.Now().Unix())
+	createdAt := blockTime
 	blockIndex := &types.BlockIndex{
 		BlockNumber: "3000000",
 		Addresses: []types.AddressSequence{
 			types.AddressSequence{Address: address1, Sequence: 1},
 			types.AddressSequence{Address: address2, Sequence: 2},
 		},
-		Time: blockTime,
+		Time:      blockTime,
+		CreatedAt: createdAt,
 	}
 	encoded := bm.MarshallBlockValue(blockIndex)
-	if len(encoded) != TIMESTAMP_BYTE_LENGTH+(gethcommon.AddressLength+1)*2 {
-		t.Error("Encoded array length is not correct")
-	}
-	// 84 as in StringMarshaller
-	stringByteLength := len([]byte(address1)) * 2
+	assert.Equal(t, 2*TIMESTAMP_BYTE_LENGTH+(gethcommon.AddressLength+1)*2, len(encoded))
 	// 40
-	if (len(encoded)) > stringByteLength {
-		t.Error("Encoded array length is not correct")
-	}
-	time, addresses := bm.UnmarshallBlockValue(encoded)
-	if blockTime.Cmp(time) != 0 {
-		t.Error("Decoded time is not correct")
-	}
-	if len(addresses) != 2 {
-		t.Error("Decoded address array length is not correct")
-	}
+	reBlockIndex := bm.UnmarshallBlockValue(encoded)
+	assert.Equal(t, *blockTime, *reBlockIndex.Time)
+	assert.Equal(t, *createdAt, *reBlockIndex.CreatedAt)
+	assert.Equal(t, 2, len(reBlockIndex.Addresses))
 
-	for i, address := range addresses {
-		if !strings.EqualFold(address.Address, blockIndex.Addresses[i].Address) {
-			t.Error("Encoded address is not correct")
-		}
-		if address.Sequence != blockIndex.Addresses[i].Sequence {
-			t.Error("Sequence is not correct")
-		}
+	for i, address := range reBlockIndex.Addresses {
+		assert.True(t, strings.EqualFold(address.Address, blockIndex.Addresses[i].Address))
+		assert.Equal(t, address.Sequence, blockIndex.Addresses[i].Sequence)
 	}
 }
 

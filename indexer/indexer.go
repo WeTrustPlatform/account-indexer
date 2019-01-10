@@ -170,6 +170,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 		BlockNumber: blockDetail.BlockNumber.String(),
 		Addresses:   []types.AddressSequence{},
 		Time:        blockDetail.Time,
+		CreatedAt:   big.NewInt(time.Now().Unix()),
 	}
 	sequenceMap := map[string]uint8{}
 

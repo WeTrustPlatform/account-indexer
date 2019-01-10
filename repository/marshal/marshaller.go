@@ -14,7 +14,7 @@ type Marshaller interface {
 	MarshallBatchKeyFrom(from *big.Int) []byte
 	UnmarshallBatchKey(value []byte) types.BatchStatus
 	MarshallBlockValue(blockIndex *types.BlockIndex) []byte
-	UnmarshallBlockValue(value []byte) (*big.Int, []types.AddressSequence)
+	UnmarshallBlockValue(value []byte) types.BlockIndex
 	MarshallBlockKey(blockNumber string) []byte
 	UnmarshallBlockKey(key []byte) *big.Int
 	MarshallAddressKey(index *types.AddressIndex) []byte
