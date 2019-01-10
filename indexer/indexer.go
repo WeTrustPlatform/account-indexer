@@ -67,11 +67,13 @@ func (indexer *Indexer) Index() {
 func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 	allBatches := indexer.Repo.GetAllBatchStatuses()
 	batches := []types.BatchStatus{}
+	now := big.NewInt(time.Now().Unix())
 	if len(allBatches) == 0 {
 		// Ethereum mainnet has genesis block as 0
 		genesisBlock := big.NewInt(0)
 		range1, range2 := DivideRange(Range{genesisBlock, latestBlock})
-		batches = append(batches, types.BatchStatus{From: range1.From, To: range1.To}, types.BatchStatus{From: range2.From, To: range2.To})
+		batches = append(batches, types.BatchStatus{From: range1.From, To: range1.To, CreatedAt: now},
+			types.BatchStatus{From: range2.From, To: range2.To, CreatedAt: now})
 	} else {
 		// Get latest block in block database
 		lastNewHeadBlockInDB := indexer.Repo.GetLastNewHeadBlockInDB()
@@ -89,7 +91,7 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 			}
 		}
 		if lastNewHeadBlockInDB != nil && !found {
-			batch := types.BatchStatus{From: lastNewHeadBlockInDB, To: latestBlock}
+			batch := types.BatchStatus{From: lastNewHeadBlockInDB, To: latestBlock, CreatedAt: now}
 			batches = append(batches, batch)
 		}
 	}
@@ -142,6 +144,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 		batchStatus := types.BatchStatus{
 			From:      batch.From,
 			To:        batch.To,
+			CreatedAt: batch.CreatedAt,
 			Current:   blockNumber,
 			UpdatedAt: big.NewInt(time.Now().Unix()),
 		}

@@ -15,7 +15,7 @@ ${address}${time}${sequence}=${tx_hash}${other_address}${blockNumber}${value}
 This is to track the sync status of batch process
 Initially, a batch has "from" as genesis block and "to" as latest block.
 A batch can be from the last newHead block in DB to the latest block in block chain
-${from_to}=${time}${block_number}
+${from_to_createdAt}=${updated_at}${current_block_number}
 
 ## Block database
 This is used by the "newHead" subscribe to handle Reorg scenario.

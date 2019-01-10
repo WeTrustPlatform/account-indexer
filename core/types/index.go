@@ -34,15 +34,20 @@ type BlockIndex struct {
 	Time        *big.Int
 }
 
-// InitBatchStatus the init batch status
+// BatchStatus the init batch status
 type BatchStatus struct {
 	// Block information for each batch
 	From      *big.Int
 	To        *big.Int
 	Current   *big.Int
+	CreatedAt *big.Int
 	UpdatedAt *big.Int
 }
 
 func (index AddressIndex) String() string {
 	return fmt.Sprintf("address %s, tx hash: %s, value: %s, time: %v, block: %v", index.Address, index.TxHash, index.Value.String(), index.Time, index.BlockNumber)
+}
+
+func (bs BatchStatus) String() string {
+	return fmt.Sprintf("From %v, To %v, Current %v, CreatedAt %v, UpdatedAt %v", bs.From, bs.To, bs.Current, bs.CreatedAt, bs.UpdatedAt)
 }

@@ -113,6 +113,7 @@ func (server HttpServer) getBatchStatus(c *gin.Context) {
 			From:      batch.From,
 			To:        batch.To,
 			Current:   current,
+			CreatedAt: common.UnmarshallIntToTime(batch.CreatedAt),
 			UpdatedAt: common.UnmarshallIntToTime(batch.UpdatedAt),
 		}
 		response = append(response, eiBatch)

@@ -170,12 +170,14 @@ func TestGetBatches(t *testing.T) {
 		From:      big.NewInt(0),
 		To:        big.NewInt(350),
 		Current:   big.NewInt(200),
+		CreatedAt: big.NewInt(time.Now().Unix() - 1000),
 		UpdatedAt: big.NewInt(time.Now().Unix()),
 	}
 	batch2 := types.BatchStatus{
 		From:      big.NewInt(351),
 		To:        big.NewInt(700),
 		Current:   big.NewInt(550),
+		CreatedAt: big.NewInt(time.Now().Unix() - 1000),
 		UpdatedAt: big.NewInt(time.Now().Unix()),
 	}
 	repo.UpdateBatch(batch1)

@@ -165,11 +165,17 @@ func (bm ByteMarshaller) UnmarshallBatchValue(value []byte) types.BatchStatus {
 	}
 }
 
-func (bm ByteMarshaller) MarshallBatchKey(from *big.Int, to *big.Int) []byte {
+// MarshallBatchKey marshall key of batch status database
+func (bm ByteMarshaller) MarshallBatchKey(from *big.Int, to *big.Int, createdAt *big.Int) []byte {
 	fromStr := blockNumberWidPad(from.String())
 	toStr := blockNumberWidPad(to.String())
-	keyStr := fromStr + "_" + toStr
-	return []byte(keyStr)
+	var buffer bytes.Buffer
+	buffer.WriteString(fromStr)
+	buffer.WriteString("_")
+	buffer.WriteString(toStr)
+	buffer.WriteString("_")
+	buffer.WriteString(createdAt.String())
+	return buffer.Bytes()
 }
 
 func (bm ByteMarshaller) MarshallBatchKeyFrom(from *big.Int) []byte {
@@ -177,17 +183,21 @@ func (bm ByteMarshaller) MarshallBatchKeyFrom(from *big.Int) []byte {
 	return []byte(fromStr)
 }
 
+// UnmarshallBatchKey unmarshall key of batch status database
 func (bm ByteMarshaller) UnmarshallBatchKey(key []byte) types.BatchStatus {
 	keyStr := string(key)
 	keyArr := strings.Split(keyStr, "_")
 	// TODO: handle error
 	fromStr := keyArr[0]
 	toStr := keyArr[1]
+	createdAtStr := keyArr[2]
 	from := new(big.Int)
 	from.SetString(fromStr, 10)
 	to := new(big.Int)
 	to.SetString(toStr, 10)
-	return types.BatchStatus{From: from, To: to}
+	createdAt := new(big.Int)
+	createdAt.SetString(createdAtStr, 10)
+	return types.BatchStatus{From: from, To: to, CreatedAt: createdAt}
 }
 
 func (bm ByteMarshaller) MarshallBlockKey(blockNumber string) []byte {

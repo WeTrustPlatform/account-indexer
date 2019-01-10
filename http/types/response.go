@@ -26,5 +26,6 @@ type EIBatchStatus struct {
 	From      *big.Int  `json:"from"`
 	To        *big.Int  `json:"to"`
 	Current   string    `json:"current"`
+	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

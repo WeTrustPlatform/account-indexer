@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"log"
 	"math/big"
 
@@ -188,24 +189,33 @@ func (repo *LevelDBRepo) GetAllBatchStatuses() []types.BatchStatus {
 	keyValues := repo.batchDAO.GetAllRecords()
 	batches := []types.BatchStatus{}
 	for _, keyValue := range keyValues {
-		key := keyValue.Key
-		value := keyValue.Value
-		batch1 := repo.marshaller.UnmarshallBatchKey(key)
-		batch2 := repo.marshaller.UnmarshallBatchValue(value)
-		batch := types.BatchStatus{
-			From:      batch1.From,
-			To:        batch1.To,
-			UpdatedAt: batch2.UpdatedAt,
-			Current:   batch2.Current,
-		}
+		batch := repo.keyValueToBatchStatus(keyValue)
 		batches = append(batches, batch)
 	}
 	return batches
 }
 
+func (repo *LevelDBRepo) keyValueToBatchStatus(keyValue dao.KeyValue) types.BatchStatus {
+	key := keyValue.Key
+	value := keyValue.Value
+	batch1 := repo.marshaller.UnmarshallBatchKey(key)
+	batch2 := repo.marshaller.UnmarshallBatchValue(value)
+	batch := types.BatchStatus{
+		From:      batch1.From,
+		To:        batch1.To,
+		UpdatedAt: batch2.UpdatedAt,
+		CreatedAt: batch1.CreatedAt,
+		Current:   batch2.Current,
+	}
+	return batch
+}
+
 // UpdateBatch update a batch
 func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) error {
-	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
+	if batch.From == nil || batch.To == nil || batch.CreatedAt == nil {
+		return errors.New("Batch is not valid, value:" + batch.String())
+	}
+	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.CreatedAt)
 	value := repo.marshaller.MarshallBatchValue(batch.UpdatedAt, batch.Current)
 	return repo.batchDAO.Put(dao.NewKeyValue(key, value))
 }
@@ -226,7 +236,7 @@ func (repo *LevelDBRepo) ReplaceBatch(from *big.Int, newTo *big.Int) error {
 }
 
 func (repo *LevelDBRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) error {
-	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To)
+	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.CreatedAt)
 	repo.batchDAO.DeleteByKey(key)
 	batch.To = newTo
 	return repo.UpdateBatch(batch)
