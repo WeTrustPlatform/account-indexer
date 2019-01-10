@@ -141,21 +141,18 @@ func TestCreateIndexData(t *testing.T) {
 	for _, addressSequence := range blockIndex.Addresses {
 		blockIndexAddresses[addressSequence.Address] = addressSequence.Sequence
 	}
-
-	if blockIndexAddresses["from1"] != uint8(1) || blockIndexAddresses["from2"] != uint8(1) || blockIndexAddresses["to1"] != uint8(2) {
-		t.Error("BlockIndex - address sequences is not correct")
-	}
+	assert.Equal(t, uint8(1), blockIndexAddresses["from1"])
+	assert.Equal(t, uint8(1), blockIndexAddresses["from2"])
+	assert.Equal(t, uint8(2), blockIndexAddresses["to1"])
 }
 
 func TestDivideRange(t *testing.T) {
 	parentRange := Range{big.NewInt(2), big.NewInt(7)}
 	range1, range2 := DivideRange(parentRange)
-	if range1.From.String() != "2" || range1.To.String() != "4" {
-		t.Error("Range1 is not correct")
-	}
-	if range2.From.String() != "5" || range2.To.String() != "7" {
-		t.Error("Range2 is not correct")
-	}
+	assert.Equal(t, "2", range1.From.String())
+	assert.Equal(t, "4", range1.To.String())
+	assert.Equal(t, "5", range2.From.String())
+	assert.Equal(t, "7", range2.To.String())
 }
 
 func TestGetBatches(t *testing.T) {

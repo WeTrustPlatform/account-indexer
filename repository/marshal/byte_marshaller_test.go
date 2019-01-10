@@ -75,12 +75,8 @@ func TestMarshallBatchValue(t *testing.T) {
 	currentBlock := big.NewInt(3000000)
 	value := bm.MarshallBatchValue(updatedAt, currentBlock)
 	batchStatus := bm.UnmarshallBatchValue(value)
-	if batchStatus.UpdatedAt.Cmp(updatedAt) != 0 {
-		t.Error("UpdatedAt is not cortrect")
-	}
-	if batchStatus.Current.Cmp(currentBlock) != 0 {
-		t.Error("Current block is not correct")
-	}
+	assert.True(t, batchStatus.UpdatedAt.Cmp(updatedAt) == 0)
+	assert.True(t, batchStatus.Current.Cmp(currentBlock) == 0)
 }
 
 func TestMarshallBatchKey(t *testing.T) {
@@ -100,7 +96,5 @@ func TestMarshallBlockKey(t *testing.T) {
 	blockNumberStr := "3000000"
 	key := bm.MarshallBlockKey(blockNumberStr)
 	blockNumber := bm.UnmarshallBlockKey(key)
-	if blockNumber.String() != blockNumberStr {
-		t.Error("Marshall/Unmarshall for block key is not correct")
-	}
+	assert.Equal(t, blockNumberStr, blockNumber.String())
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	gethCommon "github.com/ethereum/go-ethereum/common"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/assert"
 )
 
 type MockEthClient struct{}
@@ -60,14 +61,8 @@ func SkipTestFetchData(t *testing.T) {
 	go fetcher.RealtimeFetch(indexerChannel)
 	// time.Sleep(time.Second * 1)
 	blockDetail := <-indexerChannel
-	if blockDetail.BlockNumber.Uint64() != header.Number.Uint64() {
-		t.Error("Test failed: Block number is not the same:", blockDetail.BlockNumber, header.Number)
-	}
+	assert.Equal(t, header.Number.Uint64(), blockDetail.BlockNumber.Uint64())
 	transaction := blockDetail.Transactions[0]
-	if transaction.From != from.String() {
-		t.Error("Test failed, from address is not correct: ", transaction.From, from.String())
-	}
-	if transaction.To != to.String() {
-		t.Error("Test failed, to address is not correct: ", transaction.To, to.String())
-	}
+	assert.Equal(t, from.String(), transaction.From)
+	assert.Equal(t, to.String(), transaction.To)
 }

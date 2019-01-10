@@ -18,17 +18,11 @@ func TestMarshallTime(t *testing.T) {
 
 func testTime(t *testing.T, inTime *big.Int, expectedTime *big.Int) {
 	byteArr := MarshallTime(inTime)
-	if len(byteArr) != 4 {
-		t.Error("Byte array should has length 4")
-	}
-	if UnmarshallTimeToInt(byteArr).Cmp(expectedTime) != 0 {
-		t.Error("Marshall/Unmarshall is not correct")
-	}
+	assert.Equal(t, 4, len(byteArr))
+	assert.True(t, UnmarshallTimeToInt(byteArr).Cmp(expectedTime) == 0)
 	outTime := UnmarshallTime(byteArr)
 	outTimeInt64 := outTime.Unix()
-	if outTimeInt64 != int64(expectedTime.Uint64()) {
-		t.Error("Unmarshall to time is not correct")
-	}
+	assert.Equal(t, int64(expectedTime.Uint64()), outTimeInt64)
 }
 
 func TestStrToUnixTime(t *testing.T) {
