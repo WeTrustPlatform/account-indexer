@@ -160,8 +160,9 @@ func TestGetBatches(t *testing.T) {
 	blockDAO := dao.NewMemDbDAO(blockDB)
 	batchDB := memdb.New(comparer.DefaultComparer, 0)
 	batchDAO := dao.NewMemDbDAO(batchDB)
-	repo := repository.NewKVIndexRepo(nil, blockDAO, batchDAO)
-	indexer := Indexer{IpcPath: "", Repo: repo}
+	indexRepo := repository.NewKVIndexRepo(nil, blockDAO)
+	batchRepo := repository.NewKVBatchRepo(batchDAO)
+	indexer := Indexer{IpcPath: "", IndexRepo: indexRepo, BatchRepo: batchRepo}
 	// init data
 	batch1 := types.BatchStatus{
 		From:      big.NewInt(0),
@@ -177,8 +178,8 @@ func TestGetBatches(t *testing.T) {
 		CreatedAt: big.NewInt(time.Now().Unix() - 1000),
 		UpdatedAt: big.NewInt(time.Now().Unix()),
 	}
-	repo.UpdateBatch(batch1)
-	repo.UpdateBatch(batch2)
+	batchRepo.UpdateBatch(batch1)
+	batchRepo.UpdateBatch(batch2)
 
 	blockIndex := types.BlockIndex{
 		BlockNumber: big.NewInt(800).String(),
@@ -186,7 +187,7 @@ func TestGetBatches(t *testing.T) {
 		Time:        big.NewInt(time.Now().Unix()),
 		CreatedAt:   big.NewInt(time.Now().Unix()),
 	}
-	repo.SaveBlockIndex(&blockIndex)
+	indexRepo.SaveBlockIndex(&blockIndex)
 	// Test: should add a new batch from latest block in DB to latest block in blockchain
 	latestBlock := big.NewInt(900)
 	batches := indexer.getBatches(latestBlock)
@@ -199,7 +200,7 @@ func TestGetBatches(t *testing.T) {
 	current := big.NewInt(850)
 	newBatch.Current = current
 	newBatch.UpdatedAt = big.NewInt(time.Now().Unix())
-	repo.UpdateBatch(newBatch)
+	batchRepo.UpdateBatch(newBatch)
 
 	// Test: should not add a new batch, reuse the last batch with updated "To"
 	latestBlock = big.NewInt(1000)

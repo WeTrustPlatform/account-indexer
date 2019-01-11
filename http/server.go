@@ -21,11 +21,13 @@ const (
 )
 
 type HttpServer struct {
-	repo repository.IndexRepo
+	indexRepo repository.IndexRepo
+	batchRepo repository.BatchRepo
 }
 
-func NewServer(repo repository.IndexRepo) HttpServer {
-	return HttpServer{repo: repo}
+// NewServer Rest API
+func NewServer(indexRepo repository.IndexRepo, batchRepo repository.BatchRepo) HttpServer {
+	return HttpServer{indexRepo: indexRepo, batchRepo: batchRepo}
 }
 
 // Start start http server
@@ -78,7 +80,7 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 
 	rows, start := getPagingQueryParams(c)
 	log.Printf("Getting transactions for account %v\n", account)
-	total, addressIndexes := server.repo.GetTransactionByAddress(account, rows, start, fromTime, toTime)
+	total, addressIndexes := server.indexRepo.GetTransactionByAddress(account, rows, start, fromTime, toTime)
 	// response automatically marshalled using json.Marshall()
 	response := types.EITransactionsByAccount{
 		Total:   total,
@@ -91,7 +93,7 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 func (server HttpServer) getBlock(c *gin.Context) {
 	blockNumber := c.Param("blockNumber")
 	rows, start := getPagingQueryParams(c)
-	total, blocks := server.repo.GetBlocks(blockNumber, rows, start)
+	total, blocks := server.indexRepo.GetBlocks(blockNumber, rows, start)
 	response := types.EIBlocks{
 		Total:   total,
 		Start:   start,
@@ -102,7 +104,7 @@ func (server HttpServer) getBlock(c *gin.Context) {
 }
 
 func (server HttpServer) getBatchStatus(c *gin.Context) {
-	batchStatuses := server.repo.GetAllBatchStatuses()
+	batchStatuses := server.batchRepo.GetAllBatchStatuses()
 	response := []types.EIBatchStatus{}
 	for _, batch := range batchStatuses {
 		current := ""

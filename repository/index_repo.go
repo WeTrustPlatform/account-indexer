@@ -19,25 +19,20 @@ type IndexRepo interface {
 	GetFirstBlock() (types.BlockIndex, error)
 	DeleteOldBlocks(untilTime *big.Int) (int, error)
 	GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex)
-	GetAllBatchStatuses() []types.BatchStatus
-	UpdateBatch(batch types.BatchStatus) error
-	ReplaceBatch(from *big.Int, newTo *big.Int) error
 }
 
 // KVIndexRepo implementation of IndexRepo
 type KVIndexRepo struct {
 	addressDAO dao.KeyValueDAO
 	blockDAO   dao.KeyValueDAO
-	batchDAO   dao.KeyValueDAO
 	marshaller marshal.Marshaller
 }
 
 // NewKVIndexRepo create an instance of KVIndexRepo
-func NewKVIndexRepo(addressDAO dao.KeyValueDAO, blockDAO dao.KeyValueDAO, batchDAO dao.KeyValueDAO) *KVIndexRepo {
+func NewKVIndexRepo(addressDAO dao.KeyValueDAO, blockDAO dao.KeyValueDAO) *KVIndexRepo {
 	return &KVIndexRepo{
 		addressDAO: addressDAO,
 		blockDAO:   blockDAO,
-		batchDAO:   batchDAO,
 		marshaller: marshal.ByteMarshaller{},
 	}
 }
@@ -205,72 +200,6 @@ func (repo *KVIndexRepo) keyValueToBlockIndex(keyValue dao.KeyValue) types.Block
 	blockIndex := repo.marshaller.UnmarshallBlockValue(value)
 	blockIndex.BlockNumber = blockNumber.String()
 	return blockIndex
-}
-
-// GetAllBatchStatuses get all batches
-func (repo *KVIndexRepo) GetAllBatchStatuses() []types.BatchStatus {
-	keyValues := repo.batchDAO.GetAllRecords()
-	batches := []types.BatchStatus{}
-	for _, keyValue := range keyValues {
-		batch := repo.keyValueToBatchStatus(keyValue)
-		batches = append(batches, batch)
-	}
-	return batches
-}
-
-func (repo *KVIndexRepo) keyValueToBatchStatus(keyValue dao.KeyValue) types.BatchStatus {
-	key := keyValue.Key
-	value := keyValue.Value
-	batch1 := repo.marshaller.UnmarshallBatchKey(key)
-	batch2 := repo.marshaller.UnmarshallBatchValue(value)
-	batch := types.BatchStatus{
-		From:      batch1.From,
-		To:        batch1.To,
-		UpdatedAt: batch2.UpdatedAt,
-		CreatedAt: batch1.CreatedAt,
-		Current:   batch2.Current,
-	}
-	return batch
-}
-
-// UpdateBatch update a batch
-func (repo *KVIndexRepo) UpdateBatch(batch types.BatchStatus) error {
-	if batch.From == nil || batch.To == nil || batch.CreatedAt == nil {
-		return errors.New("Batch is not valid, value:" + batch.String())
-	}
-	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.CreatedAt)
-	value := repo.marshaller.MarshallBatchValue(batch.UpdatedAt, batch.Current)
-	return repo.batchDAO.Put(dao.NewKeyValue(key, value))
-}
-
-// ReplaceBatch replace a batch with new "to"
-func (repo *KVIndexRepo) ReplaceBatch(from *big.Int, newTo *big.Int) error {
-	fromByteArr := repo.marshaller.MarshallBatchKeyFrom(from)
-	asc := true
-	_, keyValues := repo.batchDAO.FindByKeyPrefix(fromByteArr, asc, 0, 0)
-	if len(keyValues) <= 0 {
-		return nil
-	}
-	keyValue := keyValues[0]
-	key := keyValue.Key
-	value := keyValue.Value
-	batch := repo.getBatchStatus(key, value)
-	return repo.replaceBatch(batch, newTo)
-}
-
-func (repo *KVIndexRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) error {
-	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.CreatedAt)
-	repo.batchDAO.DeleteByKey(key)
-	batch.To = newTo
-	return repo.UpdateBatch(batch)
-}
-
-func (repo *KVIndexRepo) getBatchStatus(key []byte, value []byte) types.BatchStatus {
-	batch := repo.marshaller.UnmarshallBatchKey(key)
-	batchValue := repo.marshaller.UnmarshallBatchValue(value)
-	batch.Current = batchValue.Current
-	batch.UpdatedAt = batchValue.UpdatedAt
-	return batch
 }
 
 // GetBlocks by blockNumber. blockNumber = blank => latest block

@@ -103,9 +103,7 @@ func (suite *RepositoryTestSuite) SetupTest() {
 	addressDAO := dao.NewMemDbDAO(addressDB)
 	blockDB := memdb.New(comparer.DefaultComparer, 0)
 	blockDAO := dao.NewMemDbDAO(blockDB)
-	batchDB := memdb.New(comparer.DefaultComparer, 0)
-	batchDAO := dao.NewMemDbDAO(batchDB)
-	repo := NewKVIndexRepo(addressDAO, blockDAO, batchDAO)
+	repo := NewKVIndexRepo(addressDAO, blockDAO)
 	suite.repo = repo
 	err := repo.Store(addressIndexes, blockIndex, false)
 	assert.Nil(suite.T(), err)

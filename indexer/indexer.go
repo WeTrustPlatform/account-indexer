@@ -16,8 +16,9 @@ import (
 // Indexer fetch data from blockchain and store in a repository
 type Indexer struct {
 	// Fetcher Fetch
-	IpcPath string
-	Repo    repository.IndexRepo
+	IpcPath   string
+	IndexRepo repository.IndexRepo
+	BatchRepo repository.BatchRepo
 }
 
 // Range from block - to block
@@ -65,7 +66,7 @@ func (indexer *Indexer) Index() {
 }
 
 func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
-	allBatches := indexer.Repo.GetAllBatchStatuses()
+	allBatches := indexer.BatchRepo.GetAllBatchStatuses()
 	batches := []types.BatchStatus{}
 	now := big.NewInt(time.Now().Unix())
 	if len(allBatches) == 0 {
@@ -76,16 +77,16 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 			types.BatchStatus{From: range2.From, To: range2.To, CreatedAt: now})
 	} else {
 		// Get latest block in block database
-		lastBlock, _ := indexer.Repo.GetLastBlock()
+		lastBlock, _ := indexer.IndexRepo.GetLastBlock()
 		lastBlockNum := new(big.Int)
 		lastBlockNum.SetString(lastBlock.BlockNumber, 10)
-		allBatches := indexer.Repo.GetAllBatchStatuses()
+		allBatches := indexer.BatchRepo.GetAllBatchStatuses()
 		found := false
 		for _, batch := range allBatches {
 			if batch.To.Cmp(batch.Current) > 0 {
 				if lastBlockNum != nil && lastBlockNum.Cmp(batch.From) == 0 {
 					batch.To = latestBlock
-					indexer.Repo.ReplaceBatch(batch.From, latestBlock)
+					indexer.BatchRepo.ReplaceBatch(batch.From, latestBlock)
 					found = true
 					log.Println("Updated batch with from " + batch.From.String())
 				}
@@ -150,7 +151,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 			Current:   blockNumber,
 			UpdatedAt: big.NewInt(time.Now().Unix()),
 		}
-		err = indexer.Repo.UpdateBatch(batchStatus)
+		err = indexer.BatchRepo.UpdateBatch(batchStatus)
 		if err != nil {
 			log.Fatal(tag + " indexer: cannot update batch for process block " + blockNumber.String() + " , error is " + err.Error())
 		}
@@ -162,7 +163,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 
 func (indexer *Indexer) processBlock(blockDetail *types.BLockDetail, isBatch bool) error {
 	addressIndex, blockIndex := indexer.CreateIndexData(blockDetail)
-	return indexer.Repo.Store(addressIndex, blockIndex, isBatch)
+	return indexer.IndexRepo.Store(addressIndex, blockIndex, isBatch)
 }
 
 // CreateIndexData transforms blockchain data to our index data
