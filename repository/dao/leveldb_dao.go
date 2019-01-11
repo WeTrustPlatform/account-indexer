@@ -152,6 +152,27 @@ func getNLastRecords(iter iterator.Iterator, n int) []KeyValue {
 	return result
 }
 
+// GetNFirstPredicate go from first record until predicate evaluation is false
+func (ld LevelDbDAO) GetNFirstPredicate(prep Predicate) []KeyValue {
+	iter := ld.db.NewIterator(nil, nil)
+	defer iter.Release()
+	return getNFirstPredicate(iter, prep)
+}
+
+func getNFirstPredicate(iter iterator.Iterator, prep Predicate) []KeyValue {
+	result := []KeyValue{}
+	for iter.Next() {
+		key := iter.Key()
+		value := iter.Value()
+		keyValue := CopyKeyValue(key, value)
+		if !prep(keyValue) {
+			break
+		}
+		result = append(result, keyValue)
+	}
+	return result
+}
+
 // GetAllRecords get all records
 func (ld LevelDbDAO) GetAllRecords() []KeyValue {
 	iter := ld.db.NewIterator(nil, nil)

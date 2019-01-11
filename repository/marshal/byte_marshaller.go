@@ -2,6 +2,7 @@ package marshal
 
 import (
 	"bytes"
+	"log"
 	"math/big"
 	"strings"
 
@@ -22,6 +23,9 @@ type ByteMarshaller struct {
 
 // MarshallBlockValue marshall a blockIndex to []byte so that we store it as value in Block db
 func (bm ByteMarshaller) MarshallBlockValue(blockIndex *types.BlockIndex) []byte {
+	if blockIndex.CreatedAt == nil || blockIndex.Time == nil {
+		log.Fatal("block data is not correct", *blockIndex)
+	}
 	numAddr := len(blockIndex.Addresses)
 	createdAtByteArr := common.MarshallTime(blockIndex.CreatedAt)
 	timeByteArr := common.MarshallTime(blockIndex.Time)

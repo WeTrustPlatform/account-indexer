@@ -10,6 +10,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/http"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/WeTrustPlatform/account-indexer/watcher"
 	"github.com/ethereum/go-ethereum/console"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -78,6 +79,8 @@ func index(ctx *cli.Context) {
 		Repo:    repo,
 	}
 	go indexer.Index()
+	cleaner := watcher.NewCleaner(repo)
+	go cleaner.CleanBlockDB()
 	server := http.NewServer(repo)
 	server.Start()
 }

@@ -78,6 +78,13 @@ func (md MemDbDAO) GetNLastRecords(n int) []KeyValue {
 	return getNLastRecords(iter, n)
 }
 
+// GetNFirstPredicate go from first record until predicate evaluation is false
+func (md MemDbDAO) GetNFirstPredicate(prep Predicate) []KeyValue {
+	iter := md.db.NewIterator(nil)
+	defer iter.Release()
+	return getNFirstPredicate(iter, prep)
+}
+
 func (md MemDbDAO) GetAllRecords() []KeyValue {
 	iter := md.db.NewIterator(nil)
 	defer iter.Release()

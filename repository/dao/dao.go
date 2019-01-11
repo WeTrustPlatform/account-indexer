@@ -15,6 +15,7 @@ type KeyValueDAO interface {
 	FindByKey(key []byte) (*KeyValue, error)
 	GetNFirstRecords(n int) []KeyValue
 	GetNLastRecords(n int) []KeyValue
+	GetNFirstPredicate(pre Predicate) []KeyValue
 	GetAllRecords() []KeyValue
 }
 
@@ -31,6 +32,8 @@ func NewKeyValue(key []byte, value []byte) KeyValue {
 func CopyKeyValue(key []byte, value []byte) KeyValue {
 	return KeyValue{Key: copy(key), Value: copy(value)}
 }
+
+type Predicate func(KeyValue) bool
 
 func copy(arr []byte) []byte {
 	newSlice := make([]byte, len(arr))

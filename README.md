@@ -29,6 +29,10 @@ If an old block comes again, get time and address sequences from block database,
 ## Handle node out of sync
 Use a go routine to regularly check for last record of block database amongst current time, created at and block time
 
+## Handle block db
+Block db is borned for Reorg scenario and we need last block most of the time.
+Use a go routine to regularly delete old blocks.
+
 ## Handle Restart
 + If there is no batch status database, run from genesis to latest as a batch, track status at each block processed
 + Else if there are any uncompleted batches, run all of them, each in a separate go routine. And run a separate batch from the last newHead block to the latest block in blockchain

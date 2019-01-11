@@ -15,12 +15,13 @@ import (
 type Repository interface {
 	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error
 	GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex)
-	GetLastNewHeadBlockInDB() *big.Int
-	GetFirstNewHeadBlockInDB() *big.Int
+	GetLastBlock() (types.BlockIndex, error)
+	GetFirstBlock() (types.BlockIndex, error)
+	DeleteOldBlocks(untilTime *big.Int) (int, error)
+	GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex)
 	GetAllBatchStatuses() []types.BatchStatus
 	UpdateBatch(batch types.BatchStatus) error
 	ReplaceBatch(from *big.Int, newTo *big.Int) error
-	GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex)
 }
 
 // LevelDBRepo implementation of Repository
@@ -164,26 +165,46 @@ func (repo *LevelDBRepo) HandleReorg(blockTime *big.Int, reorgAddresses []types.
 	return err
 }
 
-// GetLastNewHeadBlockInDB latest saved block in newHead block DB
-func (repo *LevelDBRepo) GetLastNewHeadBlockInDB() *big.Int {
+// GetLastBlock latest saved block in newHead block DB
+func (repo *LevelDBRepo) GetLastBlock() (types.BlockIndex, error) {
 	lastBlocks := repo.blockDAO.GetNLastRecords(1)
 	if len(lastBlocks) <= 0 {
-		return nil
+		return types.BlockIndex{}, errors.New("No last record")
 	}
-	key := lastBlocks[0].Key
-	blockNumber := repo.marshaller.UnmarshallBlockKey(key)
-	return blockNumber
+	return repo.keyValueToBlockIndex(lastBlocks[0]), nil
 }
 
-// GetFirstNewHeadBlockInDB first saved block in newHead block DB
-func (repo *LevelDBRepo) GetFirstNewHeadBlockInDB() *big.Int {
-	lastBlocks := repo.blockDAO.GetNFirstRecords(1)
-	if len(lastBlocks) <= 0 {
-		return nil
+// GetFirstBlock first saved block in newHead block DB
+func (repo *LevelDBRepo) GetFirstBlock() (types.BlockIndex, error) {
+	firstBlock := repo.blockDAO.GetNFirstRecords(1)
+	if len(firstBlock) <= 0 {
+		return types.BlockIndex{}, errors.New("No first record")
 	}
-	key := lastBlocks[0].Key
+	return repo.keyValueToBlockIndex(firstBlock[0]), nil
+}
+
+// DeleteOldBlocks delete blocks where CreatedAt < untilTime
+func (repo *LevelDBRepo) DeleteOldBlocks(untilTime *big.Int) (int, error) {
+	pre := func(keyValue dao.KeyValue) bool {
+		blockIndex := repo.keyValueToBlockIndex(keyValue)
+		return blockIndex.CreatedAt.Cmp(untilTime) < 0
+	}
+	kvsToDel := repo.blockDAO.GetNFirstPredicate(pre)
+	keys := [][]byte{}
+	for _, kv := range kvsToDel {
+		keys = append(keys, kv.Key)
+	}
+	err := repo.blockDAO.BatchDelete(keys)
+	return len(kvsToDel), err
+}
+
+func (repo *LevelDBRepo) keyValueToBlockIndex(keyValue dao.KeyValue) types.BlockIndex {
+	key := keyValue.Key
 	blockNumber := repo.marshaller.UnmarshallBlockKey(key)
-	return blockNumber
+	value := keyValue.Value
+	blockIndex := repo.marshaller.UnmarshallBlockValue(value)
+	blockIndex.BlockNumber = blockNumber.String()
+	return blockIndex
 }
 
 // GetAllBatchStatuses get all batches

@@ -2,6 +2,7 @@ package dao
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,6 +50,27 @@ func (suite *MemDbDAOTestSuite) TestFindByKeyPrefix() {
 	assert.Equal(suite.T(), 2, len(prefixFound), "Found items by prefix should be 2")
 	assert.True(suite.T(), reflect.DeepEqual(keyValues[1], prefixFound[0]))
 	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], prefixFound[1]))
+}
+
+func (suite *MemDbDAOTestSuite) TestGetNFirstPredicate() {
+	// 1st test
+	pre := Predicate(func(KeyValue) bool {
+		return true
+	})
+	foundKVs := suite.dao.GetNFirstPredicate(pre)
+	assert.Equal(suite.T(), 3, len(foundKVs))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], foundKVs[0]))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[1], foundKVs[1]))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[2], foundKVs[2]))
+	// 2nd test
+	pre = Predicate(func(kv KeyValue) bool {
+		str := string(kv.Key)
+		return strings.HasPrefix(str, "key")
+	})
+	foundKVs = suite.dao.GetNFirstPredicate(pre)
+	assert.Equal(suite.T(), 2, len(foundKVs))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], foundKVs[0]))
+	assert.True(suite.T(), reflect.DeepEqual(keyValues[1], foundKVs[1]))
 }
 
 func (suite *MemDbDAOTestSuite) TestBatchDelete() {

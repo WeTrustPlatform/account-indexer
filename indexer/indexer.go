@@ -58,7 +58,7 @@ func (indexer *Indexer) Index() {
 	// index realtime
 	go func() {
 		defer wg.Done()
-		indexer.RealtimeIndex(fetcher)
+		indexer.realtimeIndex(fetcher)
 	}()
 
 	wg.Wait()
@@ -76,12 +76,14 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 			types.BatchStatus{From: range2.From, To: range2.To, CreatedAt: now})
 	} else {
 		// Get latest block in block database
-		lastNewHeadBlockInDB := indexer.Repo.GetLastNewHeadBlockInDB()
+		lastBlock, _ := indexer.Repo.GetLastBlock()
+		lastBlockNum := new(big.Int)
+		lastBlockNum.SetString(lastBlock.BlockNumber, 10)
 		allBatches := indexer.Repo.GetAllBatchStatuses()
 		found := false
 		for _, batch := range allBatches {
 			if batch.To.Cmp(batch.Current) > 0 {
-				if lastNewHeadBlockInDB != nil && lastNewHeadBlockInDB.Cmp(batch.From) == 0 {
+				if lastBlockNum != nil && lastBlockNum.Cmp(batch.From) == 0 {
 					batch.To = latestBlock
 					indexer.Repo.ReplaceBatch(batch.From, latestBlock)
 					found = true
@@ -90,8 +92,8 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 				batches = append(batches, batch)
 			}
 		}
-		if lastNewHeadBlockInDB != nil && !found {
-			batch := types.BatchStatus{From: lastNewHeadBlockInDB, To: latestBlock, CreatedAt: now}
+		if lastBlockNum != nil && !found {
+			batch := types.BatchStatus{From: lastBlockNum, To: latestBlock, CreatedAt: now}
 			batches = append(batches, batch)
 		}
 	}
@@ -99,7 +101,7 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 }
 
 // RealtimeIndex newHead subscribe
-func (indexer *Indexer) RealtimeIndex(fetcher fetcher.Fetch) {
+func (indexer *Indexer) realtimeIndex(fetcher fetcher.Fetch) {
 	indexerChannel := make(chan *types.BLockDetail)
 	// go indexer.Fetcher.RealtimeFetch(indexerChannel)
 	go fetcher.RealtimeFetch(indexerChannel)
