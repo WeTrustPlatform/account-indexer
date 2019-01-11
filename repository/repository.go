@@ -11,8 +11,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-// Repository to store index data
-type Repository interface {
+// IndexRepo to store index data
+type IndexRepo interface {
 	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error
 	GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex)
 	GetLastBlock() (types.BlockIndex, error)
@@ -24,17 +24,17 @@ type Repository interface {
 	ReplaceBatch(from *big.Int, newTo *big.Int) error
 }
 
-// LevelDBRepo implementation of Repository
-type LevelDBRepo struct {
+// KVIndexRepo implementation of IndexRepo
+type KVIndexRepo struct {
 	addressDAO dao.KeyValueDAO
 	blockDAO   dao.KeyValueDAO
 	batchDAO   dao.KeyValueDAO
 	marshaller marshal.Marshaller
 }
 
-// NewLevelDBRepo create an instance of LevelDBRepo
-func NewLevelDBRepo(addressDAO dao.KeyValueDAO, blockDAO dao.KeyValueDAO, batchDAO dao.KeyValueDAO) *LevelDBRepo {
-	return &LevelDBRepo{
+// NewKVIndexRepo create an instance of KVIndexRepo
+func NewKVIndexRepo(addressDAO dao.KeyValueDAO, blockDAO dao.KeyValueDAO, batchDAO dao.KeyValueDAO) *KVIndexRepo {
+	return &KVIndexRepo{
 		addressDAO: addressDAO,
 		blockDAO:   blockDAO,
 		batchDAO:   batchDAO,
@@ -42,8 +42,8 @@ func NewLevelDBRepo(addressDAO dao.KeyValueDAO, blockDAO dao.KeyValueDAO, batchD
 	}
 }
 
-// Store implements Repository
-func (repo *LevelDBRepo) Store(addressIndex []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error {
+// Store implements IndexRepo
+func (repo *KVIndexRepo) Store(addressIndex []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error {
 	if !isBatch {
 		oldBlock, err := repo.blockDAO.FindByKey([]byte(blockIndex.BlockNumber))
 		if err == nil && oldBlock != nil {
@@ -78,7 +78,7 @@ func (repo *LevelDBRepo) Store(addressIndex []*types.AddressIndex, blockIndex *t
 }
 
 // SaveAddressIndex save to address db
-func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) error {
+func (repo *KVIndexRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) error {
 	keyValues := []dao.KeyValue{}
 	for _, item := range addressIndex {
 		key := repo.marshaller.MarshallAddressKey(item)
@@ -94,7 +94,7 @@ func (repo *LevelDBRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) er
 }
 
 // SaveBlockIndex save to block db
-func (repo *LevelDBRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
+func (repo *KVIndexRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 	key := repo.marshaller.MarshallBlockKey(blockIndex.BlockNumber)
 	value := repo.marshaller.MarshallBlockValue(blockIndex)
 	err := repo.blockDAO.Put(dao.NewKeyValue(key, value))
@@ -105,7 +105,7 @@ func (repo *LevelDBRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 }
 
 // GetTransactionByAddress main thing for this indexer
-func (repo *LevelDBRepo) GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex) {
+func (repo *KVIndexRepo) GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex) {
 	convertKeyValuesToAddressIndexes := func(keyValues []dao.KeyValue) []types.AddressIndex {
 		result := []types.AddressIndex{}
 		for _, keyValue := range keyValues {
@@ -141,7 +141,7 @@ func (repo *LevelDBRepo) GetTransactionByAddress(address string, rows int, start
 	return total, addressIndexes
 }
 
-func (repo *LevelDBRepo) keyValueToAddressIndex(keyValue dao.KeyValue) types.AddressIndex {
+func (repo *KVIndexRepo) keyValueToAddressIndex(keyValue dao.KeyValue) types.AddressIndex {
 	value := keyValue.Value
 	addressIndex := repo.marshaller.UnmarshallAddressValue(value)
 	key := keyValue.Key
@@ -152,7 +152,7 @@ func (repo *LevelDBRepo) keyValueToAddressIndex(keyValue dao.KeyValue) types.Add
 }
 
 // HandleReorg handle reorg scenario: get block again
-func (repo *LevelDBRepo) HandleReorg(blockTime *big.Int, reorgAddresses []types.AddressSequence) error {
+func (repo *KVIndexRepo) HandleReorg(blockTime *big.Int, reorgAddresses []types.AddressSequence) error {
 	keys := [][]byte{}
 	for _, address := range reorgAddresses {
 		// Block database save address and max sequence as value
@@ -166,7 +166,7 @@ func (repo *LevelDBRepo) HandleReorg(blockTime *big.Int, reorgAddresses []types.
 }
 
 // GetLastBlock latest saved block in newHead block DB
-func (repo *LevelDBRepo) GetLastBlock() (types.BlockIndex, error) {
+func (repo *KVIndexRepo) GetLastBlock() (types.BlockIndex, error) {
 	lastBlocks := repo.blockDAO.GetNLastRecords(1)
 	if len(lastBlocks) <= 0 {
 		return types.BlockIndex{}, errors.New("No last record")
@@ -175,7 +175,7 @@ func (repo *LevelDBRepo) GetLastBlock() (types.BlockIndex, error) {
 }
 
 // GetFirstBlock first saved block in newHead block DB
-func (repo *LevelDBRepo) GetFirstBlock() (types.BlockIndex, error) {
+func (repo *KVIndexRepo) GetFirstBlock() (types.BlockIndex, error) {
 	firstBlock := repo.blockDAO.GetNFirstRecords(1)
 	if len(firstBlock) <= 0 {
 		return types.BlockIndex{}, errors.New("No first record")
@@ -184,7 +184,7 @@ func (repo *LevelDBRepo) GetFirstBlock() (types.BlockIndex, error) {
 }
 
 // DeleteOldBlocks delete blocks where CreatedAt < untilTime
-func (repo *LevelDBRepo) DeleteOldBlocks(untilTime *big.Int) (int, error) {
+func (repo *KVIndexRepo) DeleteOldBlocks(untilTime *big.Int) (int, error) {
 	pre := func(keyValue dao.KeyValue) bool {
 		blockIndex := repo.keyValueToBlockIndex(keyValue)
 		return blockIndex.CreatedAt.Cmp(untilTime) < 0
@@ -198,7 +198,7 @@ func (repo *LevelDBRepo) DeleteOldBlocks(untilTime *big.Int) (int, error) {
 	return len(kvsToDel), err
 }
 
-func (repo *LevelDBRepo) keyValueToBlockIndex(keyValue dao.KeyValue) types.BlockIndex {
+func (repo *KVIndexRepo) keyValueToBlockIndex(keyValue dao.KeyValue) types.BlockIndex {
 	key := keyValue.Key
 	blockNumber := repo.marshaller.UnmarshallBlockKey(key)
 	value := keyValue.Value
@@ -208,7 +208,7 @@ func (repo *LevelDBRepo) keyValueToBlockIndex(keyValue dao.KeyValue) types.Block
 }
 
 // GetAllBatchStatuses get all batches
-func (repo *LevelDBRepo) GetAllBatchStatuses() []types.BatchStatus {
+func (repo *KVIndexRepo) GetAllBatchStatuses() []types.BatchStatus {
 	keyValues := repo.batchDAO.GetAllRecords()
 	batches := []types.BatchStatus{}
 	for _, keyValue := range keyValues {
@@ -218,7 +218,7 @@ func (repo *LevelDBRepo) GetAllBatchStatuses() []types.BatchStatus {
 	return batches
 }
 
-func (repo *LevelDBRepo) keyValueToBatchStatus(keyValue dao.KeyValue) types.BatchStatus {
+func (repo *KVIndexRepo) keyValueToBatchStatus(keyValue dao.KeyValue) types.BatchStatus {
 	key := keyValue.Key
 	value := keyValue.Value
 	batch1 := repo.marshaller.UnmarshallBatchKey(key)
@@ -234,7 +234,7 @@ func (repo *LevelDBRepo) keyValueToBatchStatus(keyValue dao.KeyValue) types.Batc
 }
 
 // UpdateBatch update a batch
-func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) error {
+func (repo *KVIndexRepo) UpdateBatch(batch types.BatchStatus) error {
 	if batch.From == nil || batch.To == nil || batch.CreatedAt == nil {
 		return errors.New("Batch is not valid, value:" + batch.String())
 	}
@@ -244,7 +244,7 @@ func (repo *LevelDBRepo) UpdateBatch(batch types.BatchStatus) error {
 }
 
 // ReplaceBatch replace a batch with new "to"
-func (repo *LevelDBRepo) ReplaceBatch(from *big.Int, newTo *big.Int) error {
+func (repo *KVIndexRepo) ReplaceBatch(from *big.Int, newTo *big.Int) error {
 	fromByteArr := repo.marshaller.MarshallBatchKeyFrom(from)
 	asc := true
 	_, keyValues := repo.batchDAO.FindByKeyPrefix(fromByteArr, asc, 0, 0)
@@ -258,14 +258,14 @@ func (repo *LevelDBRepo) ReplaceBatch(from *big.Int, newTo *big.Int) error {
 	return repo.replaceBatch(batch, newTo)
 }
 
-func (repo *LevelDBRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) error {
+func (repo *KVIndexRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) error {
 	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.CreatedAt)
 	repo.batchDAO.DeleteByKey(key)
 	batch.To = newTo
 	return repo.UpdateBatch(batch)
 }
 
-func (repo *LevelDBRepo) getBatchStatus(key []byte, value []byte) types.BatchStatus {
+func (repo *KVIndexRepo) getBatchStatus(key []byte, value []byte) types.BatchStatus {
 	batch := repo.marshaller.UnmarshallBatchKey(key)
 	batchValue := repo.marshaller.UnmarshallBatchValue(value)
 	batch.Current = batchValue.Current
@@ -274,7 +274,7 @@ func (repo *LevelDBRepo) getBatchStatus(key []byte, value []byte) types.BatchSta
 }
 
 // GetBlocks by blockNumber. blockNumber = blank => latest block
-func (repo *LevelDBRepo) GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex) {
+func (repo *KVIndexRepo) GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex) {
 	result := []types.BlockIndex{}
 	makeBlockIndex := func(keyValue *dao.KeyValue) types.BlockIndex {
 		key := keyValue.Key

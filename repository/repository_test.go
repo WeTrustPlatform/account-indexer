@@ -91,7 +91,7 @@ func TestBatch(t *testing.T) {
 
 type RepositoryTestSuite struct {
 	suite.Suite
-	repo *LevelDBRepo
+	repo *KVIndexRepo
 }
 
 func TestRepository(t *testing.T) {
@@ -105,7 +105,7 @@ func (suite *RepositoryTestSuite) SetupTest() {
 	blockDAO := dao.NewMemDbDAO(blockDB)
 	batchDB := memdb.New(comparer.DefaultComparer, 0)
 	batchDAO := dao.NewMemDbDAO(batchDB)
-	repo := NewLevelDBRepo(addressDAO, blockDAO, batchDAO)
+	repo := NewKVIndexRepo(addressDAO, blockDAO, batchDAO)
 	suite.repo = repo
 	err := repo.Store(addressIndexes, blockIndex, false)
 	assert.Nil(suite.T(), err)

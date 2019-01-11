@@ -11,11 +11,11 @@ import (
 
 // Cleaner cleaner for account indexer
 type Cleaner struct {
-	repo repository.Repository
+	repo repository.IndexRepo
 }
 
 // NewCleaner create a cleaner instance
-func NewCleaner(repo repository.Repository) Cleaner {
+func NewCleaner(repo repository.IndexRepo) Cleaner {
 	return Cleaner{repo: repo}
 }
 

@@ -21,10 +21,10 @@ const (
 )
 
 type HttpServer struct {
-	repo repository.Repository
+	repo repository.IndexRepo
 }
 
-func NewServer(repo repository.Repository) HttpServer {
+func NewServer(repo repository.IndexRepo) HttpServer {
 	return HttpServer{repo: repo}
 }
 

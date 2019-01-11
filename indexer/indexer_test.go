@@ -160,7 +160,7 @@ func TestGetBatches(t *testing.T) {
 	blockDAO := dao.NewMemDbDAO(blockDB)
 	batchDB := memdb.New(comparer.DefaultComparer, 0)
 	batchDAO := dao.NewMemDbDAO(batchDB)
-	repo := repository.NewLevelDBRepo(nil, blockDAO, batchDAO)
+	repo := repository.NewKVIndexRepo(nil, blockDAO, batchDAO)
 	indexer := Indexer{IpcPath: "", Repo: repo}
 	// init data
 	batch1 := types.BatchStatus{

@@ -17,7 +17,7 @@ import (
 type Indexer struct {
 	// Fetcher Fetch
 	IpcPath string
-	Repo    repository.Repository
+	Repo    repository.IndexRepo
 }
 
 // Range from block - to block

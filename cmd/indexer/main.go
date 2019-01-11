@@ -73,7 +73,7 @@ func index(ctx *cli.Context) {
 		log.Fatal("Can't connect to LevelDB", err)
 	}
 	defer batchDB.Close()
-	repo := repository.NewLevelDBRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB), dao.NewLevelDbDAO(batchDB))
+	repo := repository.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB), dao.NewLevelDbDAO(batchDB))
 	indexer := indexer.Indexer{
 		IpcPath: ipcPath,
 		Repo:    repo,
