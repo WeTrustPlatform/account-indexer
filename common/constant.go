@@ -8,4 +8,6 @@ const (
 	DefaultCleanInterval = 5
 	// DefaultBlockTTL In hour
 	DefaultBlockTTL = 4
+	// DefaultHTTPPort default http port
+	DefaultHTTPPort = 8645
 )

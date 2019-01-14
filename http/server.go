@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"log"
 	"math/big"
 	"net/http"
@@ -52,7 +53,12 @@ func (server HttpServer) Start() {
 		admin.GET("/block", server.getBlock)
 	}
 	// Start and run the server
-	router.Run(":3000")
+	err := router.Run(fmt.Sprintf(":%v", common.GetConfig().Port))
+	if err == nil {
+		log.Println("Started server successfully at port ", common.GetConfig().Port)
+	} else {
+		log.Fatal("Cannot start http server", err.Error())
+	}
 }
 
 func (server HttpServer) getTransactionsByAccount(c *gin.Context) {

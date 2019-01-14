@@ -48,12 +48,18 @@ var (
 		Usage: "block time to live (int) in hour",
 		Value: common.DefaultBlockTTL,
 	}
+	portFlag = cli.IntFlag{
+		Name:  "p",
+		Usage: "http port number",
+		Value: common.DefaultHTTPPort,
+	}
 
 	indexerFlags = []cli.Flag{
 		ipcFlag,
 		dbFlag,
 		cleanIntervalFlag,
 		blockTimeToLiveFlag,
+		portFlag,
 	}
 )
 
@@ -77,8 +83,9 @@ func index(ctx *cli.Context) {
 	config := common.GetConfig()
 	config.CleanInterval = time.Duration(clearInterval) * time.Minute
 	config.BlockTTL = time.Duration(blockTTL) * time.Hour
-	log.Printf("%v ipcPath=%s \n dbPath=%s\n CleanInterval=%v\n BlockTimeToLive=%v\n",
-		time.Now(), ipcPath, dbPath, config.CleanInterval, config.BlockTTL)
+	config.Port = ctx.GlobalInt(portFlag.Name)
+	log.Printf("%v ipcPath=%s \n dbPath=%s\n CleanInterval=%v\n BlockTimeToLive=%v Port=%v\n",
+		time.Now(), ipcPath, dbPath, config.CleanInterval, config.BlockTTL, config.Port)
 	ipcs := strings.Split(ipcPath, ",")
 	service.GetIpcManager().SetIPC(ipcs)
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)

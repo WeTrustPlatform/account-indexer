@@ -9,6 +9,7 @@ import (
 type configuration struct {
 	CleanInterval time.Duration
 	BlockTTL      time.Duration
+	Port          int
 }
 
 var config *configuration
