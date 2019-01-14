@@ -11,13 +11,9 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
 	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/WeTrustPlatform/account-indexer/service"
+	"github.com/WeTrustPlatform/account-indexer/watcher"
 )
-
-// Indexer fetch data from blockchain and store in a repository
-type Indexer struct {
-	IndexRepo repository.IndexRepo
-	BatchRepo repository.BatchRepo
-}
 
 // Range from block - to block
 type Range struct {
@@ -27,8 +23,44 @@ type Range struct {
 	To *big.Int
 }
 
-// Index Entry point
-func (indexer *Indexer) Index() {
+// Indexer fetch data from blockchain and store in a repository
+type Indexer struct {
+	IndexRepo repository.IndexRepo
+	BatchRepo repository.BatchRepo
+	bdChan    chan *types.BLockDetail
+	watcher   watcher.Watcher
+}
+
+// NewIndexer create an Indexer
+func NewIndexer(IndexRepo repository.IndexRepo, BatchRepo repository.BatchRepo, wa watcher.Watcher) Indexer {
+	result := Indexer{IndexRepo: IndexRepo, BatchRepo: BatchRepo, watcher: wa}
+	var sub service.IpcSubscriber
+	sub = &result
+	service.GetIpcManager().Subscribe(&sub)
+	if wa == nil {
+		result.watcher = watcher.NewNodeStatusWatcher(IndexRepo, BatchRepo)
+	}
+	return result
+}
+
+// IpcUpdated implements IpcSubscriber interface
+func (indexer *Indexer) IpcUpdated(ipcPath string) {
+	// finish any ongoing go-routines of this fetcher
+	if indexer.bdChan != nil {
+		// This should finish the realtimeIndex for loop
+		close(indexer.bdChan)
+	}
+	time.Sleep(5 * time.Second)
+	hasWatcher := false
+	indexer.index(hasWatcher)
+}
+
+// IndexWithWatcher Entry point
+func (indexer *Indexer) IndexWithWatcher() {
+	indexer.index(true)
+}
+
+func (indexer *Indexer) index(hasWatcher bool) {
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
 		log.Fatal("IPC path is not correct error:", err.Error())
@@ -40,13 +72,20 @@ func (indexer *Indexer) Index() {
 	}
 	log.Println("IPC path is correct, latestBlock=" + latestBlock.String())
 	batches := indexer.getBatches(latestBlock)
-	wg := sync.WaitGroup{}
-	wg.Add(len(batches) + 1)
+	mainWG := sync.WaitGroup{}
+	if hasWatcher {
+		mainWG.Add(2)
+	} else {
+		mainWG.Add(1)
+	}
+
+	batchWG := sync.WaitGroup{}
+	batchWG.Add(len(batches))
 	// index batches
 	for _, bt := range batches {
 		_bt := bt
 		go func() {
-			defer wg.Done()
+			defer batchWG.Done()
 			current := ""
 			if _bt.Current != nil {
 				current = _bt.Current.String()
@@ -56,11 +95,22 @@ func (indexer *Indexer) Index() {
 	}
 	// index realtime
 	go func() {
-		defer wg.Done()
+		defer mainWG.Done()
 		indexer.realtimeIndex(fetcher)
+		log.Println("Realtime index is done")
 	}()
 
-	wg.Wait()
+	batchWG.Wait()
+	log.Println("All batches are done")
+	// All batches are done, start the watcher if needed
+	if hasWatcher {
+		go func() {
+			defer mainWG.Done()
+			indexer.watcher.Watch()
+		}()
+	}
+
+	mainWG.Wait()
 }
 
 func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
@@ -81,7 +131,7 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 		allBatches := indexer.BatchRepo.GetAllBatchStatuses()
 		found := false
 		for _, batch := range allBatches {
-			if batch.To.Cmp(batch.Current) > 0 {
+			if !batch.IsDone() {
 				if lastBlockNum != nil && lastBlockNum.Cmp(batch.From) == 0 {
 					batch.To = latestBlock
 					indexer.BatchRepo.ReplaceBatch(batch.From, latestBlock)
@@ -101,11 +151,14 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 
 // RealtimeIndex newHead subscribe
 func (indexer *Indexer) realtimeIndex(fetcher fetcher.Fetch) {
-	indexerChannel := make(chan *types.BLockDetail)
-	// go indexer.Fetcher.RealtimeFetch(indexerChannel)
-	go fetcher.RealtimeFetch(indexerChannel)
+	indexer.bdChan = make(chan *types.BLockDetail)
+	go fetcher.RealtimeFetch(indexer.bdChan)
 	for {
-		blockDetail := <-indexerChannel
+		blockDetail, ok := <-indexer.bdChan
+		if !ok {
+			log.Println("Stopping realtimeIndex, ipc is switched?")
+			break
+		}
 		log.Printf("indexer: Received BlockDetail %v blockTime: %v\n", blockDetail.BlockNumber.String(), common.UnmarshallIntToTime(blockDetail.Time))
 		isBatch := false
 		indexer.processBlock(blockDetail, isBatch)

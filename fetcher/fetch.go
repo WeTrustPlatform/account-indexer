@@ -30,7 +30,8 @@ type Fetch interface {
 
 // ChainFetch the real implementation
 type ChainFetch struct {
-	Client EthClient
+	Client             EthClient
+	blockHeaderChannel chan *gethtypes.Header
 }
 
 // NewChainFetch new ChainFetch instance
@@ -46,24 +47,28 @@ func NewChainFetch() (*ChainFetch, error) {
 	return fetcher, err
 }
 
-// IpcUpdated implement IpcSubscriber interface
+// IpcUpdated implements IpcSubscriber interface
 func (cf *ChainFetch) IpcUpdated(ipcPath string) {
-	client, err := ethclient.Dial(ipcPath)
-	if err != nil {
-		log.Fatal("Not able to switch to ipc", ipcPath, err.Error())
+	// finish any ongoing go-routines of this fetcher
+	if cf.blockHeaderChannel != nil {
+		// This should finish the RealtimeFetch for loop
+		close(cf.blockHeaderChannel)
 	}
-	cf.Client = client
-	log.Println("Switched to new IPC", ipcPath)
 }
 
 // RealtimeFetch fetch data from blockchain
 func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 	ctx := context.Background()
-	blockHeaderChannel := make(chan *gethtypes.Header)
-	go cf.Client.SubscribeNewHead(ctx, blockHeaderChannel)
+	cf.blockHeaderChannel = make(chan *gethtypes.Header)
+	go cf.Client.SubscribeNewHead(ctx, cf.blockHeaderChannel)
 	log.Println("RealtimeFetch Waiting for new block hearders...")
 	for {
-		receivedHeader := <-blockHeaderChannel
+		receivedHeader, ok := <-cf.blockHeaderChannel
+		if !ok {
+			// switch ipc
+			log.Println("Stopping SubscribeNewHead, ipc is switched?")
+			break
+		}
 		blockNumber := receivedHeader.Number
 		// log.Println("RealtimeFetch received block number " + blockNumber.String())
 		blockDetail, err := cf.FetchABlock(blockNumber)

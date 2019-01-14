@@ -108,6 +108,14 @@ func (mr MockRepo) Get(address string) []types.AddressIndex {
 	return nil
 }
 
+type MockWatcher struct {
+	watched bool
+}
+
+func (mw MockWatcher) Watch() {
+	mw.watched = true
+}
+
 // TODO: fix me
 // func TestIndex(t *testing.T) {
 // 	mockRepo := MockRepo{}
@@ -127,8 +135,8 @@ func (mr MockRepo) Get(address string) []types.AddressIndex {
 
 func TestCreateIndexData(t *testing.T) {
 
-	indexer := Indexer{}
-	addressIndex, blockIndex := indexer.CreateIndexData(&blockDetail)
+	idx := Indexer{}
+	addressIndex, blockIndex := idx.CreateIndexData(&blockDetail)
 	assert.Equal(t, len(expectedIndexes), len(addressIndex))
 	for i, index := range addressIndex {
 		assert.True(t, reflect.DeepEqual(index, expectedIndexes[i]))
@@ -162,7 +170,7 @@ func TestGetBatches(t *testing.T) {
 	batchDAO := dao.NewMemDbDAO(batchDB)
 	indexRepo := repository.NewKVIndexRepo(nil, blockDAO)
 	batchRepo := repository.NewKVBatchRepo(batchDAO)
-	indexer := Indexer{IpcPath: "", IndexRepo: indexRepo, BatchRepo: batchRepo}
+	idx := NewIndexer(indexRepo, batchRepo, nil)
 	// init data
 	batch1 := types.BatchStatus{
 		From:      big.NewInt(0),
@@ -190,7 +198,7 @@ func TestGetBatches(t *testing.T) {
 	indexRepo.SaveBlockIndex(&blockIndex)
 	// Test: should add a new batch from latest block in DB to latest block in blockchain
 	latestBlock := big.NewInt(900)
-	batches := indexer.getBatches(latestBlock)
+	batches := idx.getBatches(latestBlock)
 	assert.Equal(t, 3, len(batches), "Should add 1 batch")
 	newBatch := batches[2]
 	assert.Equal(t, big.NewInt(800), newBatch.From, "NewBatch From should be correct")
@@ -204,10 +212,14 @@ func TestGetBatches(t *testing.T) {
 
 	// Test: should not add a new batch, reuse the last batch with updated "To"
 	latestBlock = big.NewInt(1000)
-	batches = indexer.getBatches(latestBlock)
+	batches = idx.getBatches(latestBlock)
 	assert.Equal(t, 3, len(batches), "Should not add 1 batch")
 	newBatch = batches[2]
 	assert.Equal(t, big.NewInt(800), newBatch.From, "NewBatch From should be correct")
 	assert.Equal(t, latestBlock, newBatch.To, "NewBatch To should be correct")
 	assert.Equal(t, current, newBatch.Current, "NewBatch Current should be correct")
+}
+
+func TestWatchAfterBatch(t *testing.T) {
+	// TODO
 }

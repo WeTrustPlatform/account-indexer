@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
@@ -29,13 +30,13 @@ var (
 
 	ipcFlag = cli.StringFlag{
 		Name:  "ipc",
-		Usage: "ipc file path",
-		Value: usr.HomeDir + "/working_dir/geth_private_network_data_dir/geth.ipc",
+		Usage: "ipc file paths separated by ','",
+		Value: usr.HomeDir + "/datadrive/geth.ipc",
 	}
 	dbFlag = cli.StringFlag{
 		Name:  "db",
 		Usage: "leveldb file path",
-		Value: usr.HomeDir + "/working_dir/geth_indexer_leveldb",
+		Value: usr.HomeDir + "/account-indexer-db/geth_indexer_leveldb",
 	}
 	cleanIntervalFlag = cli.IntFlag{
 		Name:  "bci",
@@ -78,7 +79,8 @@ func index(ctx *cli.Context) {
 	config.BlockTTL = time.Duration(blockTTL) * time.Hour
 	log.Printf("%v ipcPath=%s \n dbPath=%s\n CleanInterval=%v\n BlockTimeToLive=%v\n",
 		time.Now(), ipcPath, dbPath, config.CleanInterval, config.BlockTTL)
-	service.GetIpcManager().ChangeIPC(ipcPath)
+	ipcs := strings.Split(ipcPath, ",")
+	service.GetIpcManager().SetIPC(ipcs)
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)
 	if err != nil {
 		log.Fatal("Can't connect to Address LevelDB", err)
@@ -96,11 +98,8 @@ func index(ctx *cli.Context) {
 	defer batchDB.Close()
 	indexRepo := repository.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB))
 	batchRepo := repository.NewKVBatchRepo(dao.NewLevelDbDAO(batchDB))
-	indexer := indexer.Indexer{
-		IndexRepo: indexRepo,
-		BatchRepo: batchRepo,
-	}
-	go indexer.Index()
+	idx := indexer.NewIndexer(indexRepo, batchRepo, nil)
+	go idx.IndexWithWatcher()
 	cleaner := watcher.NewCleaner(indexRepo)
 	go cleaner.CleanBlockDB()
 	server := http.NewServer(indexRepo, batchRepo)
