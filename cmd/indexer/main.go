@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/repository/dao"
 
 	"github.com/WeTrustPlatform/account-indexer/http"
@@ -35,10 +36,22 @@ var (
 		Usage: "leveldb file path",
 		Value: usr.HomeDir + "/working_dir/geth_indexer_leveldb",
 	}
+	cleanIntervalFlag = cli.IntFlag{
+		Name:  "bci",
+		Usage: "block clean interval (int) in minute",
+		Value: common.DefaultCleanInterval,
+	}
+	blockTimeToLiveFlag = cli.IntFlag{
+		Name:  "bttl",
+		Usage: "block time to live (int) in hour",
+		Value: common.DefaultBlockTTL,
+	}
 
 	indexerFlags = []cli.Flag{
 		ipcFlag,
 		dbFlag,
+		cleanIntervalFlag,
+		blockTimeToLiveFlag,
 	}
 )
 
@@ -57,20 +70,26 @@ func newApp() *cli.App {
 func index(ctx *cli.Context) {
 	ipcPath := ctx.GlobalString(ipcFlag.Name)
 	dbPath := ctx.GlobalString(dbFlag.Name)
-	log.Println(fmt.Sprintf("%v ipcPath=%s \n dbPath=%s\n", time.Now(), ipcPath, dbPath))
+	clearInterval := ctx.GlobalInt(cleanIntervalFlag.Name)
+	blockTTL := ctx.GlobalInt(blockTimeToLiveFlag.Name)
+	config := common.GetConfig()
+	config.CleanInterval = time.Duration(clearInterval) * time.Minute
+	config.BlockTTL = time.Duration(blockTTL) * time.Hour
+	log.Printf("%v ipcPath=%s \n dbPath=%s\n CleanInterval=%v\n BlockTimeToLive=%v\n",
+		time.Now(), ipcPath, dbPath, config.CleanInterval, config.BlockTTL)
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)
 	if err != nil {
-		log.Fatal("Can't connect to LevelDB", err)
+		log.Fatal("Can't connect to Address LevelDB", err)
 	}
 	defer addressDB.Close()
 	blockDB, err := leveldb.OpenFile(dbPath+"_block", nil)
 	if err != nil {
-		log.Fatal("Can't connect to LevelDB", err)
+		log.Fatal("Can't connect to Block LevelDB", err)
 	}
 	defer blockDB.Close()
 	batchDB, err := leveldb.OpenFile(dbPath+"_batch", nil)
 	if err != nil {
-		log.Fatal("Can't connect to LevelDB", err)
+		log.Fatal("Can't connect to Batch LevelDB", err)
 	}
 	defer batchDB.Close()
 	indexRepo := repository.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB))

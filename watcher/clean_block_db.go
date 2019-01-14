@@ -22,7 +22,7 @@ func NewCleaner(repo repository.IndexRepo) Cleaner {
 // CleanBlockDB clean block db regularly
 func (c Cleaner) CleanBlockDB() {
 	// Clean every 5 minute -> 5*60/15 ~ 20 blocks
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(common.GetConfig().CleanInterval)
 	for t := range ticker.C {
 		log.Println("Cleaner: Clean Block DB at", t)
 		c.cleanBlockDB()
@@ -36,7 +36,7 @@ func (c Cleaner) cleanBlockDB() {
 		return
 	}
 	lastUpdated := common.UnmarshallIntToTime(lastBlock.CreatedAt)
-	untilTime := lastUpdated.Add(-4 * time.Hour)
+	untilTime := lastUpdated.Add(-common.GetConfig().BlockTTL)
 	total, err := c.repo.DeleteOldBlocks(big.NewInt(untilTime.Unix()))
 	if err != nil {
 		log.Println("Cleander: Deleting old blocks have error", err.Error())
