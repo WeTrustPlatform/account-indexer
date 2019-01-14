@@ -15,11 +15,15 @@ import (
 )
 
 const (
-	DEFAULT_ROWS    = 10
-	ADMIN_USER_NAME = "userName"
-	ADMIN_PASSWORD  = "password"
+	// DefaultRows Default row for paging
+	DefaultRows = 10
+	// AdminUserName Username for http admin api
+	AdminUserName = "INDEXER_USER_NAME"
+	// AdminPassword Password for http admin api
+	AdminPassword = "INDEXER_PASSWORD"
 )
 
+// HttpServer http server
 type HttpServer struct {
 	indexRepo repository.IndexRepo
 	batchRepo repository.BatchRepo
@@ -39,7 +43,7 @@ func (server HttpServer) Start() {
 	}
 
 	admin := router.Group("/admin", gin.BasicAuth(gin.Accounts{
-		os.Getenv(ADMIN_USER_NAME): os.Getenv(ADMIN_PASSWORD),
+		os.Getenv(AdminUserName): os.Getenv(AdminPassword),
 	}))
 	{
 		admin.GET("/batch/status", server.getBatchStatus)
@@ -131,7 +135,7 @@ func getPagingQueryParams(c *gin.Context) (int, int) {
 	startStr := c.Query("start")
 	rows, err := strconv.Atoi(rowsStr)
 	if err != nil {
-		rows = DEFAULT_ROWS
+		rows = DefaultRows
 	}
 	start, err := strconv.Atoi(startStr)
 	if err != nil {
