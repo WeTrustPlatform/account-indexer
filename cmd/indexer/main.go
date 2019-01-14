@@ -7,6 +7,7 @@ import (
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/repository/dao"
+	"github.com/WeTrustPlatform/account-indexer/service"
 
 	"github.com/WeTrustPlatform/account-indexer/http"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
@@ -77,6 +78,7 @@ func index(ctx *cli.Context) {
 	config.BlockTTL = time.Duration(blockTTL) * time.Hour
 	log.Printf("%v ipcPath=%s \n dbPath=%s\n CleanInterval=%v\n BlockTimeToLive=%v\n",
 		time.Now(), ipcPath, dbPath, config.CleanInterval, config.BlockTTL)
+	service.GetIpcManager().ChangeIPC(ipcPath)
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)
 	if err != nil {
 		log.Fatal("Can't connect to Address LevelDB", err)
@@ -95,7 +97,6 @@ func index(ctx *cli.Context) {
 	indexRepo := repository.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB))
 	batchRepo := repository.NewKVBatchRepo(dao.NewLevelDbDAO(batchDB))
 	indexer := indexer.Indexer{
-		IpcPath:   ipcPath,
 		IndexRepo: indexRepo,
 		BatchRepo: batchRepo,
 	}

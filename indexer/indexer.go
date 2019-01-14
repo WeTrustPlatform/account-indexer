@@ -15,8 +15,6 @@ import (
 
 // Indexer fetch data from blockchain and store in a repository
 type Indexer struct {
-	// Fetcher Fetch
-	IpcPath   string
 	IndexRepo repository.IndexRepo
 	BatchRepo repository.BatchRepo
 }
@@ -31,7 +29,7 @@ type Range struct {
 
 // Index Entry point
 func (indexer *Indexer) Index() {
-	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
+	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
 		log.Fatal("IPC path is not correct error:", err.Error())
 	}
@@ -127,7 +125,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 		from = batch.From
 	}
 	to := batch.To
-	fetcher, err := fetcher.NewChainFetch(indexer.IpcPath)
+	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
 		log.Fatal("Can't connect to IPC server", err)
 		return

@@ -11,12 +11,6 @@ type configuration struct {
 	BlockTTL      time.Duration
 }
 
-// In minute
-const DefaultCleanInterval = 5
-
-// In hour
-const DefaultBlockTTL = 4
-
 var config *configuration
 var once sync.Once
 

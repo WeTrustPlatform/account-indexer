@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/service"
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -33,9 +34,26 @@ type ChainFetch struct {
 }
 
 // NewChainFetch new ChainFetch instance
-func NewChainFetch(ipcPath string) (*ChainFetch, error) {
+func NewChainFetch() (*ChainFetch, error) {
+	ipcPath := service.GetIpcManager().GetIPC()
 	client, err := ethclient.Dial(ipcPath)
-	return &ChainFetch{Client: client}, err
+	fetcher := &ChainFetch{Client: client}
+	if err != nil {
+		var sub service.IpcSubscriber
+		sub = fetcher
+		service.GetIpcManager().Subscribe(&sub)
+	}
+	return fetcher, err
+}
+
+// IpcUpdated implement IpcSubscriber interface
+func (cf *ChainFetch) IpcUpdated(ipcPath string) {
+	client, err := ethclient.Dial(ipcPath)
+	if err != nil {
+		log.Fatal("Not able to switch to ipc", ipcPath, err.Error())
+	}
+	cf.Client = client
+	log.Println("Switched to new IPC", ipcPath)
 }
 
 // RealtimeFetch fetch data from blockchain
