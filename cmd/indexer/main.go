@@ -66,7 +66,7 @@ var (
 
 	batchFlag = cli.IntFlag{
 		Name:  "b",
-		Usage: "initial number of batch",
+		Usage: "initial number of batch (1-127)",
 		Value: common.DefaultNumBatch,
 	}
 
@@ -106,8 +106,9 @@ func setConfig(ctx *cli.Context) {
 
 	config.Port = ctx.GlobalInt(portFlag.Name)
 	config.NumBatch = ctx.GlobalInt(batchFlag.Name)
-	if config.NumBatch < 1 || config.NumBatch > 16 {
-		log.Fatal("Number of batch should be 1 to 16")
+	// byte range
+	if config.NumBatch < 1 || config.NumBatch > 127 {
+		log.Fatal("Number of batch should be 1 to 127")
 	}
 	log.Printf("configuration: %v \n", common.GetConfig())
 }
