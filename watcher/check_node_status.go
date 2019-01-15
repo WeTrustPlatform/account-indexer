@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/WeTrustPlatform/account-indexer/service"
 )
@@ -41,16 +42,21 @@ func (n NodeStatusWatcher) watch() {
 		log.Println("Watcher warning: error=", err.Error())
 		return
 	}
+	if shouldChangeIPC(lastBlock) {
+		// TODO: update event database
+		service.GetIpcManager().ChangeIPC()
+	}
+}
+
+func shouldChangeIPC(lastBlock types.BlockIndex) bool {
 	createdAt := common.UnmarshallIntToTime(lastBlock.CreatedAt)
 	blockTime := common.UnmarshallIntToTime(lastBlock.Time)
 	// 20 minutes -> 80 blocks
-	// TODO: remove hard-coded
 	createdAtDelay := time.Since(createdAt)
 	blockDelay := createdAt.Sub(blockTime)
 	if createdAtDelay > common.GetConfig().OOSThreshold || blockDelay > common.GetConfig().OOSThreshold {
-		// TODO: unit test
-		// TODO: update event database
 		log.Printf("Geth node is out of date, createdAtDelay=%v, blockDelay=%v \n", createdAtDelay, blockDelay)
-		service.GetIpcManager().ChangeIPC()
+		return true
 	}
+	return false
 }
