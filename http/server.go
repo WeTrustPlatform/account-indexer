@@ -51,6 +51,7 @@ func (server HttpServer) Start() {
 		// admin.POST("/batch/restart", server.restartBatch)
 		admin.GET("/block/:blockNumber", server.getBlock)
 		admin.GET("/block", server.getBlock)
+		admin.GET("/config", server.getConfig)
 	}
 	// Start and run the server
 	err := router.Run(fmt.Sprintf(":%v", common.GetConfig().Port))
@@ -111,6 +112,10 @@ func (server HttpServer) getBlock(c *gin.Context) {
 	}
 	log.Printf("Number of found blocks : %v \n", len(blocks))
 	c.JSON(http.StatusOK, response)
+}
+
+func (server HttpServer) getConfig(c *gin.Context) {
+	c.JSON(http.StatusOK, common.GetConfig().String())
 }
 
 func (server HttpServer) getBatchStatus(c *gin.Context) {

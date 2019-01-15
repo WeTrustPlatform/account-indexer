@@ -39,7 +39,7 @@ func (c Cleaner) cleanBlockDB() {
 	untilTime := lastUpdated.Add(-common.GetConfig().BlockTTL)
 	total, err := c.repo.DeleteOldBlocks(big.NewInt(untilTime.Unix()))
 	if err != nil {
-		log.Println("Cleander: Deleting old blocks have error", err.Error())
+		log.Println("Cleaner: Deleting old blocks have error", err.Error())
 	}
-	log.Printf("Cleander: deleted %v blocks before %v \n", total, untilTime)
+	log.Printf("Cleaner: deleted %v blocks before %v \n", total, untilTime)
 }

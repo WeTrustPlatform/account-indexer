@@ -36,7 +36,7 @@ var (
 	dbFlag = cli.StringFlag{
 		Name:  "db",
 		Usage: "leveldb file path",
-		Value: "datadrive/account-indexer-db/geth_indexer_leveldb",
+		Value: "/datadrive/account-indexer-db/geth_indexer_leveldb",
 	}
 	cleanIntervalFlag = cli.IntFlag{
 		Name:  "bci",
@@ -47,6 +47,16 @@ var (
 		Name:  "bttl",
 		Usage: "block time to live (int) in hour",
 		Value: common.DefaultBlockTTL,
+	}
+	watcherIntervalFlag = cli.IntFlag{
+		Name:  "w",
+		Usage: "watcher interval (int) in minute",
+		Value: common.DefaultWatcherInterval,
+	}
+	oosThresholdFlag = cli.IntFlag{
+		Name:  "oos",
+		Usage: "threshold (in minute) to consider a node as out of sync",
+		Value: common.DefaultOOSThreshold,
 	}
 	portFlag = cli.IntFlag{
 		Name:  "p",
@@ -65,6 +75,8 @@ var (
 		dbFlag,
 		cleanIntervalFlag,
 		blockTimeToLiveFlag,
+		watcherIntervalFlag,
+		oosThresholdFlag,
 		portFlag,
 		batchFlag,
 	}
@@ -81,22 +93,30 @@ func newApp() *cli.App {
 	return app
 }
 
-// Entry point
-func index(ctx *cli.Context) {
-	ipcPath := ctx.GlobalString(ipcFlag.Name)
-	dbPath := ctx.GlobalString(dbFlag.Name)
+func setConfig(ctx *cli.Context) {
 	clearInterval := ctx.GlobalInt(cleanIntervalFlag.Name)
 	blockTTL := ctx.GlobalInt(blockTimeToLiveFlag.Name)
+	watcherInterval := ctx.GlobalInt(watcherIntervalFlag.Name)
+	oosThreshold := ctx.GlobalInt(oosThresholdFlag.Name)
 	config := common.GetConfig()
 	config.CleanInterval = time.Duration(clearInterval) * time.Minute
 	config.BlockTTL = time.Duration(blockTTL) * time.Hour
+	config.WatcherInterval = time.Duration(watcherInterval) * time.Minute
+	config.OOSThreshold = time.Duration(oosThreshold) * time.Minute
+
 	config.Port = ctx.GlobalInt(portFlag.Name)
 	config.NumBatch = ctx.GlobalInt(batchFlag.Name)
 	if config.NumBatch < 1 || config.NumBatch > 16 {
 		log.Fatal("Number of batch should be 1 to 16")
 	}
-	log.Printf("%v ipcPath=%s \n dbPath=%s\n CleanInterval=%v\n BlockTimeToLive=%v Port=%v NumBatch=%v \n",
-		time.Now(), ipcPath, dbPath, config.CleanInterval, config.BlockTTL, config.Port, config.NumBatch)
+	log.Printf("configuration: %v \n", common.GetConfig())
+}
+
+// Entry point
+func index(ctx *cli.Context) {
+	setConfig(ctx)
+	ipcPath := ctx.GlobalString(ipcFlag.Name)
+	dbPath := ctx.GlobalString(dbFlag.Name)
 	ipcs := strings.Split(ipcPath, ",")
 	service.GetIpcManager().SetIPC(ipcs)
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)

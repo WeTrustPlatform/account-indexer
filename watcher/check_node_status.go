@@ -28,7 +28,7 @@ func NewNodeStatusWatcher(indexRepo repository.IndexRepo, batchRepo repository.B
 // Watch entry point of this struct
 func (n NodeStatusWatcher) Watch() {
 	// Watcher every 5 minute -> 5*60/15 ~ 20 blocks
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(common.GetConfig().WatcherInterval)
 	for t := range ticker.C {
 		log.Println("Watcher: Watch geth node status at", t)
 		n.watch()
@@ -47,7 +47,7 @@ func (n NodeStatusWatcher) watch() {
 	// TODO: remove hard-coded
 	createdAtDelay := time.Since(createdAt)
 	blockDelay := createdAt.Sub(blockTime)
-	if createdAtDelay > 20*time.Minute || blockDelay > 20*time.Minute {
+	if createdAtDelay > common.GetConfig().OOSThreshold || blockDelay > common.GetConfig().OOSThreshold {
 		// TODO: unit test
 		// TODO: update event database
 		log.Printf("Geth node is out of date, createdAtDelay=%v, blockDelay=%v \n", createdAtDelay, blockDelay)

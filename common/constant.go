@@ -8,6 +8,10 @@ const (
 	DefaultCleanInterval = 5
 	// DefaultBlockTTL In hour
 	DefaultBlockTTL = 4
+	// DefaultWatcherInterval in minute
+	DefaultWatcherInterval = 5
+	// DefaultOOSThreshold in minute
+	DefaultOOSThreshold = 10
 	// DefaultHTTPPort default http port
 	DefaultHTTPPort = 8645
 	// DefaultNumBatch default number of init batch
