@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"log"
 	"math/big"
-	"strings"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
@@ -184,18 +183,18 @@ func (bm ByteMarshaller) UnmarshallBatchValue(value []byte) types.BatchStatus {
 }
 
 // MarshallBatchKey marshall key of batch status database
-func (bm ByteMarshaller) MarshallBatchKey(from *big.Int, to *big.Int, createdAt *big.Int) []byte {
+func (bm ByteMarshaller) MarshallBatchKey(from *big.Int, to *big.Int, step byte, createdAt *big.Int) []byte {
 	fromStr := blockNumberWidPad(from.String())
 	toStr := blockNumberWidPad(to.String())
 	var buffer bytes.Buffer
 	buffer.WriteString(fromStr)
-	buffer.WriteString("_")
 	buffer.WriteString(toStr)
-	buffer.WriteString("_")
+	buffer.WriteByte(step)
 	buffer.WriteString(createdAt.String())
 	return buffer.Bytes()
 }
 
+// MarshallBatchKeyFrom marshall From in batch DB
 func (bm ByteMarshaller) MarshallBatchKeyFrom(from *big.Int) []byte {
 	fromStr := blockNumberWidPad(from.String())
 	return []byte(fromStr)
@@ -203,25 +202,31 @@ func (bm ByteMarshaller) MarshallBatchKeyFrom(from *big.Int) []byte {
 
 // UnmarshallBatchKey unmarshall key of batch status database
 func (bm ByteMarshaller) UnmarshallBatchKey(key []byte) types.BatchStatus {
-	keyStr := string(key)
-	keyArr := strings.Split(keyStr, "_")
 	// TODO: handle error
-	fromStr := keyArr[0]
-	toStr := keyArr[1]
-	createdAtStr := keyArr[2]
+	nextIndex := BLOCK_NUMBER_MARSHALL_LENGTH
+	fromStr := string(key[:nextIndex])
+	prevIndex := nextIndex
+	nextIndex += BLOCK_NUMBER_MARSHALL_LENGTH
+	toStr := string(key[prevIndex:nextIndex])
+	prevIndex = nextIndex
+	nextIndex++
+	step := key[prevIndex]
+	createdAtStr := string(key[nextIndex:])
 	from := new(big.Int)
 	from.SetString(fromStr, 10)
 	to := new(big.Int)
 	to.SetString(toStr, 10)
 	createdAt := new(big.Int)
 	createdAt.SetString(createdAtStr, 10)
-	return types.BatchStatus{From: from, To: to, CreatedAt: createdAt}
+	return types.BatchStatus{From: from, To: to, Step: step, CreatedAt: createdAt}
 }
 
+// MarshallBlockKey marshall key of block DB
 func (bm ByteMarshaller) MarshallBlockKey(blockNumber string) []byte {
 	return []byte(blockNumber)
 }
 
+// UnmarshallBlockKey unmarshall key of block DB
 func (bm ByteMarshaller) UnmarshallBlockKey(key []byte) *big.Int {
 	blockNumber := string(key)
 	result := new(big.Int)

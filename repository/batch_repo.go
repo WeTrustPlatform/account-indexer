@@ -49,8 +49,9 @@ func (repo *KVBatchRepo) keyValueToBatchStatus(keyValue dao.KeyValue) types.Batc
 	batch := types.BatchStatus{
 		From:      batch1.From,
 		To:        batch1.To,
-		UpdatedAt: batch2.UpdatedAt,
+		Step:      batch1.Step,
 		CreatedAt: batch1.CreatedAt,
+		UpdatedAt: batch2.UpdatedAt,
 		Current:   batch2.Current,
 	}
 	return batch
@@ -58,10 +59,10 @@ func (repo *KVBatchRepo) keyValueToBatchStatus(keyValue dao.KeyValue) types.Batc
 
 // UpdateBatch update a batch
 func (repo *KVBatchRepo) UpdateBatch(batch types.BatchStatus) error {
-	if batch.From == nil || batch.To == nil || batch.CreatedAt == nil {
+	if batch.From == nil || batch.To == nil || batch.Step <= 0 || batch.CreatedAt == nil {
 		return errors.New("Batch is not valid, value:" + batch.String())
 	}
-	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.CreatedAt)
+	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.Step, batch.CreatedAt)
 	value := repo.marshaller.MarshallBatchValue(batch.UpdatedAt, batch.Current)
 	return repo.batchDAO.Put(dao.NewKeyValue(key, value))
 }
@@ -82,7 +83,7 @@ func (repo *KVBatchRepo) ReplaceBatch(from *big.Int, newTo *big.Int) error {
 }
 
 func (repo *KVBatchRepo) replaceBatch(batch types.BatchStatus, newTo *big.Int) error {
-	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.CreatedAt)
+	key := repo.marshaller.MarshallBatchKey(batch.From, batch.To, batch.Step, batch.CreatedAt)
 	repo.batchDAO.DeleteByKey(key)
 	batch.To = newTo
 	return repo.UpdateBatch(batch)

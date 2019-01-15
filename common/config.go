@@ -10,6 +10,7 @@ type configuration struct {
 	CleanInterval time.Duration
 	BlockTTL      time.Duration
 	Port          int
+	NumBatch      int
 }
 
 var config *configuration

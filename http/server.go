@@ -124,6 +124,7 @@ func (server HttpServer) getBatchStatus(c *gin.Context) {
 		eiBatch := types.EIBatchStatus{
 			From:      batch.From,
 			To:        batch.To,
+			Step:      batch.Step,
 			Current:   current,
 			CreatedAt: common.UnmarshallIntToTime(batch.CreatedAt),
 			UpdatedAt: common.UnmarshallIntToTime(batch.UpdatedAt),

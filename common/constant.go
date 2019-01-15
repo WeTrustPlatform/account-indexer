@@ -10,4 +10,6 @@ const (
 	DefaultBlockTTL = 4
 	// DefaultHTTPPort default http port
 	DefaultHTTPPort = 8645
+	// DefaultNumBatch default number of init batch
+	DefaultNumBatch = 8
 )

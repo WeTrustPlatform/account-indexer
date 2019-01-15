@@ -83,11 +83,13 @@ func TestMarshallBatchKey(t *testing.T) {
 	bm := ByteMarshaller{}
 	from := big.NewInt(2)
 	to := big.NewInt(100000)
+	step := byte(3)
 	createdAt := big.NewInt(time.Now().Unix())
-	key := bm.MarshallBatchKey(from, to, createdAt)
+	key := bm.MarshallBatchKey(from, to, step, createdAt)
 	batchStatus := bm.UnmarshallBatchKey(key)
 	assert.Equal(t, *from, *batchStatus.From)
 	assert.Equal(t, *to, *batchStatus.To)
+	assert.Equal(t, byte(3), batchStatus.Step)
 	assert.Equal(t, *createdAt, *batchStatus.CreatedAt)
 }
 

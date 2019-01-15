@@ -25,6 +25,7 @@ type EIBlocks struct {
 type EIBatchStatus struct {
 	From      *big.Int  `json:"from"`
 	To        *big.Int  `json:"to"`
+	Step      byte      `json:"Step"`
 	Current   string    `json:"current"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`

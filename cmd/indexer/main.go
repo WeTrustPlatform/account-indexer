@@ -31,12 +31,12 @@ var (
 	ipcFlag = cli.StringFlag{
 		Name:  "ipc",
 		Usage: "ipc file paths separated by ','",
-		Value: usr.HomeDir + "/datadrive/geth.ipc",
+		Value: "/datadrive/geth.ipc",
 	}
 	dbFlag = cli.StringFlag{
 		Name:  "db",
 		Usage: "leveldb file path",
-		Value: usr.HomeDir + "/account-indexer-db/geth_indexer_leveldb",
+		Value: "datadrive/account-indexer-db/geth_indexer_leveldb",
 	}
 	cleanIntervalFlag = cli.IntFlag{
 		Name:  "bci",
@@ -54,12 +54,19 @@ var (
 		Value: common.DefaultHTTPPort,
 	}
 
+	batchFlag = cli.IntFlag{
+		Name:  "b",
+		Usage: "initial number of batch",
+		Value: common.DefaultNumBatch,
+	}
+
 	indexerFlags = []cli.Flag{
 		ipcFlag,
 		dbFlag,
 		cleanIntervalFlag,
 		blockTimeToLiveFlag,
 		portFlag,
+		batchFlag,
 	}
 )
 
@@ -84,8 +91,12 @@ func index(ctx *cli.Context) {
 	config.CleanInterval = time.Duration(clearInterval) * time.Minute
 	config.BlockTTL = time.Duration(blockTTL) * time.Hour
 	config.Port = ctx.GlobalInt(portFlag.Name)
-	log.Printf("%v ipcPath=%s \n dbPath=%s\n CleanInterval=%v\n BlockTimeToLive=%v Port=%v\n",
-		time.Now(), ipcPath, dbPath, config.CleanInterval, config.BlockTTL, config.Port)
+	config.NumBatch = ctx.GlobalInt(batchFlag.Name)
+	if config.NumBatch < 1 || config.NumBatch > 16 {
+		log.Fatal("Number of batch should be 1 to 16")
+	}
+	log.Printf("%v ipcPath=%s \n dbPath=%s\n CleanInterval=%v\n BlockTimeToLive=%v Port=%v NumBatch=%v \n",
+		time.Now(), ipcPath, dbPath, config.CleanInterval, config.BlockTTL, config.Port, config.NumBatch)
 	ipcs := strings.Split(ipcPath, ",")
 	service.GetIpcManager().SetIPC(ipcs)
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)

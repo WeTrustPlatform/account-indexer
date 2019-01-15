@@ -15,13 +15,13 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/watcher"
 )
 
-// Range from block - to block
-type Range struct {
-	// Inclusive
-	From *big.Int
-	// Exclusive
-	To *big.Int
-}
+// // Range from block - to block
+// type Range struct {
+// 	// Inclusive
+// 	From *big.Int
+// 	// Exclusive
+// 	To *big.Int
+// }
 
 // Indexer fetch data from blockchain and store in a repository
 type Indexer struct {
@@ -120,9 +120,7 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 	if len(allBatches) == 0 {
 		// Ethereum mainnet has genesis block as 0
 		genesisBlock := big.NewInt(0)
-		range1, range2 := DivideRange(Range{genesisBlock, latestBlock})
-		batches = append(batches, types.BatchStatus{From: range1.From, To: range1.To, CreatedAt: now},
-			types.BatchStatus{From: range2.From, To: range2.To, CreatedAt: now})
+		batches = GetInitBatches(common.GetConfig().NumBatch, genesisBlock, latestBlock)
 	} else {
 		// Get latest block in block database
 		lastBlock, _ := indexer.IndexRepo.GetLastBlock()
@@ -142,7 +140,7 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 			}
 		}
 		if lastBlockNum != nil && !found {
-			batch := types.BatchStatus{From: lastBlockNum, To: latestBlock, CreatedAt: now}
+			batch := types.BatchStatus{From: lastBlockNum, To: latestBlock, Step: byte(1), CreatedAt: now}
 			batches = append(batches, batch)
 		}
 	}
@@ -173,18 +171,13 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 		time.Sleep(time.Second)
 	}
 	start := time.Now()
-	from := batch.Current
-	if from == nil {
-		from = batch.From
-	}
-	to := batch.To
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
 		log.Fatal("Can't connect to IPC server", err)
 		return
 	}
-	blockNumber := new(big.Int)
-	for blockNumber.Set(from); blockNumber.Cmp(to) <= 0; blockNumber = blockNumber.Add(blockNumber, big.NewInt(int64(1))) {
+	for !batch.IsDone() {
+		blockNumber := batch.Next()
 		blockDetail, err := fetcher.FetchABlock(blockNumber)
 		if err != nil {
 			log.Fatal(tag + " indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
@@ -195,14 +188,8 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 		if err != nil {
 			log.Fatal(tag + " indexer: cannot process block " + blockNumber.String() + " , error is " + err.Error())
 		}
-		batchStatus := types.BatchStatus{
-			From:      batch.From,
-			To:        batch.To,
-			CreatedAt: batch.CreatedAt,
-			Current:   blockNumber,
-			UpdatedAt: big.NewInt(time.Now().Unix()),
-		}
-		err = indexer.BatchRepo.UpdateBatch(batchStatus)
+		batch.UpdatedAt = big.NewInt(time.Now().Unix())
+		err = indexer.BatchRepo.UpdateBatch(batch)
 		if err != nil {
 			log.Fatal(tag + " indexer: cannot update batch for process block " + blockNumber.String() + " , error is " + err.Error())
 		}
@@ -277,24 +264,20 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 	return addressIndex, blockIndex
 }
 
-// DivideRange performance states that having > 2 goroutines have same performance
-// so let's go with 2 goroutines
-// To and From are inclusive
-func DivideRange(parent Range) (Range, Range) {
-	minusFrom := new(big.Int)
-	minusFrom = minusFrom.Neg(parent.From)
-	distance := new(big.Int)
-	distance = distance.Add(parent.To, minusFrom)
-	distance = distance.Div(distance, big.NewInt(2))
-	middle := new(big.Int)
-	middle = middle.Add(parent.From, distance)
-	middlePlus1 := new(big.Int)
-	middlePlus1 = middlePlus1.Add(middle, big.NewInt(1))
-	to := new(big.Int)
-	to = to.Set(parent.To)
-	range1From := new(big.Int)
-	range1From = range1From.Set(parent.From)
-	range1 := Range{From: range1From, To: middle}
-	range2 := Range{From: middlePlus1, To: to}
-	return range1, range2
+// GetInitBatches create batch initially
+func GetInitBatches(numBatch int, genesisBlock *big.Int, latestBlock *big.Int) []types.BatchStatus {
+	result := []types.BatchStatus{}
+	now := big.NewInt(time.Now().Unix())
+	for i := 0; i < numBatch; i++ {
+		from := new(big.Int)
+		from = from.Add(genesisBlock, big.NewInt(int64(i)))
+		batch := types.BatchStatus{
+			From:      from,
+			To:        latestBlock,
+			CreatedAt: now,
+			Step:      byte(numBatch),
+		}
+		result = append(result, batch)
+	}
+	return result
 }

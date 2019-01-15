@@ -154,13 +154,18 @@ func TestCreateIndexData(t *testing.T) {
 	assert.Equal(t, uint8(2), blockIndexAddresses["to1"])
 }
 
-func TestDivideRange(t *testing.T) {
-	parentRange := Range{big.NewInt(2), big.NewInt(7)}
-	range1, range2 := DivideRange(parentRange)
-	assert.Equal(t, "2", range1.From.String())
-	assert.Equal(t, "4", range1.To.String())
-	assert.Equal(t, "5", range2.From.String())
-	assert.Equal(t, "7", range2.To.String())
+func TestGetInitBatches(t *testing.T) {
+	genesisBlock := big.NewInt(0)
+	latestBlock := big.NewInt(10)
+	numBatch := 3
+	batches := GetInitBatches(numBatch, genesisBlock, latestBlock)
+	assert.Equal(t, 3, len(batches))
+	assert.Equal(t, big.NewInt(0), batches[0].From)
+	assert.Equal(t, big.NewInt(1), batches[1].From)
+	assert.Equal(t, big.NewInt(2), batches[2].From)
+	assert.Equal(t, byte(3), batches[0].Step)
+	assert.Equal(t, byte(3), batches[1].Step)
+	assert.Equal(t, byte(3), batches[2].Step)
 }
 
 func TestGetBatches(t *testing.T) {
@@ -174,15 +179,17 @@ func TestGetBatches(t *testing.T) {
 	// init data
 	batch1 := types.BatchStatus{
 		From:      big.NewInt(0),
-		To:        big.NewInt(350),
+		To:        big.NewInt(700),
+		Step:      byte(2),
 		Current:   big.NewInt(200),
 		CreatedAt: big.NewInt(time.Now().Unix() - 1000),
 		UpdatedAt: big.NewInt(time.Now().Unix()),
 	}
 	batch2 := types.BatchStatus{
-		From:      big.NewInt(351),
+		From:      big.NewInt(1),
 		To:        big.NewInt(700),
-		Current:   big.NewInt(550),
+		Step:      byte(2),
+		Current:   big.NewInt(231),
 		CreatedAt: big.NewInt(time.Now().Unix() - 1000),
 		UpdatedAt: big.NewInt(time.Now().Unix()),
 	}
@@ -201,8 +208,9 @@ func TestGetBatches(t *testing.T) {
 	batches := idx.getBatches(latestBlock)
 	assert.Equal(t, 3, len(batches), "Should add 1 batch")
 	newBatch := batches[2]
-	assert.Equal(t, big.NewInt(800), newBatch.From, "NewBatch From should be correct")
-	assert.Equal(t, latestBlock, newBatch.To, "NewBatch To should be correct")
+	assert.Equal(t, big.NewInt(800), newBatch.From)
+	assert.Equal(t, latestBlock, newBatch.To)
+	assert.Equal(t, byte(1), newBatch.Step)
 
 	// Init data next, assuming batch stop at 850
 	current := big.NewInt(850)
