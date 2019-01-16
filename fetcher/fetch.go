@@ -39,7 +39,7 @@ func NewChainFetch() (*ChainFetch, error) {
 	ipcPath := service.GetIpcManager().GetIPC()
 	client, err := ethclient.Dial(ipcPath)
 	fetcher := &ChainFetch{Client: client}
-	if err != nil {
+	if err == nil {
 		var sub service.IpcSubscriber
 		sub = fetcher
 		service.GetIpcManager().Subscribe(&sub)
