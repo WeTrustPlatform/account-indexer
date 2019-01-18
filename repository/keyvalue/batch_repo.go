@@ -9,13 +9,6 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/marshal"
 )
 
-// BatchRepo repository for batch status
-type BatchRepo interface {
-	GetAllBatchStatuses() []types.BatchStatus
-	UpdateBatch(batch types.BatchStatus) error
-	ReplaceBatch(from *big.Int, newTo *big.Int) error
-}
-
 // KVBatchRepo implement BatchRepo
 type KVBatchRepo struct {
 	batchDAO   dao.KeyValueDAO

@@ -10,7 +10,7 @@ import (
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/http/types"
-	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
+	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gin-gonic/gin"
 )
@@ -26,12 +26,12 @@ const (
 
 // HttpServer http server
 type HttpServer struct {
-	indexRepo keyvalue.IndexRepo
-	batchRepo keyvalue.BatchRepo
+	indexRepo repository.IndexRepo
+	batchRepo repository.BatchRepo
 }
 
 // NewServer Rest API
-func NewServer(indexRepo keyvalue.IndexRepo, batchRepo keyvalue.BatchRepo) HttpServer {
+func NewServer(indexRepo repository.IndexRepo, batchRepo repository.BatchRepo) HttpServer {
 	return HttpServer{indexRepo: indexRepo, batchRepo: batchRepo}
 }
 

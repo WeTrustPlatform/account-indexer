@@ -11,16 +11,6 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-// IndexRepo to store index data
-type IndexRepo interface {
-	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error
-	GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex)
-	GetLastBlock() (types.BlockIndex, error)
-	GetFirstBlock() (types.BlockIndex, error)
-	DeleteOldBlocks(untilTime *big.Int) (int, error)
-	GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex)
-}
-
 // KVIndexRepo implementation of IndexRepo
 type KVIndexRepo struct {
 	addressDAO dao.KeyValueDAO

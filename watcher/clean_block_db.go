@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
-	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
+	"github.com/WeTrustPlatform/account-indexer/repository"
 )
 
 // Cleaner cleaner for account indexer
 type Cleaner struct {
-	repo keyvalue.IndexRepo
+	repo repository.IndexRepo
 }
 
 // NewCleaner create a cleaner instance
-func NewCleaner(repo keyvalue.IndexRepo) Cleaner {
+func NewCleaner(repo repository.IndexRepo) Cleaner {
 	return Cleaner{repo: repo}
 }
 
