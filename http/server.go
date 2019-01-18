@@ -40,17 +40,17 @@ func (server HttpServer) Start() {
 	router := gin.Default()
 	api := router.Group("/api")
 	{
-		api.GET("/account/:accountNumber", server.getTransactionsByAccount)
+		api.GET("v1/accounts/:accountNumber", server.getTransactionsByAccount)
 	}
 
 	admin := router.Group("/admin", gin.BasicAuth(gin.Accounts{
 		os.Getenv(AdminUserName): os.Getenv(AdminPassword),
 	}))
 	{
-		admin.GET("/batch/status", server.getBatchStatus)
+		admin.GET("/batches/status", server.getBatchStatus)
 		// admin.POST("/batch/restart", server.restartBatch)
-		admin.GET("/block/:blockNumber", server.getBlock)
-		admin.GET("/block", server.getBlock)
+		admin.GET("/blocks/:blockNumber", server.getBlock)
+		admin.GET("/blocks", server.getBlock)
 		admin.GET("/config", server.getConfig)
 	}
 	// Start and run the server
