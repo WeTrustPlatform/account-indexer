@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
-	"github.com/WeTrustPlatform/account-indexer/repository/dao"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 	"github.com/WeTrustPlatform/account-indexer/service"
 
 	"github.com/WeTrustPlatform/account-indexer/http"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
-	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
 	"github.com/WeTrustPlatform/account-indexer/watcher"
 	"github.com/ethereum/go-ethereum/console"
 	"github.com/ethereum/go-ethereum/params"
@@ -135,8 +135,8 @@ func index(ctx *cli.Context) {
 		log.Fatal("Can't connect to Batch LevelDB", err)
 	}
 	defer batchDB.Close()
-	indexRepo := repository.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB))
-	batchRepo := repository.NewKVBatchRepo(dao.NewLevelDbDAO(batchDB))
+	indexRepo := keyvalue.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB))
+	batchRepo := keyvalue.NewKVBatchRepo(dao.NewLevelDbDAO(batchDB))
 	idx := indexer.NewIndexer(indexRepo, batchRepo, nil)
 	go idx.IndexWithWatcher()
 	cleaner := watcher.NewCleaner(indexRepo)

@@ -1,4 +1,4 @@
-package repository
+package keyvalue
 
 import (
 	"errors"
@@ -6,8 +6,8 @@ import (
 	"math/big"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
-	"github.com/WeTrustPlatform/account-indexer/repository/dao"
-	"github.com/WeTrustPlatform/account-indexer/repository/marshal"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/marshal"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 

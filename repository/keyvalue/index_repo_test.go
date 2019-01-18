@@ -1,4 +1,4 @@
-package repository
+package keyvalue
 
 import (
 	"math/big"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
-	"github.com/WeTrustPlatform/account-indexer/repository/dao"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 	"github.com/syndtr/goleveldb/leveldb/comparer"
 	"github.com/syndtr/goleveldb/leveldb/memdb"
 )

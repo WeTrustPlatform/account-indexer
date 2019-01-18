@@ -10,29 +10,21 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
-	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
 	"github.com/WeTrustPlatform/account-indexer/service"
 	"github.com/WeTrustPlatform/account-indexer/watcher"
 )
 
-// // Range from block - to block
-// type Range struct {
-// 	// Inclusive
-// 	From *big.Int
-// 	// Exclusive
-// 	To *big.Int
-// }
-
 // Indexer fetch data from blockchain and store in a repository
 type Indexer struct {
-	IndexRepo repository.IndexRepo
-	BatchRepo repository.BatchRepo
+	IndexRepo keyvalue.IndexRepo
+	BatchRepo keyvalue.BatchRepo
 	bdChan    chan *types.BLockDetail
 	watcher   watcher.Watcher
 }
 
 // NewIndexer create an Indexer
-func NewIndexer(IndexRepo repository.IndexRepo, BatchRepo repository.BatchRepo, wa watcher.Watcher) Indexer {
+func NewIndexer(IndexRepo keyvalue.IndexRepo, BatchRepo keyvalue.BatchRepo, wa watcher.Watcher) Indexer {
 	result := Indexer{IndexRepo: IndexRepo, BatchRepo: BatchRepo, watcher: wa}
 	var sub service.IpcSubscriber
 	sub = &result

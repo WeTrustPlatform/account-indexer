@@ -6,7 +6,7 @@ import (
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
-	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
 	"github.com/WeTrustPlatform/account-indexer/service"
 )
 
@@ -17,12 +17,12 @@ type Watcher interface {
 
 // NodeStatusWatcher watch status of geth node
 type NodeStatusWatcher struct {
-	indexRepo repository.IndexRepo
-	batchRepo repository.BatchRepo
+	indexRepo keyvalue.IndexRepo
+	batchRepo keyvalue.BatchRepo
 }
 
 // NewNodeStatusWatcher create NodeStatusWatcher
-func NewNodeStatusWatcher(indexRepo repository.IndexRepo, batchRepo repository.BatchRepo) NodeStatusWatcher {
+func NewNodeStatusWatcher(indexRepo keyvalue.IndexRepo, batchRepo keyvalue.BatchRepo) NodeStatusWatcher {
 	return NodeStatusWatcher{indexRepo: indexRepo, batchRepo: batchRepo}
 }
 

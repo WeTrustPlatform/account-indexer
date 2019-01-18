@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
-	"github.com/WeTrustPlatform/account-indexer/repository/dao"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 	"github.com/syndtr/goleveldb/leveldb/comparer"
 	"github.com/syndtr/goleveldb/leveldb/memdb"
 )
@@ -173,8 +173,8 @@ func TestGetBatches(t *testing.T) {
 	blockDAO := dao.NewMemDbDAO(blockDB)
 	batchDB := memdb.New(comparer.DefaultComparer, 0)
 	batchDAO := dao.NewMemDbDAO(batchDB)
-	indexRepo := repository.NewKVIndexRepo(nil, blockDAO)
-	batchRepo := repository.NewKVBatchRepo(batchDAO)
+	indexRepo := keyvalue.NewKVIndexRepo(nil, blockDAO)
+	batchRepo := keyvalue.NewKVBatchRepo(batchDAO)
 	idx := NewIndexer(indexRepo, batchRepo, nil)
 	// init data
 	batch1 := types.BatchStatus{
