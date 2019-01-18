@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/fetcher"
 	"github.com/WeTrustPlatform/account-indexer/http/types"
 	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -28,11 +30,16 @@ const (
 type HttpServer struct {
 	indexRepo repository.IndexRepo
 	batchRepo repository.BatchRepo
+	fetcher   fetcher.Fetch
 }
 
 // NewServer Rest API
 func NewServer(indexRepo repository.IndexRepo, batchRepo repository.BatchRepo) HttpServer {
-	return HttpServer{indexRepo: indexRepo, batchRepo: batchRepo}
+	fetcher, err := fetcher.NewChainFetch()
+	if err != nil {
+		log.Fatal("IPC path is not correct error:", err.Error())
+	}
+	return HttpServer{indexRepo: indexRepo, batchRepo: batchRepo, fetcher: fetcher}
 }
 
 // Start start http server
@@ -69,34 +76,64 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 		c.JSON(400, gin.H{"msg": "invalid account " + account})
 		return
 	}
-	fromTimeStr := c.Query("fromTime")
+	fromTimeStr := c.Query("from")
 	var fromTime *big.Int
 	if len(fromTimeStr) > 0 {
 		fromTime, err = common.StrToUnixTimeInt(fromTimeStr)
 		if err != nil {
-			c.JSON(400, gin.H{"msg": "invalid fromTime " + fromTimeStr})
+			c.JSON(400, gin.H{"msg": "invalid from " + fromTimeStr})
 			return
 		}
 	}
 
-	toTimeStr := c.Query("toTime")
+	toTimeStr := c.Query("to")
 	var toTime *big.Int
 	if len(toTimeStr) > 0 {
 		toTime, err = common.StrToUnixTimeInt(toTimeStr)
 		if err != nil {
-			c.JSON(400, gin.H{"msg": "invalid toTime " + toTimeStr})
+			c.JSON(400, gin.H{"msg": "invalid to " + toTimeStr})
 			return
 		}
 	}
 
+	flParam := c.Query("fl")
+	addlFields := strings.Split(flParam, ",")
+	needTxData := common.Contains(addlFields, "data")
+	needGas := common.Contains(addlFields, "gas")
+	needGasPrice := common.Contains(addlFields, "gasPrice")
+
 	rows, start := getPagingQueryParams(c)
 	log.Printf("Getting transactions for account %v\n", account)
 	total, addressIndexes := server.indexRepo.GetTransactionByAddress(account, rows, start, fromTime, toTime)
+	addresses := []types.EIAddress{}
+	for _, idx := range addressIndexes {
+		addr := types.EIAddress{
+			AddressIndex: idx,
+		}
+		if needTxData || needGas || needGasPrice {
+			addlTxData, err := server.fetcher.TransactionByHash(addr.TxHash)
+			if err == nil {
+				if needTxData {
+					addr.Data = addlTxData.Data
+				}
+				if needGas {
+					addr.Gas = addlTxData.Gas
+				}
+				if needGasPrice {
+					addr.GasPrice = addlTxData.GasPrice
+				}
+
+			} else {
+				log.Println("Warning: cannot get additional data for transaction ", addr.TxHash)
+			}
+		}
+		addresses = append(addresses, addr)
+	}
 	// response automatically marshalled using json.Marshall()
 	response := types.EITransactionsByAccount{
 		Total:   total,
 		Start:   start,
-		Indexes: addressIndexes,
+		Indexes: addresses,
 	}
 	c.JSON(http.StatusOK, response)
 }

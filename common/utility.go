@@ -40,3 +40,12 @@ func StrToUnixTimeInt(str string) (*big.Int, error) {
 	}
 	return big.NewInt(i), nil
 }
+
+func Contains(arr []string, item string) bool {
+	for _, a := range arr {
+		if a == item {
+			return true
+		}
+	}
+	return false
+}

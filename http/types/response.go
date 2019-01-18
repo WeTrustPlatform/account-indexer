@@ -9,9 +9,17 @@ import (
 
 // EITransactionsByAccount response for getTransactionsByAccount api
 type EITransactionsByAccount struct {
-	Total   int                      `json:"numFound"`
-	Start   int                      `json:"start"`
-	Indexes []coreTypes.AddressIndex `json:"data"`
+	Total   int         `json:"numFound"`
+	Start   int         `json:"start"`
+	Indexes []EIAddress `json:"data"`
+}
+
+// EIAddress response for getTransactionsByAccount api
+type EIAddress struct {
+	coreTypes.AddressIndex
+	Data     []byte   `json:"data"`
+	Gas      uint64   `json:"gas"`
+	GasPrice *big.Int `json:"gasPrice"`
 }
 
 // EIBlocks list of blocks to return to frontend

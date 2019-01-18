@@ -14,11 +14,11 @@ import (
 // Value can be negative or positive
 type AddressIndex struct {
 	AddressSequence
-	TxHash        string   `json:"tx_hash"`
-	Value         *big.Int `json:"value"`
-	Time          *big.Int `json:"time"`
-	BlockNumber   *big.Int `json:"blockNumber"`
-	CoupleAddress string   `json:"coupleAddress"`
+	TxHash string   `json:"tx_hash"`
+	Value  *big.Int `json:"value"`
+	Time   *big.Int `json:"time"`
+	// BlockNumber   *big.Int `json:"blockNumber"`
+	CoupleAddress string `json:"coupleAddress"`
 }
 
 // AddressSequence In same block, 1 address can stay in multiple transactions, especially the "to"
@@ -37,5 +37,6 @@ type BlockIndex struct {
 }
 
 func (index AddressIndex) String() string {
-	return fmt.Sprintf("address %s, tx hash: %s, value: %s, time: %v, block: %v", index.Address, index.TxHash, index.Value.String(), index.Time, index.BlockNumber)
+	return fmt.Sprintf("address %s, tx hash: %s, value: %s, time: %v", index.Address, index.TxHash, index.Value.String(), index.Time)
+	// return fmt.Sprintf("address %s, tx hash: %s, value: %s, time: %v, block: %v", index.Address, index.TxHash, index.Value.String(), index.Time, index.BlockNumber)
 }

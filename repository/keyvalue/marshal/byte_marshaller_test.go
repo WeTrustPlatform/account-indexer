@@ -52,21 +52,21 @@ func TestByteMarshallAddressKey(t *testing.T) {
 }
 
 func TestByteMarshallAddressValue(t *testing.T) {
-	blockNumber := big.NewInt(6000000)
+	// blockNumber := big.NewInt(6000000)
 	value := big.NewInt(1000000000)
 	bm := ByteMarshaller{}
 	addressIndex := &types.AddressIndex{
 		CoupleAddress: "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e",
-		BlockNumber:   blockNumber,
-		TxHash:        "0x9bdbd233827534e48cc23801d145c64c4f4bab6b2c4c74a54673633e4c6c1591",
-		Value:         value,
+		// BlockNumber:   blockNumber,
+		TxHash: "0x9bdbd233827534e48cc23801d145c64c4f4bab6b2c4c74a54673633e4c6c1591",
+		Value:  value,
 	}
 	indexValue := bm.MarshallAddressValue(addressIndex)
 	addressIndex2 := bm.UnmarshallAddressValue(indexValue)
 	assert.True(t, strings.EqualFold(addressIndex2.TxHash, addressIndex.TxHash))
 	assert.True(t, strings.EqualFold(addressIndex2.CoupleAddress, addressIndex.CoupleAddress))
 	assert.True(t, strings.EqualFold(addressIndex2.Value.String(), addressIndex.Value.String()))
-	assert.Equal(t, blockNumber, addressIndex2.BlockNumber)
+	// assert.Equal(t, blockNumber, addressIndex2.BlockNumber)
 }
 
 func TestMarshallBatchValue(t *testing.T) {

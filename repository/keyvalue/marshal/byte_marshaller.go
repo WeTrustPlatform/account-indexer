@@ -122,9 +122,9 @@ func (bm ByteMarshaller) MarshallAddressValue(index *types.AddressIndex) []byte 
 	addressByteArr, _ := hexutil.Decode(index.CoupleAddress)
 	buf.Write(addressByteArr)
 	// blockNumber
-	blockNumber := blockNumberWidPad(index.BlockNumber.String())
-	buf.Write([]byte(blockNumber))
-	valueByteArr := []byte(index.Value.String())
+	// blockNumber := blockNumberWidPad(index.BlockNumber.String())
+	// buf.Write([]byte(blockNumber))
+	valueByteArr := index.Value.Bytes()
 	buf.Write(valueByteArr)
 	return buf.Bytes()
 }
@@ -142,20 +142,25 @@ func (bm ByteMarshaller) UnmarshallAddressKey(key []byte) (string, *big.Int) {
 func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex {
 	hashLength := gethcommon.HashLength
 	addressLength := gethcommon.AddressLength
-	txHash := hexutil.Encode(value[:hashLength])
-	address := hexutil.Encode(value[hashLength : hashLength+addressLength])
-	blockNumberStr := string(value[hashLength+addressLength : hashLength+addressLength+BLOCK_NUMBER_MARSHALL_LENGTH])
-	blockNumber := new(big.Int)
-	blockNumber.SetString(blockNumberStr, 10)
+	prevIndex := 0
+	index := hashLength
+	txHash := hexutil.Encode(value[:index])
+	prevIndex = index
+	index = index + addressLength
+	address := hexutil.Encode(value[prevIndex:index])
+	// prevIndex = index
+	// index = index + BLOCK_NUMBER_MARSHALL_LENGTH
+	// blockNumberStr := string(value[prevIndex:index])
+	// blockNumber := new(big.Int)
+	// blockNumber.SetString(blockNumberStr, 10)
+	prevIndex = index
 	txValueBI := new(big.Int)
-	txValue := string(value[hashLength+addressLength+BLOCK_NUMBER_MARSHALL_LENGTH:])
-
-	txValueBI.SetString(txValue, 10)
+	txValueBI.SetBytes(value[prevIndex:])
 	result := types.AddressIndex{
 		TxHash:        txHash,
 		CoupleAddress: address,
 		Value:         txValueBI,
-		BlockNumber:   blockNumber,
+		// BlockNumber:   blockNumber,
 	}
 	return result
 }

@@ -16,6 +16,13 @@ type TransactionDetail struct {
 	Value  *big.Int
 }
 
+// TransactionExtra additional data to query geth node on the fly, this is not store in indexer DB
+type TransactionExtra struct {
+	Data     []byte
+	Gas      uint64
+	GasPrice *big.Int
+}
+
 // BLockDetail data received from blockchain
 type BLockDetail struct {
 	BlockNumber  *big.Int

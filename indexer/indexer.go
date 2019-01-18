@@ -226,10 +226,10 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 
 		if !isNilFrom {
 			fromIndex := types.AddressIndex{
-				TxHash:        transaction.TxHash,
-				Value:         negValue,
-				Time:          blockDetail.Time,
-				BlockNumber:   blockDetail.BlockNumber,
+				TxHash: transaction.TxHash,
+				Value:  negValue,
+				Time:   blockDetail.Time,
+				// BlockNumber:   blockDetail.BlockNumber,
 				CoupleAddress: to,
 			}
 			if _, ok := sequenceMap[from]; !ok {
@@ -243,10 +243,10 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 
 		if !isNilTo {
 			toIndex := types.AddressIndex{
-				TxHash:        transaction.TxHash,
-				Value:         posValue,
-				Time:          blockDetail.Time,
-				BlockNumber:   blockDetail.BlockNumber,
+				TxHash: transaction.TxHash,
+				Value:  posValue,
+				Time:   blockDetail.Time,
+				// BlockNumber:   blockDetail.BlockNumber,
 				CoupleAddress: from,
 			}
 			if _, ok := sequenceMap[to]; !ok {

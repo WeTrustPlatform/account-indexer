@@ -4,6 +4,14 @@ An indexer to get all transactions of an account.
 ## Design
 TODO: insert an image
 
+## Configuration
+Admin API is protected by ${INDEXER_USER_NAME} and ${INDEXER_PASSWORD}
+
+## REST api
++ http(s)://${server}${port}/api/v1/accounts/:accountNumber?from=${from}&to=${to}&fl=${additional_field_list}
++ By default, the api should return account address, timestamp, hash and value of transaction
++ Field list: additional field list, "data" for transaction data, "gas" for gas, "gasPrice" for gas price
+
 ## Technology stack
 We use the same technology stack like go-ethereum: golang - LevelDB. For REST, we use gin. We also leverage ethclient package of go-ethereum to connect with a geth node through ipc.
 

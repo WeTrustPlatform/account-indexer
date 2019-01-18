@@ -9,6 +9,8 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/service"
 	ethereum "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	gethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
@@ -20,6 +22,7 @@ type EthClient interface {
 	TransactionSender(ctx context.Context, tx *gethtypes.Transaction, block common.Hash, index uint) (common.Address, error)
 	HeaderByNumber(ctx context.Context, number *big.Int) (*gethtypes.Header, error)
 	TransactionReceipt(ctx context.Context, txHash common.Hash) (*gethtypes.Receipt, error)
+	TransactionByHash(ctx context.Context, hash common.Hash) (*gethtypes.Transaction, bool, error)
 }
 
 // Fetch the interface to interact with blockchain
@@ -27,6 +30,7 @@ type Fetch interface {
 	RealtimeFetch(ch chan<- *types.BLockDetail)
 	FetchABlock(blockNumber *big.Int) (*types.BLockDetail, error)
 	GetLatestBlock() (*big.Int, error)
+	TransactionByHash(txHash string) (*types.TransactionExtra, error)
 }
 
 // ChainFetch the real implementation
@@ -131,6 +135,25 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 		Transactions: transactions,
 	}
 	return &blockDetail, nil
+}
+
+// TransactionByHash query geth node to get addtional data of tx
+func (cf *ChainFetch) TransactionByHash(txHash string) (*types.TransactionExtra, error) {
+	ctx := context.Background()
+	byteArr, err := hexutil.Decode(txHash)
+	hash := gethcommon.BytesToHash(byteArr)
+	if err != nil {
+		return nil, err
+	}
+	tx, _, err := cf.Client.TransactionByHash(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	return &types.TransactionExtra{
+		Data:     tx.Data(),
+		Gas:      tx.Gas(),
+		GasPrice: tx.GasPrice(),
+	}, nil
 }
 
 // GetLatestBlock get latest known block by geth node

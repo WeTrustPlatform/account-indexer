@@ -29,7 +29,8 @@ func (sm StringMarshaller) UnmarshallBlockDBValue(value []byte) []string {
 
 // MarshallAddressKey create LevelDB key
 func (sm StringMarshaller) MarshallAddressKey(index *types.AddressIndex) []byte {
-	return sm.MarshallAddressKeyStr(index.Address, index.BlockNumber.String())
+	// return sm.MarshallAddressKeyStr(index.Address, index.BlockNumber.String())
+	return sm.MarshallAddressKeyStr(index.Address, "")
 }
 
 // MarshallAddressKeyStr create LevelDB key
