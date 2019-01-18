@@ -217,21 +217,29 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 			to = common.AddressZero
 			isNilTo = true
 		}
+		isNilFrom := false
+		from := transaction.From
+		if from == "" {
+			from = common.AddressZero
+			isNilFrom = true
+		}
 
-		fromIndex := types.AddressIndex{
-			TxHash:        transaction.TxHash,
-			Value:         negValue,
-			Time:          blockDetail.Time,
-			BlockNumber:   blockDetail.BlockNumber,
-			CoupleAddress: to,
+		if !isNilFrom {
+			fromIndex := types.AddressIndex{
+				TxHash:        transaction.TxHash,
+				Value:         negValue,
+				Time:          blockDetail.Time,
+				BlockNumber:   blockDetail.BlockNumber,
+				CoupleAddress: to,
+			}
+			if _, ok := sequenceMap[from]; !ok {
+				sequenceMap[from] = 0
+			}
+			sequenceMap[from]++
+			fromIndex.Address = from
+			fromIndex.Sequence = sequenceMap[from]
+			addressIndex = append(addressIndex, &fromIndex)
 		}
-		if _, ok := sequenceMap[transaction.From]; !ok {
-			sequenceMap[transaction.From] = 0
-		}
-		sequenceMap[transaction.From]++
-		fromIndex.Address = transaction.From
-		fromIndex.Sequence = sequenceMap[transaction.From]
-		addressIndex = append(addressIndex, &fromIndex)
 
 		if !isNilTo {
 			toIndex := types.AddressIndex{
@@ -239,14 +247,14 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 				Value:         posValue,
 				Time:          blockDetail.Time,
 				BlockNumber:   blockDetail.BlockNumber,
-				CoupleAddress: transaction.From,
+				CoupleAddress: from,
 			}
-			if _, ok := sequenceMap[transaction.To]; !ok {
-				sequenceMap[transaction.To] = 0
+			if _, ok := sequenceMap[to]; !ok {
+				sequenceMap[to] = 0
 			}
-			sequenceMap[transaction.To]++
-			toIndex.Address = transaction.To
-			toIndex.Sequence = sequenceMap[transaction.To]
+			sequenceMap[to]++
+			toIndex.Address = to
+			toIndex.Sequence = sequenceMap[to]
 			addressIndex = append(addressIndex, &toIndex)
 		}
 	}

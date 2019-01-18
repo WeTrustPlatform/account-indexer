@@ -52,6 +52,10 @@ func (mec MockEthClient) HeaderByNumber(ctx context.Context, number *big.Int) (*
 	return header, nil
 }
 
+func (mec MockEthClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*gethtypes.Receipt, error) {
+	return &gethtypes.Receipt{}, nil
+}
+
 // Temporary skip this test because it's blocking
 func SkipTestFetchData(t *testing.T) {
 	fetcher := ChainFetch{

@@ -19,6 +19,7 @@ type EthClient interface {
 	BlockByNumber(ctx context.Context, number *big.Int) (*gethtypes.Block, error)
 	TransactionSender(ctx context.Context, tx *gethtypes.Transaction, block common.Hash, index uint) (common.Address, error)
 	HeaderByNumber(ctx context.Context, number *big.Int) (*gethtypes.Header, error)
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*gethtypes.Receipt, error)
 }
 
 // Fetch the interface to interact with blockchain
@@ -88,7 +89,6 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 		log.Fatal("RealtimeFetch BlockByNumber returns error " + err.Error())
 		return &types.BLockDetail{}, err
 	}
-	// log.Println(fmt.Sprintf("Found block number received from SubscribeNewHead: %s", blockNumber))
 	transactions := []types.TransactionDetail{}
 	if len(aBlock.Transactions()) > 0 {
 		for index, tx := range aBlock.Transactions() {
@@ -106,6 +106,23 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 				Value:  tx.Value(),
 			}
 			transactions = append(transactions, transaction)
+			// Index transactions that create contract too
+			if tx.To() == nil && (tx.Value() == nil || tx.Value().Int64() == 0) {
+				txRecp, err := cf.Client.TransactionReceipt(ctx, tx.Hash())
+				if err == nil {
+					if txRecp != nil {
+						transaction := types.TransactionDetail{
+							From:   "",
+							To:     txRecp.ContractAddress.String(),
+							TxHash: tx.Hash().String(),
+							Value:  tx.Value(),
+						}
+						transactions = append(transactions, transaction)
+					}
+				} else {
+					log.Printf("Fetch: cannot get receipt for transaction %v, error=%v \n", tx.Hash().String(), err.Error())
+				}
+			}
 		}
 	}
 	blockDetail := types.BLockDetail{
