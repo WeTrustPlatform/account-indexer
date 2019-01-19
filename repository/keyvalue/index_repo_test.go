@@ -110,8 +110,11 @@ func (suite *RepositoryTestSuite) SetupTest() {
 }
 
 func (suite *RepositoryTestSuite) TestGetTransactionByAddress() {
+	fromTime := time.Time{}
+	toTime := time.Time{}
+
 	// GetTransactionByAddress
-	total, addresses := suite.repo.GetTransactionByAddress("wrong address", 10, 0, nil, nil)
+	total, addresses := suite.repo.GetTransactionByAddress("wrong address", 10, 0, fromTime, toTime)
 	assert.Equal(suite.T(), 0, len(addresses))
 	assert.Equal(suite.T(), 0, total)
 
@@ -129,25 +132,28 @@ func (suite *RepositoryTestSuite) TestGetTransactionByAddress() {
 
 	}
 
-	total, addresses = suite.repo.GetTransactionByAddress(to1, 10, 0, nil, nil)
+	total, addresses = suite.repo.GetTransactionByAddress(to1, 10, 0, fromTime, toTime)
 	assert.Equal(suite.T(), 2, len(addresses))
 	assertAddresses(false)
 	assert.Equal(suite.T(), 2, total)
 	// time range includes the transactions
-	fromTime := big.NewInt(time.Now().Unix() - 100)
-	toTime := big.NewInt(time.Now().Unix() + 100)
+	// fromTime := big.NewInt(time.Now().Unix() - 100)
+	// toTime := big.NewInt(time.Now().Unix() + 100)
+	fromTime = time.Now().Add(-100 * time.Second)
+	toTime = time.Now().Add(100 * time.Second)
 	total, addresses = suite.repo.GetTransactionByAddress(to1, 10, 0, fromTime, toTime)
 	assert.Equal(suite.T(), 2, len(addresses))
 	assertAddresses(true)
 	assert.Equal(suite.T(), 2, total)
 	// edge case
-	total, addresses = suite.repo.GetTransactionByAddress(to1, 10, 0, blockTime, blockTime)
+	tm := common.UnmarshallIntToTime(blockTime)
+	total, addresses = suite.repo.GetTransactionByAddress(to1, 10, 0, tm, tm)
 	assert.Equal(suite.T(), 2, len(addresses))
 	assertAddresses(true)
 	assert.Equal(suite.T(), 2, total)
 	// time range does not include the transactions
-	fromTime = big.NewInt(time.Now().Unix() + 1)
-	toTime = big.NewInt(time.Now().Unix() + 100)
+	fromTime = common.UnmarshallIntToTime(big.NewInt(time.Now().Unix() + 1))
+	toTime = common.UnmarshallIntToTime((big.NewInt(time.Now().Unix() + 100)))
 	total, addresses = suite.repo.GetTransactionByAddress(to1, 10, 0, fromTime, toTime)
 	assert.Equal(suite.T(), 0, len(addresses))
 	assert.Equal(suite.T(), 0, total)
@@ -207,7 +213,11 @@ func (suite *RepositoryTestSuite) SkipTestHandleReorg() {
 	// HandleReorg
 	err := suite.repo.HandleReorg(blockIndex.CreatedAt, blockIndex.Addresses)
 	assert.Nil(suite.T(), err)
-	total, addresses := suite.repo.GetTransactionByAddress(to1, 10, 0, nil, nil)
+	fromTime := time.Time{}
+	toTime := time.Time{}
+	assert.True(suite.T(), time.Time.IsZero(fromTime))
+	assert.True(suite.T(), time.Time.IsZero(toTime))
+	total, addresses := suite.repo.GetTransactionByAddress(to1, 10, 0, fromTime, toTime)
 	assert.Equal(suite.T(), 0, len(addresses))
 	assert.Equal(suite.T(), 0, total)
 }

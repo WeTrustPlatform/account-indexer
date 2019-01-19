@@ -3,11 +3,11 @@ package http
 import (
 	"fmt"
 	"log"
-	"math/big"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
@@ -77,9 +77,9 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 		return
 	}
 	fromTimeStr := c.Query("from")
-	var fromTime *big.Int
+	var fromTime time.Time
 	if len(fromTimeStr) > 0 {
-		fromTime, err = common.StrToUnixTimeInt(fromTimeStr)
+		fromTime, err = common.StrToTime(fromTimeStr)
 		if err != nil {
 			c.JSON(400, gin.H{"msg": "invalid from " + fromTimeStr})
 			return
@@ -87,9 +87,9 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 	}
 
 	toTimeStr := c.Query("to")
-	var toTime *big.Int
+	var toTime time.Time
 	if len(toTimeStr) > 0 {
-		toTime, err = common.StrToUnixTimeInt(toTimeStr)
+		toTime, err = common.StrToTime(toTimeStr)
 		if err != nil {
 			c.JSON(400, gin.H{"msg": "invalid to " + toTimeStr})
 			return

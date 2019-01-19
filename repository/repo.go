@@ -2,6 +2,7 @@ package repository
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 )
@@ -9,7 +10,7 @@ import (
 // IndexRepo to store index data
 type IndexRepo interface {
 	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error
-	GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex)
+	GetTransactionByAddress(address string, rows int, start int, fromTime time.Time, toTime time.Time) (int, []types.AddressIndex)
 	GetLastBlock() (types.BlockIndex, error)
 	GetFirstBlock() (types.BlockIndex, error)
 	DeleteOldBlocks(untilTime *big.Int) (int, error)

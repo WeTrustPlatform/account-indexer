@@ -51,6 +51,16 @@ func TestByteMarshallAddressKey(t *testing.T) {
 	assert.Equal(t, blockTime, blockTimeRst)
 }
 
+func TestByteMarshallAddressKeyPrefix(t *testing.T) {
+	bm := ByteMarshaller{}
+	address := "0xEcFf2b254c9354f3F73F6E64b9613Ad0a740a54e"
+	now := time.Now()
+	tm2 := big.NewInt(now.Unix())
+	byteArr2 := bm.MarshallAddressKeyPrefix2(address, tm2)
+	byteArr3 := bm.MarshallAddressKeyPrefix3(address, now)
+	assert.Equal(t, byteArr2, byteArr3)
+}
+
 func TestByteMarshallAddressValue(t *testing.T) {
 	// blockNumber := big.NewInt(6000000)
 	value := big.NewInt(1000000000)

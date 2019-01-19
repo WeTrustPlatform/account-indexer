@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"math/big"
+	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
@@ -90,7 +91,7 @@ func (repo *KVIndexRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 }
 
 // GetTransactionByAddress main thing for this indexer
-func (repo *KVIndexRepo) GetTransactionByAddress(address string, rows int, start int, fromTime *big.Int, toTime *big.Int) (int, []types.AddressIndex) {
+func (repo *KVIndexRepo) GetTransactionByAddress(address string, rows int, start int, fromTime time.Time, toTime time.Time) (int, []types.AddressIndex) {
 	convertKeyValuesToAddressIndexes := func(keyValues []dao.KeyValue) []types.AddressIndex {
 		result := []types.AddressIndex{}
 		for _, keyValue := range keyValues {
@@ -100,13 +101,12 @@ func (repo *KVIndexRepo) GetTransactionByAddress(address string, rows int, start
 		return result
 	}
 
-	if fromTime != nil && toTime != nil {
+	if !time.Time.IsZero(fromTime) && !time.Time.IsZero(toTime) {
 		// assuming fromTime and toTime is good
 		// make toTime inclusive
-		fromPrefix := repo.marshaller.MarshallAddressKeyPrefix2(address, fromTime)
-		newToTime := new(big.Int)
-		newToTime = newToTime.Add(toTime, big.NewInt(1))
-		toPrefix := repo.marshaller.MarshallAddressKeyPrefix2(address, newToTime)
+		fromPrefix := repo.marshaller.MarshallAddressKeyPrefix3(address, fromTime)
+		newToTime := toTime.Add(1 * time.Second)
+		toPrefix := repo.marshaller.MarshallAddressKeyPrefix3(address, newToTime)
 		rg := &util.Range{Start: fromPrefix, Limit: toPrefix}
 		asc := true
 		total, keyValues := repo.addressDAO.FindByRange(rg, asc, rows, start)

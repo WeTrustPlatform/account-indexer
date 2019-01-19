@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"math/big"
+	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
@@ -101,13 +102,25 @@ func (bm ByteMarshaller) MarshallAddressKeyPrefix(address string) []byte {
 }
 
 // MarshallAddressKeyPrefix2 marshall the address and time which is key prefix of address db
-func (bm ByteMarshaller) MarshallAddressKeyPrefix2(address string, time *big.Int) []byte {
+func (bm ByteMarshaller) MarshallAddressKeyPrefix2(address string, tm *big.Int) []byte {
 	buf := &bytes.Buffer{}
 	// 20 bytes
 	resultByteArr, _ := hexutil.Decode(address)
 	buf.Write(resultByteArr)
 	// 4 byte
-	timeByteArr := common.MarshallTime(time)
+	timeByteArr := common.MarshallTime(tm)
+	buf.Write(timeByteArr)
+	return buf.Bytes()
+}
+
+// MarshallAddressKeyPrefix3 same to MarshallAddressKeyPrefix2
+func (bm ByteMarshaller) MarshallAddressKeyPrefix3(address string, tm time.Time) []byte {
+	buf := &bytes.Buffer{}
+	// 20 bytes
+	resultByteArr, _ := hexutil.Decode(address)
+	buf.Write(resultByteArr)
+	// 4 byte
+	timeByteArr := common.MarshallTime2(tm)
 	buf.Write(timeByteArr)
 	return buf.Bytes()
 }
