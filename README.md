@@ -2,7 +2,7 @@
 A [go-ethereum](https://github.com/ethereum/go-ethereum) companion to index all transactions in Ethereum blockchain.
 
 ## High Level Design
-![High Level Design](https://github.com/WeTrustPlatform/account-indexer/high_level_design.png)
+![High Level Design](https://github.com/WeTrustPlatform/account-indexer/blob/master/docs/high_level_design.png)
 
 ## Configuration
 Admin API is protected by ${INDEXER_USER_NAME} and ${INDEXER_PASSWORD}
