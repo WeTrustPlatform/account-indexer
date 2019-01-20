@@ -15,6 +15,7 @@ type IndexRepo interface {
 	GetFirstBlock() (types.BlockIndex, error)
 	DeleteOldBlocks(untilTime *big.Int) (int, error)
 	GetBlocks(blockNumber string, rows int, start int) (int, []types.BlockIndex)
+	SaveBlockIndex(blockIndex *types.BlockIndex) error
 }
 
 // BatchRepo repository for batch status

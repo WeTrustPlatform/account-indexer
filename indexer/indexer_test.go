@@ -169,13 +169,7 @@ func TestGetInitBatches(t *testing.T) {
 }
 
 func TestGetBatches(t *testing.T) {
-	blockDB := memdb.New(comparer.DefaultComparer, 0)
-	blockDAO := dao.NewMemDbDAO(blockDB)
-	batchDB := memdb.New(comparer.DefaultComparer, 0)
-	batchDAO := dao.NewMemDbDAO(batchDB)
-	indexRepo := keyvalue.NewKVIndexRepo(nil, blockDAO)
-	batchRepo := keyvalue.NewKVBatchRepo(batchDAO)
-	idx := NewIndexer(indexRepo, batchRepo, nil)
+	idx := newTestIndexer()
 	// init data
 	batch1 := types.BatchStatus{
 		From:      big.NewInt(0),
@@ -193,8 +187,8 @@ func TestGetBatches(t *testing.T) {
 		CreatedAt: big.NewInt(time.Now().Unix() - 1000),
 		UpdatedAt: big.NewInt(time.Now().Unix()),
 	}
-	batchRepo.UpdateBatch(batch1)
-	batchRepo.UpdateBatch(batch2)
+	idx.BatchRepo.UpdateBatch(batch1)
+	idx.BatchRepo.UpdateBatch(batch2)
 
 	blockIndex := types.BlockIndex{
 		BlockNumber: big.NewInt(800).String(),
@@ -202,7 +196,7 @@ func TestGetBatches(t *testing.T) {
 		Time:        big.NewInt(time.Now().Unix()),
 		CreatedAt:   big.NewInt(time.Now().Unix()),
 	}
-	indexRepo.SaveBlockIndex(&blockIndex)
+	idx.IndexRepo.SaveBlockIndex(&blockIndex)
 	// Test: should add a new batch from latest block in DB to latest block in blockchain
 	latestBlock := big.NewInt(900)
 	batches := idx.getBatches(latestBlock)
@@ -216,7 +210,7 @@ func TestGetBatches(t *testing.T) {
 	current := big.NewInt(850)
 	newBatch.Current = current
 	newBatch.UpdatedAt = big.NewInt(time.Now().Unix())
-	batchRepo.UpdateBatch(newBatch)
+	idx.BatchRepo.UpdateBatch(newBatch)
 
 	// Test: should not add a new batch, reuse the last batch with updated "To"
 	latestBlock = big.NewInt(1000)
@@ -226,6 +220,19 @@ func TestGetBatches(t *testing.T) {
 	assert.Equal(t, big.NewInt(800), newBatch.From, "NewBatch From should be correct")
 	assert.Equal(t, latestBlock, newBatch.To, "NewBatch To should be correct")
 	assert.Equal(t, current, newBatch.Current, "NewBatch Current should be correct")
+}
+
+func newTestIndexer() Indexer {
+	addressDB := memdb.New(comparer.DefaultComparer, 0)
+	addressDAO := dao.NewMemDbDAO(addressDB)
+	blockDB := memdb.New(comparer.DefaultComparer, 0)
+	blockDAO := dao.NewMemDbDAO(blockDB)
+	batchDB := memdb.New(comparer.DefaultComparer, 0)
+	batchDAO := dao.NewMemDbDAO(batchDB)
+	indexRepo := keyvalue.NewKVIndexRepo(addressDAO, blockDAO)
+	batchRepo := keyvalue.NewKVBatchRepo(batchDAO)
+	idx := NewIndexer(indexRepo, batchRepo, nil)
+	return idx
 }
 
 func TestWatchAfterBatch(t *testing.T) {
