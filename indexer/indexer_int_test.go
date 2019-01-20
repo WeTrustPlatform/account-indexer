@@ -1,4 +1,4 @@
-// // +build int
+// +build int
 
 package indexer
 
@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
 	"github.com/WeTrustPlatform/account-indexer/service"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +29,9 @@ func TestContractCreation(t *testing.T) {
 	idx.processBlock(blockDetail, isBatch)
 	// Confirm contract created tx
 	contract := "0x4a6ead96974679957a17d2f9c7835a3da7ddf91d"
-	total, addressIndexes := idx.IndexRepo.GetTransactionByAddress(contract, 10, 0, time.Time{}, time.Time{})
+	fromTime, _ := common.StrToTime("2018-01-12T00:00:00")
+	toTime := common.StrToTime("2018-01-12T23:59:59")
+	total, addressIndexes := idx.IndexRepo.GetTransactionByAddress(contract, 10, 0, fromTime, toTime)
 	assert.Equal(t, 1, total)
 	tx := addressIndexes[0].TxHash
 	assert.True(t, strings.EqualFold("0x61278dd960415eadf11cfe17a6c38397af658e77bbdd367db70e19ee3a193bdd", tx))
