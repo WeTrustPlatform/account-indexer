@@ -23,21 +23,18 @@ var index = coreTypes.AddressIndex{
 }
 
 func TestMarshall(t *testing.T) {
+	idx := AddressToEIAddress(index)
+	idx.Data = []byte{1, 2}
 	response := EITransactionsByAccount{
-		Total: 10,
-		Start: 5,
-		Indexes: []EIAddress{
-			{
-				AddressIndex: index,
-				Data:         []byte{1, 2},
-			},
-		},
+		Total:   10,
+		Start:   5,
+		Indexes: []EIAddress{idx},
 	}
 	data, err := json.Marshal(response)
 	assert.Nil(t, err)
 	assert.Nil(t, err)
 	dataStr := string(data)
 	log.Printf("%v \n", dataStr)
-	expectedStr := `{"numFound":10,"start":5,"data":[{"address":"from1","sequence":1,"tx_hash":"0xtx1","value":-111,"time":1546848896,"coupleAddress":"to1","data":"AQI=","gas":0,"gasPrice":null}]}`
+	expectedStr := `{"numFound":10,"start":5,"data":[{"address":"from1","txHash":"0xtx1","value":-111,"time":"2019-01-07T15:14:56+07:00","coupleAddress":"to1","data":"AQI=","gas":0,"gasPrice":null}]}`
 	assert.Equal(t, expectedStr, dataStr)
 }

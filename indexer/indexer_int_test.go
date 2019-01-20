@@ -29,10 +29,12 @@ func TestContractCreation(t *testing.T) {
 	idx.processBlock(blockDetail, isBatch)
 	// Confirm contract created tx
 	contract := "0x4a6ead96974679957a17d2f9c7835a3da7ddf91d"
-	fromTime, _ := common.StrToTime("2018-01-12T00:00:00")
-	toTime := common.StrToTime("2018-01-12T23:59:59")
+	fromTime, _ := common.StrToTime("2018-12-01T00:00:00")
+	toTime, _ := common.StrToTime("2018-12-01T23:59:59")
 	total, addressIndexes := idx.IndexRepo.GetTransactionByAddress(contract, 10, 0, fromTime, toTime)
 	assert.Equal(t, 1, total)
 	tx := addressIndexes[0].TxHash
 	assert.True(t, strings.EqualFold("0x61278dd960415eadf11cfe17a6c38397af658e77bbdd367db70e19ee3a193bdd", tx))
+	tm := common.UnmarshallIntToTime(addressIndexes[0].Time)
+	t.Log(tm)
 }

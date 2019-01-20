@@ -11,7 +11,7 @@ import (
 
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
-	"github.com/WeTrustPlatform/account-indexer/http/types"
+	httpTypes "github.com/WeTrustPlatform/account-indexer/http/types"
 	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gin-gonic/gin"
@@ -105,11 +105,9 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 	rows, start := getPagingQueryParams(c)
 	log.Printf("Getting transactions for account %v\n", account)
 	total, addressIndexes := server.indexRepo.GetTransactionByAddress(account, rows, start, fromTime, toTime)
-	addresses := []types.EIAddress{}
+	addresses := []httpTypes.EIAddress{}
 	for _, idx := range addressIndexes {
-		addr := types.EIAddress{
-			AddressIndex: idx,
-		}
+		addr := httpTypes.AddressToEIAddress(idx)
 		if needTxData || needGas || needGasPrice {
 			addlTxData, err := server.fetcher.TransactionByHash(addr.TxHash)
 			if err == nil {
@@ -130,7 +128,7 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 		addresses = append(addresses, addr)
 	}
 	// response automatically marshalled using json.Marshall()
-	response := types.EITransactionsByAccount{
+	response := httpTypes.EITransactionsByAccount{
 		Total:   total,
 		Start:   start,
 		Indexes: addresses,
@@ -142,7 +140,7 @@ func (server HttpServer) getBlock(c *gin.Context) {
 	blockNumber := c.Param("blockNumber")
 	rows, start := getPagingQueryParams(c)
 	total, blocks := server.indexRepo.GetBlocks(blockNumber, rows, start)
-	response := types.EIBlocks{
+	response := httpTypes.EIBlocks{
 		Total:   total,
 		Start:   start,
 		Indexes: blocks,
@@ -157,13 +155,13 @@ func (server HttpServer) getConfig(c *gin.Context) {
 
 func (server HttpServer) getBatchStatus(c *gin.Context) {
 	batchStatuses := server.batchRepo.GetAllBatchStatuses()
-	response := []types.EIBatchStatus{}
+	response := []httpTypes.EIBatchStatus{}
 	for _, batch := range batchStatuses {
 		current := ""
 		if batch.Current != nil {
 			current = batch.Current.String()
 		}
-		eiBatch := types.EIBatchStatus{
+		eiBatch := httpTypes.EIBatchStatus{
 			From:      batch.From,
 			To:        batch.To,
 			Step:      batch.Step,
