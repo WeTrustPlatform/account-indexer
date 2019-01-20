@@ -101,20 +101,32 @@ func (repo *KVIndexRepo) GetTransactionByAddress(address string, rows int, start
 		return result
 	}
 
-	if !time.Time.IsZero(fromTime) && !time.Time.IsZero(toTime) {
+	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
+	hasFrom := !time.Time.IsZero(fromTime)
+	hasTo := !time.Time.IsZero(toTime)
+	if hasFrom || hasTo {
 		// assuming fromTime and toTime is good
 		// make toTime inclusive
+		allTimeRange := util.BytesPrefix(prefix)
 		fromPrefix := repo.marshaller.MarshallAddressKeyPrefix3(address, fromTime)
 		newToTime := toTime.Add(1 * time.Second)
 		toPrefix := repo.marshaller.MarshallAddressKeyPrefix3(address, newToTime)
-		rg := &util.Range{Start: fromPrefix, Limit: toPrefix}
+		var rg *util.Range
+		if !hasFrom {
+			rg = &util.Range{Start: allTimeRange.Start, Limit: toPrefix}
+		} else if !hasTo {
+			rg = &util.Range{Start: fromPrefix, Limit: allTimeRange.Limit}
+		} else {
+			rg = &util.Range{Start: fromPrefix, Limit: toPrefix}
+		}
+
 		asc := true
 		total, keyValues := repo.addressDAO.FindByRange(rg, asc, rows, start)
 		addressIndexes := convertKeyValuesToAddressIndexes(keyValues)
 		return total, addressIndexes
 	}
 	// Search by address as LevelDB prefix
-	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
+
 	// bad address
 	if len(prefix) == 0 {
 		return 0, []types.AddressIndex{}
