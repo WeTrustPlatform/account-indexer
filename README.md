@@ -1,5 +1,5 @@
 # account-indexer
-A [go-ethereum](https://github.com/ethereum/go-ethereum) companion to index all transactions in Ethereum blockchain. Deploy this inside a geth node and you can get transactions of any accounts without one day.
+A [go-ethereum](https://github.com/ethereum/go-ethereum) companion to index all transactions in Ethereum blockchain. Deploy this inside a geth node and you can get transactions of any accounts after one day.
 
 ## High Level Design
 ![High Level Design](https://github.com/WeTrustPlatform/account-indexer/blob/master/docs/high_level_design.png)

@@ -15,7 +15,9 @@ import (
 
 func TestContractCreation(t *testing.T) {
 	// Setup
-	ipcs := []string{"wss://mainnet.kivutar.me:8546/2KT179di"}
+	// ipcs := []string{"wss://mainnet.kivutar.me:8546/2KT179di"}
+	ipcs := []string{"wss://mainnet.infura.io/_ws"}
+	t.Logf("TestContractCreation ipcs=%v \n ", ipcs)
 	service.GetIpcManager().SetIPC(ipcs)
 	fetcher, err := fetcher.NewChainFetch()
 	assert.Nil(t, err)
@@ -36,5 +38,5 @@ func TestContractCreation(t *testing.T) {
 	tx := addressIndexes[0].TxHash
 	assert.True(t, strings.EqualFold("0x61278dd960415eadf11cfe17a6c38397af658e77bbdd367db70e19ee3a193bdd", tx))
 	tm := common.UnmarshallIntToTime(addressIndexes[0].Time)
-	t.Log(tm)
+	t.Logf("TestContractCreation found transaction at %v \n", tm)
 }
