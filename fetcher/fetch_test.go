@@ -61,8 +61,7 @@ func (mec MockEthClient) TransactionByHash(ctx context.Context, hash common.Hash
 	return &gethtypes.Transaction{}, false, nil
 }
 
-// Temporary skip this test because it's blocking
-func SkipTestFetchData(t *testing.T) {
+func TestFetchData(t *testing.T) {
 	fetcher := ChainFetch{
 		Client: MockEthClient{},
 	}

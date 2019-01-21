@@ -7,6 +7,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 )
 
+// StringMarshaller initial marshaller impl
 type StringMarshaller struct {
 }
 

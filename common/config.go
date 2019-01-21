@@ -7,7 +7,7 @@ import (
 )
 
 // Configuration for the indexer
-type configuration struct {
+type Configuration struct {
 	CleanInterval   time.Duration
 	BlockTTL        time.Duration
 	WatcherInterval time.Duration
@@ -17,18 +17,18 @@ type configuration struct {
 	NumBatch     int
 }
 
-func (con *configuration) String() string {
+func (con *Configuration) String() string {
 	return fmt.Sprintf("CleanInterval=%v BlockTTL=%v WatcherInterval=%v OOSThreshold=%v Port=%v NumBatch=%v",
 		con.CleanInterval, con.BlockTTL, con.WatcherInterval, con.OOSThreshold, con.Port, con.NumBatch)
 }
 
-var config *configuration
+var config *Configuration
 var once sync.Once
 
 // GetConfig Singleton
-func GetConfig() *configuration {
+func GetConfig() *Configuration {
 	once.Do(func() {
-		config = &configuration{}
+		config = &Configuration{}
 	})
 	return config
 }
