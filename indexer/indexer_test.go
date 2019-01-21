@@ -82,57 +82,6 @@ var expectedIndexes = []*types.AddressIndex{
 	},
 }
 
-type MockFetch struct{}
-
-func (mf MockFetch) RealtimeFetch(ch chan<- types.BLockDetail) {
-	ch <- blockDetail
-}
-func (mf MockFetch) FetchABlock(blockNumber *big.Int) (types.BLockDetail, error) {
-	return types.BLockDetail{}, nil
-}
-
-type MockRepo struct {
-	addressIndex []types.AddressIndex
-	blockIndex   types.BlockIndex
-}
-
-func (mr MockRepo) Store(indexData []types.AddressIndex, blockIndex types.BlockIndex) {
-	mr.addressIndex = indexData
-	mr.blockIndex = blockIndex
-}
-
-func (mr MockRepo) HandleReorg(blockIndex string, reorgAddresses []string) {
-}
-
-func (mr MockRepo) Get(address string) []types.AddressIndex {
-	return nil
-}
-
-type MockWatcher struct {
-	watched bool
-}
-
-func (mw MockWatcher) Watch() {
-	mw.watched = true
-}
-
-// TODO: fix me
-// func TestIndex(t *testing.T) {
-// 	mockRepo := MockRepo{}
-// 	indexer := Indexer{
-// 		// Fetcher: MockFetch{},
-// 		IpcPath: "",
-// 		Repo:    mockRepo,
-// 	}
-// 	time.Sleep(time.Second * 1)
-// 	indexData := mockRepo.addressIndex
-// 	for i, index := range indexData {
-// 		if !reflect.DeepEqual(index, expectedIndexes[i]) {
-// 			t.Error("Test failed at {}", i)
-// 		}
-// 	}
-// }
-
 func TestCreateIndexData(t *testing.T) {
 
 	idx := Indexer{}
