@@ -5,7 +5,8 @@ A [go-ethereum](https://github.com/ethereum/go-ethereum) companion to index all 
 To get transactions of an account, use this Rest
 - `http(s)://${server}${port}/api/v1/accounts/:accountNumber?from=${from}&to=${to}&fl=${additional_field_list}`
   - By default, the api should return account address, timestamp, hash and value of transaction
-  - Field list: additional field list, "data" for transaction data, "gas" for gas, "gasPrice" for gas price
+  - fl: additional fields separated by `,` - "data" for transaction data, "gas" for gas, "gasPrice" for gas price
+  - from and to: timestamp, should be in unix format or ISO8601 format
 
 ## Configuration
 + Admin Rest API is protected by ${INDEXER_USER_NAME} and ${INDEXER_PASSWORD} environment variable
