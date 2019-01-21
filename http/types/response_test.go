@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/WeTrustPlatform/account-indexer/common"
 	coreTypes "github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -38,16 +38,7 @@ func TestMarshall(t *testing.T) {
 	assert.Nil(t, err)
 	dataStr := string(data)
 	log.Printf("%v \n", dataStr)
-	tm := time.Now()
-	tmF := tm.Format(time.RFC3339)
-	var timeExt string
-	if strings.HasSuffix(tmF, "Z") {
-		timeExt = "Z"
-	} else {
-		byteArr := []byte(tmF)
-		extBA := byteArr[len(byteArr)-6:]
-		timeExt = string(extBA)
-	}
-	expectedStr := fmt.Sprintf(`{"numFound":10,"start":5,"data":[{"address":"from1","txHash":"0xtx1","value":-111,"time":"2019-01-07T15:14:56%v","coupleAddress":"to1","data":"AQI=","gas":0,"gasPrice":null}]}`, timeExt)
+	tm := common.UnmarshallIntToTime(big.NewInt(1546848896)).Format(time.RFC3339)
+	expectedStr := fmt.Sprintf(`{"numFound":10,"start":5,"data":[{"address":"from1","txHash":"0xtx1","value":-111,"time":"%v","coupleAddress":"to1","data":"AQI=","gas":0,"gasPrice":null}]}`, tm)
 	assert.Equal(t, expectedStr, dataStr)
 }
