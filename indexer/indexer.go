@@ -151,7 +151,7 @@ func (indexer *Indexer) realtimeIndex(fetcher fetcher.Fetch) {
 		}
 		log.Printf("indexer: Received BlockDetail %v blockTime: %v\n", blockDetail.BlockNumber.String(), common.UnmarshallIntToTime(blockDetail.Time))
 		isBatch := false
-		indexer.processBlock(blockDetail, isBatch)
+		indexer.ProcessBlock(blockDetail, isBatch)
 	}
 }
 
@@ -176,7 +176,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 		}
 		// log.Println(tag + " indexer: Received BlockDetail " + blockDetail.BlockNumber.String())
 		isBatch := true
-		err = indexer.processBlock(blockDetail, isBatch)
+		err = indexer.ProcessBlock(blockDetail, isBatch)
 		if err != nil {
 			log.Fatal(tag + " indexer: cannot process block " + blockNumber.String() + " , error is " + err.Error())
 		}
@@ -191,7 +191,8 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, tag string) {
 	log.Println(tag + " is done in " + s + " minutes")
 }
 
-func (indexer *Indexer) processBlock(blockDetail *types.BLockDetail, isBatch bool) error {
+// ProcessBlock transform blockchain data to our index structure and save it to repo
+func (indexer *Indexer) ProcessBlock(blockDetail *types.BLockDetail, isBatch bool) error {
 	addressIndex, blockIndex := indexer.CreateIndexData(blockDetail)
 	return indexer.IndexRepo.Store(addressIndex, blockIndex, isBatch)
 }

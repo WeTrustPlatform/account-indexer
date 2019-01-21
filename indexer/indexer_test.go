@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/WeTrustPlatform/account-indexer/core/types"
-	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 	"github.com/syndtr/goleveldb/leveldb/comparer"
 	"github.com/syndtr/goleveldb/leveldb/memdb"
+
+	"github.com/WeTrustPlatform/account-indexer/core/types"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
+	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 )
 
 var blockTime = big.NewInt(time.Now().Unix())
@@ -169,7 +169,7 @@ func TestGetInitBatches(t *testing.T) {
 }
 
 func TestGetBatches(t *testing.T) {
-	idx := newTestIndexer()
+	idx := NewTestIndexer()
 	// init data
 	batch1 := types.BatchStatus{
 		From:      big.NewInt(0),
@@ -222,7 +222,11 @@ func TestGetBatches(t *testing.T) {
 	assert.Equal(t, current, newBatch.Current, "NewBatch Current should be correct")
 }
 
-func newTestIndexer() Indexer {
+func TestWatchAfterBatch(t *testing.T) {
+	// TODO
+}
+
+func NewTestIndexer() Indexer {
 	addressDB := memdb.New(comparer.DefaultComparer, 0)
 	addressDAO := dao.NewMemDbDAO(addressDB)
 	blockDB := memdb.New(comparer.DefaultComparer, 0)
@@ -233,8 +237,4 @@ func newTestIndexer() Indexer {
 	batchRepo := keyvalue.NewKVBatchRepo(batchDAO)
 	idx := NewIndexer(indexRepo, batchRepo, nil)
 	return idx
-}
-
-func TestWatchAfterBatch(t *testing.T) {
-	// TODO
 }
