@@ -26,8 +26,7 @@ type Indexer struct {
 // NewIndexer create an Indexer
 func NewIndexer(IndexRepo repository.IndexRepo, BatchRepo repository.BatchRepo, wa watcher.Watcher) Indexer {
 	result := Indexer{IndexRepo: IndexRepo, BatchRepo: BatchRepo, watcher: wa}
-	var sub service.IpcSubscriber
-	sub = &result
+	var sub service.IpcSubscriber = &result
 	service.GetIpcManager().Subscribe(&sub)
 	if wa == nil {
 		result.watcher = watcher.NewNodeStatusWatcher(IndexRepo, BatchRepo)

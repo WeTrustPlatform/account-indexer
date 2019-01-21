@@ -19,14 +19,12 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 
 	"os"
-	"os/user"
 
 	cli "gopkg.in/urfave/cli.v1"
 )
 
 var (
-	app    = newApp()
-	usr, _ = user.Current()
+	app = newApp()
 
 	ipcFlag = cli.StringFlag{
 		Name:  "ipc",

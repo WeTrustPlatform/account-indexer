@@ -27,7 +27,7 @@ func TestByteMarshallerBlock(t *testing.T) {
 		CreatedAt: createdAt,
 	}
 	encoded := bm.MarshallBlockValue(blockIndex)
-	assert.Equal(t, 2*TIMESTAMP_BYTE_LENGTH+(gethcommon.AddressLength+1)*2, len(encoded))
+	assert.Equal(t, 2*TimestampByteLength+(gethcommon.AddressLength+1)*2, len(encoded))
 	// 40
 	reBlockIndex := bm.UnmarshallBlockValue(encoded)
 	assert.Equal(t, *blockTime, *reBlockIndex.Time)

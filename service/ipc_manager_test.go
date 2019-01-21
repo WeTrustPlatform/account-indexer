@@ -40,8 +40,7 @@ func TestChangeIPC(t *testing.T) {
 	assert.Nil(t, err)
 	sub := IpcSubscriberImpl{}
 	assert.Equal(t, 0, sub.count)
-	var tmp IpcSubscriber
-	tmp = &sub
+	var tmp IpcSubscriber = &sub
 	im.Subscribe(&tmp)
 	im.ChangeIPC()
 	assert.Equal(t, 1, sub.count)

@@ -166,7 +166,7 @@ func (repo *KVIndexRepo) HandleReorg(blockTime *big.Int, reorgAddresses []types.
 func (repo *KVIndexRepo) GetLastBlock() (types.BlockIndex, error) {
 	lastBlocks := repo.blockDAO.GetNLastRecords(1)
 	if len(lastBlocks) <= 0 {
-		return types.BlockIndex{}, errors.New("No last record")
+		return types.BlockIndex{}, errors.New("no last record")
 	}
 	return repo.keyValueToBlockIndex(lastBlocks[0]), nil
 }
@@ -175,7 +175,7 @@ func (repo *KVIndexRepo) GetLastBlock() (types.BlockIndex, error) {
 func (repo *KVIndexRepo) GetFirstBlock() (types.BlockIndex, error) {
 	firstBlock := repo.blockDAO.GetNFirstRecords(1)
 	if len(firstBlock) <= 0 {
-		return types.BlockIndex{}, errors.New("No first record")
+		return types.BlockIndex{}, errors.New("no first record")
 	}
 	return repo.keyValueToBlockIndex(firstBlock[0]), nil
 }

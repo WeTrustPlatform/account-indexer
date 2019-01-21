@@ -10,15 +10,18 @@ type MemDbDAO struct {
 	db *memdb.DB
 }
 
+// NewMemDbDAO new memdb dao instance
 func NewMemDbDAO(db *memdb.DB) MemDbDAO {
 	return MemDbDAO{db: db}
 }
 
+// Put implement interface
 func (md MemDbDAO) Put(record KeyValue) error {
 	err := md.db.Put(record.Key, record.Value)
 	return err
 }
 
+// BatchPut implement interface
 func (md MemDbDAO) BatchPut(records []KeyValue) error {
 	for _, item := range records {
 		err := md.db.Put(item.Key, item.Value)
@@ -29,6 +32,7 @@ func (md MemDbDAO) BatchPut(records []KeyValue) error {
 	return nil
 }
 
+// BatchDelete implement interface
 func (md MemDbDAO) BatchDelete(keys [][]byte) error {
 	for _, key := range keys {
 		err := md.DeleteByKey(key)
@@ -39,11 +43,13 @@ func (md MemDbDAO) BatchDelete(keys [][]byte) error {
 	return nil
 }
 
+// DeleteByKey implement interface
 func (md MemDbDAO) DeleteByKey(key []byte) error {
 	err := md.db.Delete(key)
 	return err
 }
 
+// FindByKeyPrefix implement interface
 func (md MemDbDAO) FindByKeyPrefix(prefix []byte, asc bool, rows int, start int) (int, []KeyValue) {
 	iter := md.db.NewIterator(util.BytesPrefix(prefix))
 	defer iter.Release()
@@ -57,6 +63,7 @@ func (md MemDbDAO) FindByRange(rg *util.Range, asc bool, rows int, start int) (i
 	return findByKeyPrefix(iter, asc, rows, start)
 }
 
+// FindByKey implement interface
 func (md MemDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 	value, err := md.db.Get(key)
 	if err != nil {
@@ -66,12 +73,14 @@ func (md MemDbDAO) FindByKey(key []byte) (*KeyValue, error) {
 	return &kv, nil
 }
 
+// GetNFirstRecords implement interface
 func (md MemDbDAO) GetNFirstRecords(n int) []KeyValue {
 	iter := md.db.NewIterator(nil)
 	defer iter.Release()
 	return getNFirstRecords(iter, n)
 }
 
+// GetNLastRecords implement interface
 func (md MemDbDAO) GetNLastRecords(n int) []KeyValue {
 	iter := md.db.NewIterator(nil)
 	defer iter.Release()
@@ -85,6 +94,7 @@ func (md MemDbDAO) GetNFirstPredicate(prep Predicate) []KeyValue {
 	return getNFirstPredicate(iter, prep)
 }
 
+// GetAllRecords implement interface
 func (md MemDbDAO) GetAllRecords() []KeyValue {
 	iter := md.db.NewIterator(nil)
 	defer iter.Release()

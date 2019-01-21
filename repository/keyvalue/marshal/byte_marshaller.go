@@ -13,8 +13,10 @@ import (
 )
 
 const (
-	TIMESTAMP_BYTE_LENGTH        = 4
-	BLOCK_NUMBER_MARSHALL_LENGTH = 10
+	// TimestampByteLength length of time after marshall
+	TimestampByteLength = 4
+	// BlockNumberMarshallLength length of block number after marshall
+	BlockNumberMarshallLength = 10
 )
 
 // ByteMarshaller marshal data using byte array
@@ -31,19 +33,19 @@ func (bm ByteMarshaller) MarshallBlockValue(blockIndex *types.BlockIndex) []byte
 	timeByteArr := common.MarshallTime(blockIndex.Time)
 	addrSeqLen := gethcommon.AddressLength + 1
 	// time_address1_seq1_address2_seq2
-	result := make([]byte, 2*TIMESTAMP_BYTE_LENGTH+numAddr*(addrSeqLen))
+	result := make([]byte, 2*TimestampByteLength+numAddr*(addrSeqLen))
 	offset := 0
 	// CreatedAt
 	for i, byteItem := range createdAtByteArr {
 		result[offset+i] = byteItem
 	}
 	// time
-	offset = TIMESTAMP_BYTE_LENGTH
+	offset = TimestampByteLength
 	for i, byteItem := range timeByteArr {
 		result[offset+i] = byteItem
 	}
 	// address_seq*
-	offset = 2 * TIMESTAMP_BYTE_LENGTH
+	offset = 2 * TimestampByteLength
 	for i, addressSeq := range blockIndex.Addresses {
 		address := addressSeq.Address
 		addressByteArr, _ := hexutil.Decode(address)
@@ -61,12 +63,12 @@ func (bm ByteMarshaller) UnmarshallBlockValue(value []byte) types.BlockIndex {
 	addrResult := []types.AddressSequence{}
 	addressSeqLen := gethcommon.AddressLength + 1
 	// 4 first bytes are for CreatedAt
-	createdAt := common.UnmarshallTimeToInt(value[:TIMESTAMP_BYTE_LENGTH])
+	createdAt := common.UnmarshallTimeToInt(value[:TimestampByteLength])
 	// 4 first bytes are for time
-	blockTime := common.UnmarshallTimeToInt(value[TIMESTAMP_BYTE_LENGTH : 2*TIMESTAMP_BYTE_LENGTH])
-	numAddress := (len(value) - 2*TIMESTAMP_BYTE_LENGTH) / (addressSeqLen)
+	blockTime := common.UnmarshallTimeToInt(value[TimestampByteLength : 2*TimestampByteLength])
+	numAddress := (len(value) - 2*TimestampByteLength) / (addressSeqLen)
 	// remaining is for address_seq*
-	addrValue := value[2*TIMESTAMP_BYTE_LENGTH:]
+	addrValue := value[2*TimestampByteLength:]
 	for i := 0; i < numAddress; i++ {
 		address := hexutil.Encode(addrValue[i*addressSeqLen : (i+1)*addressSeqLen-1])
 		sequence := addrValue[(i+1)*addressSeqLen-1]
@@ -147,7 +149,7 @@ func (bm ByteMarshaller) UnmarshallAddressKey(key []byte) (string, *big.Int) {
 	address := hexutil.Encode(key[:gethcommon.AddressLength])
 	blockTime := new(big.Int)
 	// TODO: should we return sequence?
-	blockTime.SetBytes(key[gethcommon.AddressLength : gethcommon.AddressLength+TIMESTAMP_BYTE_LENGTH])
+	blockTime.SetBytes(key[gethcommon.AddressLength : gethcommon.AddressLength+TimestampByteLength])
 	return address, blockTime
 }
 
@@ -162,7 +164,7 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 	index = index + addressLength
 	address := hexutil.Encode(value[prevIndex:index])
 	// prevIndex = index
-	// index = index + BLOCK_NUMBER_MARSHALL_LENGTH
+	// index = index + BlockNumberMarshallLength
 	// blockNumberStr := string(value[prevIndex:index])
 	// blockNumber := new(big.Int)
 	// blockNumber.SetString(blockNumberStr, 10)
@@ -191,9 +193,9 @@ func (bm ByteMarshaller) MarshallBatchValue(updatedAt *big.Int, currentBlock *bi
 
 // UnmarshallBatchValue unmarshal value of key-value init batch status database
 func (bm ByteMarshaller) UnmarshallBatchValue(value []byte) types.BatchStatus {
-	timestamp := common.UnmarshallTimeToInt(value[:TIMESTAMP_BYTE_LENGTH])
+	timestamp := common.UnmarshallTimeToInt(value[:TimestampByteLength])
 	currentBlock := new(big.Int)
-	currentBlock.SetBytes(value[TIMESTAMP_BYTE_LENGTH:])
+	currentBlock.SetBytes(value[TimestampByteLength:])
 	return types.BatchStatus{
 		UpdatedAt: timestamp,
 		Current:   currentBlock,
@@ -221,10 +223,10 @@ func (bm ByteMarshaller) MarshallBatchKeyFrom(from *big.Int) []byte {
 // UnmarshallBatchKey unmarshall key of batch status database
 func (bm ByteMarshaller) UnmarshallBatchKey(key []byte) types.BatchStatus {
 	// TODO: handle error
-	nextIndex := BLOCK_NUMBER_MARSHALL_LENGTH
+	nextIndex := BlockNumberMarshallLength
 	fromStr := string(key[:nextIndex])
 	prevIndex := nextIndex
-	nextIndex += BLOCK_NUMBER_MARSHALL_LENGTH
+	nextIndex += BlockNumberMarshallLength
 	toStr := string(key[prevIndex:nextIndex])
 	prevIndex = nextIndex
 	nextIndex++
@@ -254,7 +256,7 @@ func (bm ByteMarshaller) UnmarshallBlockKey(key []byte) *big.Int {
 
 func blockNumberWidPad(blockNumber string) string {
 	buf := &bytes.Buffer{}
-	if len(blockNumber) < BLOCK_NUMBER_MARSHALL_LENGTH {
+	if len(blockNumber) < BlockNumberMarshallLength {
 		count := 10 - len(blockNumber)
 		for i := 0; i < count; i++ {
 			buf.WriteString("0")

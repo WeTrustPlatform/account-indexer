@@ -35,7 +35,7 @@ func TestStrToUnixTime(t *testing.T) {
 	assert.Nil(t, err)
 	tm = time.Unix(i.Int64(), 0)
 	log.Println(tm)
-	i, err = StrToUnixTimeInt("")
+	_, err = StrToUnixTimeInt("")
 	assert.NotNil(t, err)
 	_, err = StrToUnixTimeInt("100a")
 	assert.NotNil(t, err)

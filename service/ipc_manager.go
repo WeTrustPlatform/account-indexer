@@ -33,16 +33,16 @@ func (im *IpcManager) GetIPC() string {
 
 // SetIPC gets called from main
 func (im *IpcManager) SetIPC(ipcs []string) error {
-	if ipcs == nil || len(ipcs) == 0 {
-		return errors.New("No IPC specified")
+	if len(ipcs) == 0 {
+		return errors.New("no ipc specified")
 	}
 	tmp := map[string]string{}
 	for _, ipc := range ipcs {
 		if ipc == "" {
-			return errors.New("Blank ipc")
+			return errors.New("blank ipc")
 		}
 		if tmp[ipc] != "" {
-			return errors.New("Duplicate IPC: " + ipc)
+			return errors.New("duplicate IPC: " + ipc)
 		}
 		tmp[ipc] = ipc
 	}

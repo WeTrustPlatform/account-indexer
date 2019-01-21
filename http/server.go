@@ -26,24 +26,24 @@ const (
 	AdminPassword = "INDEXER_PASSWORD"
 )
 
-// HttpServer http server
-type HttpServer struct {
+// Server http server
+type Server struct {
 	indexRepo repository.IndexRepo
 	batchRepo repository.BatchRepo
 	fetcher   fetcher.Fetch
 }
 
 // NewServer Rest API
-func NewServer(indexRepo repository.IndexRepo, batchRepo repository.BatchRepo) HttpServer {
+func NewServer(indexRepo repository.IndexRepo, batchRepo repository.BatchRepo) Server {
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
 		log.Fatal("IPC path is not correct error:", err.Error())
 	}
-	return HttpServer{indexRepo: indexRepo, batchRepo: batchRepo, fetcher: fetcher}
+	return Server{indexRepo: indexRepo, batchRepo: batchRepo, fetcher: fetcher}
 }
 
 // Start start http server
-func (server HttpServer) Start() {
+func (server Server) Start() {
 	router := gin.Default()
 	api := router.Group("/api")
 	{
@@ -69,7 +69,7 @@ func (server HttpServer) Start() {
 	}
 }
 
-func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
+func (server Server) getTransactionsByAccount(c *gin.Context) {
 	account := c.Param("accountNumber")
 	accountByteArr, err := hexutil.Decode(account)
 	if err != nil || len(accountByteArr) == 0 {
@@ -136,7 +136,7 @@ func (server HttpServer) getTransactionsByAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (server HttpServer) getBlock(c *gin.Context) {
+func (server Server) getBlock(c *gin.Context) {
 	blockNumber := c.Param("blockNumber")
 	rows, start := getPagingQueryParams(c)
 	total, blocks := server.indexRepo.GetBlocks(blockNumber, rows, start)
@@ -149,11 +149,11 @@ func (server HttpServer) getBlock(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (server HttpServer) getConfig(c *gin.Context) {
+func (server Server) getConfig(c *gin.Context) {
 	c.JSON(http.StatusOK, common.GetConfig().String())
 }
 
-func (server HttpServer) getBatchStatus(c *gin.Context) {
+func (server Server) getBatchStatus(c *gin.Context) {
 	batchStatuses := server.batchRepo.GetAllBatchStatuses()
 	response := []httpTypes.EIBatchStatus{}
 	for _, batch := range batchStatuses {

@@ -68,5 +68,5 @@ func StrToTime(str string) (time.Time, error) {
 	}
 	// ISO 8601 without zone
 	tm, err = time.Parse("2006-01-02T15:04:05", str)
-	return tm, nil
+	return tm, err
 }

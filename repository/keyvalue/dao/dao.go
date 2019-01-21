@@ -25,20 +25,24 @@ type KeyValue struct {
 	Value []byte
 }
 
+// NewKeyValue new KeyValue
 func NewKeyValue(key []byte, value []byte) KeyValue {
 	return KeyValue{Key: key, Value: value}
 }
 
+// CopyKeyValue clone and return enw KeyValue
 func CopyKeyValue(key []byte, value []byte) KeyValue {
-	return KeyValue{Key: copy(key), Value: copy(value)}
+	return KeyValue{Key: clone(key), Value: clone(value)}
 }
 
+// Predicate predicate
 type Predicate func(KeyValue) bool
 
-func copy(arr []byte) []byte {
+func clone(arr []byte) []byte {
 	newSlice := make([]byte, len(arr))
-	for i, item := range arr {
-		newSlice[i] = item
-	}
+	// for i, item := range arr {
+	// 	newSlice[i] = item
+	// }
+	copy(newSlice, arr)
 	return newSlice
 }

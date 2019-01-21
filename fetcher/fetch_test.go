@@ -14,7 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type MockEthClient struct{}
+type MockEthClient struct {
+}
 
 var header = &gethtypes.Header{
 	Number: big.NewInt(2019),
