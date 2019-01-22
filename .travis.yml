@@ -33,3 +33,22 @@ matrix:
         - cd ../../test/e2e
         - INDEXER_USER_NAME=travis INDEXER_PASSWORD=travisindexer go test -tags=e2e -v
 
+before_deploy:
+  - cd cmd/indexer
+  - go clean
+  - go build
+  - mkdir account-indexer-linux-x86_64-${TRAVIS_TAG}
+  - cp ../../README.md account-indexer-linux-x86_64-${TRAVIS_TAG}/
+  - cp ../../LICENSE account-indexer-linux-x86_64-${TRAVIS_TAG}/
+  - cp indexer account-indexer-linux-x86_64-${TRAVIS_TAG}/
+  - tar -cvf account-indexer-linux-x86_64-${TRAVIS_TAG}.tar.gz account-indexer-linux-x86_64-${TRAVIS_TAG}
+
+deploy:
+  skip_cleanup: true
+  provider: releases
+  api_key:
+    secure: Et/CFlOESq1BIH2XdhfY536JnkFhPfyL3xXtEmCOzmlaK465LvjtTSlnNnBl+8k9vEeYK9g/WQKfDXyeArAitbcDP+W90WieLEt7aXqhOxsuuF88wspgtL3mK6X1XCXOxrpjYOE0Ux8sDOgk+a0EMXL/xNAaUcLKPb0SbubqaPpt1wnRd/cSy1VNGHjjYNFM5KeJkOrnb5byt94c5EfXHcQ/jGyQJ54oSK7Ldo0qT9oCHoa4AubI21eYiwiTlf6i4lP8sdt2AF/F94npq3byjtfg5P37Ktlzs+w2bRsYpYHwkZA9OiuQRGu476y+d4ySCF53YntiAzMEiy/SEwj8v3HAbHcxf+NRCqKB0p3fM1ojuOPfAsCAAngz25tnH/gs6wBmW0aH8LMnq35filjbjiUPtCaEQB04c6ku1ggNrpH47T/7Odh0oUMqDJgdfliE5lUujj4rmbwRxuDcyDcJCiBcWze+LRULu3E31Bm6C/46GKmaDEeNhIsRJQqp7pCbnoxNK9XJyTcXvflPxxCt+8BQHKaPlmTv+SaOvMzvy1RkkZ7+ExWT/gjs1eIJ9QAY5tglO5IXBtcF7yC50gcqScJlUMg50uvjlUK48rVTM4fJii8dqA344++R0lsaSyctVPhIcxdVE0CGpjRB3U0MVEfR6bVXpryfMnxYGJ5vPc0=
+  file: cmd/indexer/account-indexer-*.tar.gz
+  on:
+    repo: WeTrustPlatform/account-indexer
+
