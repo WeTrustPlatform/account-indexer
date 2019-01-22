@@ -12,7 +12,7 @@ const (
 	// DefaultOOSThreshold in minute
 	DefaultOOSThreshold = 10
 	// DefaultHTTPPort default http port
-	DefaultHTTPPort = 8645
+	DefaultHTTPPort = 3000
 	// DefaultNumBatch default number of init batch
 	DefaultNumBatch = 8
 )

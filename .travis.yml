@@ -20,9 +20,16 @@ matrix:
       os: linux
       script:
         - go get -t -v ./...
+        - go get github.com/PuerkitoBio/goquery
         - go test -tags=int -v -race ./...
         - go vet ./...
         - staticcheck ./...
         - gocyclo -over 19 $GO_FILES
         - golint -set_exit_status $(go list ./...)
+        - cd cmd/indexer
+        - go build
+        - INDEXER_USER_NAME=travis INDEXER_PASSWORD=travisindexer ./indexer --ipc wss://mainnet.infura.io/_ws --db ~/datadrive/indexer_db &
+        - sleep 3 # give server some time to boot
+        - cd ../../test/e2e
+        - INDEXER_USER_NAME=travis INDEXER_PASSWORD=travisindexer go test -tags=e2e -v
 
