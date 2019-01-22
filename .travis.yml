@@ -13,7 +13,6 @@ before_script:
   - go get golang.org/x/lint/golint
   - go get honnef.co/go/tools/cmd/staticcheck
   - go get github.com/fzipp/gocyclo
-  - go get github.com/PuerkitoBio/goquery
 
 matrix:
   include:
@@ -21,6 +20,7 @@ matrix:
       os: linux
       script:
         - go get -t -v ./...
+        - go get github.com/PuerkitoBio/goquery
         - go test -tags=int -v -race ./...
         - go vet ./...
         - staticcheck ./...
