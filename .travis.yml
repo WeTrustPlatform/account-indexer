@@ -52,4 +52,5 @@ deploy:
   file: cmd/indexer/account-indexer-*.tar.gz
   on:
     repo: WeTrustPlatform/account-indexer
+    tags: true
 
