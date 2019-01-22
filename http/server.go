@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
 	httpTypes "github.com/WeTrustPlatform/account-indexer/http/types"
+	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gin-gonic/gin"
@@ -30,16 +32,19 @@ const (
 type Server struct {
 	indexRepo repository.IndexRepo
 	batchRepo repository.BatchRepo
+	indexer   indexer.Indexer
 	fetcher   fetcher.Fetch
 }
 
 // NewServer Rest API
-func NewServer(indexRepo repository.IndexRepo, batchRepo repository.BatchRepo) Server {
+func NewServer(idx indexer.Indexer) Server {
+	indexRepo := idx.IndexRepo
+	batchRepo := idx.BatchRepo
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
 		log.Fatal("IPC path is not correct error:", err.Error())
 	}
-	return Server{indexRepo: indexRepo, batchRepo: batchRepo, fetcher: fetcher}
+	return Server{indexRepo: indexRepo, batchRepo: batchRepo, indexer: idx, fetcher: fetcher}
 }
 
 // Start start http server
@@ -57,6 +62,7 @@ func (server Server) Start() {
 		admin.GET("/batches/status", server.getBatchStatus)
 		// admin.POST("/batch/restart", server.restartBatch)
 		admin.GET("/blocks/:blockNumber", server.getBlock)
+		admin.POST("/blocks/:blockNumber", server.rerunBlock)
 		admin.GET("/blocks", server.getBlock)
 		admin.GET("/config", server.getConfig)
 	}
@@ -147,6 +153,24 @@ func (server Server) getBlock(c *gin.Context) {
 	}
 	log.Printf("Number of found blocks : %v \n", len(blocks))
 	c.JSON(http.StatusOK, response)
+}
+
+func (server Server) rerunBlock(c *gin.Context) {
+	blockNumberStr := c.Param("blockNumber")
+	log.Printf("Getting block %v from http param", blockNumberStr)
+	blockNumber := new(big.Int)
+	blockNumber, ok := blockNumber.SetString(blockNumberStr, 10)
+	if ok == false {
+		c.JSON(400, gin.H{"msg": "invalid block nunmber " + blockNumberStr})
+		return
+	}
+
+	err := server.indexer.FetchAndProcess(blockNumber)
+	if err != nil {
+		c.JSON(500, gin.H{"msg": "internal server error " + err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, fmt.Sprintf("Indexer processed block %v successfully", blockNumberStr))
 }
 
 func (server Server) getConfig(c *gin.Context) {

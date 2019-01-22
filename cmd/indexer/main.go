@@ -139,7 +139,7 @@ func index(ctx *cli.Context) {
 	go idx.IndexWithWatcher()
 	cleaner := watcher.NewCleaner(indexRepo)
 	go cleaner.CleanBlockDB()
-	server := http.NewServer(indexRepo, batchRepo)
+	server := http.NewServer(idx)
 	server.Start()
 }
 

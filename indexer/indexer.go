@@ -196,6 +196,26 @@ func (indexer *Indexer) ProcessBlock(blockDetail *types.BLockDetail, isBatch boo
 	return indexer.IndexRepo.Store(addressIndex, blockIndex, isBatch)
 }
 
+// FetchAndProcess fetch a block data from blockchain and process it
+func (indexer *Indexer) FetchAndProcess(blockNumber *big.Int) error {
+	fetcher, err := fetcher.NewChainFetch()
+	if err != nil {
+		return err
+	}
+	blockDetail, err := fetcher.FetchABlock(blockNumber)
+	if err != nil {
+		return err
+	}
+	log.Printf("Fetching block %v successfully", blockNumber)
+	isBatch := true
+	err = indexer.ProcessBlock(blockDetail, isBatch)
+	if err != nil {
+		return err
+	}
+	log.Printf("Processed and saved block %v successfully", blockNumber)
+	return err
+}
+
 // CreateIndexData transforms blockchain data to our index data
 func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*types.AddressIndex, *types.BlockIndex) {
 	addressIndex := make([]*types.AddressIndex, 0, 2*len(blockDetail.Transactions))
