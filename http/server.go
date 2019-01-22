@@ -160,7 +160,7 @@ func (server Server) rerunBlock(c *gin.Context) {
 	log.Printf("Getting block %v from http param", blockNumberStr)
 	blockNumber := new(big.Int)
 	blockNumber, ok := blockNumber.SetString(blockNumberStr, 10)
-	if ok == false {
+	if !ok {
 		c.JSON(400, gin.H{"msg": "invalid block nunmber " + blockNumberStr})
 		return
 	}
