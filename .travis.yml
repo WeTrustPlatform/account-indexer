@@ -25,4 +25,10 @@ matrix:
         - staticcheck ./...
         - gocyclo -over 19 $GO_FILES
         - golint -set_exit_status $(go list ./...)
+        - cd cmd/indexer
+        - go build
+        - ./indexer --ipc wss://mainnet.infura.io/_ws --db ~/datadrive/indexer_db &
+        - sleep 3 # give server some time to boot
+        - cd ../../test/e2e
+        - go test -tags=e2e -v
 
