@@ -34,7 +34,6 @@ matrix:
         - INDEXER_USER_NAME=travis INDEXER_PASSWORD=travisindexer go test -tags=e2e -v
 
 before_deploy:
-  - cd cmd/indexer
   - go clean
   - go build
   - mkdir account-indexer-linux-x86_64-${TRAVIS_TAG:1}
