@@ -49,7 +49,7 @@ deploy:
   api_key:
     secure: 5dvRO7XCsA7pPYMD7l077hg9UG7JlCyAWT9EABxVMlYL3a30O2MKqvgz//6rBpPR44UrKw0HvH1oJijUkEf2lUTPqApYxAPtgcvFirb29oxVvelXvaZ9xllj41qX/s0wGyUNadmAlDuuWk0PezBKPykXY7XH8b2iK6//lwG6YI4EpzgvOo9gzzzp9seDc8fyeKdhQIGQVV/puMYZ+v+0L0+X6TRJVlR8zGmfSV+41beWX2vMOiCeMNEt29eFBVzWNb31Ys5Z0ydVoIq84yPiydOvGv7S1QfsDWih7+1HlW2Hf7DmsC+c+6jEB7A4i4qpDKICIbl6IeZQUEFN8/LJ2SxwPtV+b1THGRyKMWunPVdJEoS7D/BnfOLx9NNTWOE7t8LpYlUTmiNCyvAeZ0+d5wYESKxpszt6lTP+nQrPzWTd8TvV2ijMF3TEx0i4Av267sXAQUNbUWvzXvkLY/P9jJRy/MNt3vaXR7tZyJDK3Khqov5v3IfYMWsKFE6Zyjo/6V0jSjMFSfMWr9sPFz7slV+s5062hq9Pag2y219ofQ1P2fnk9PVpS8jnpt6YqXLD51AB6mPkAx7fOZBAuoMrKMnPVeH6h+7NXBCAsTaWjzRYXIDyBXw5jQqHiHwSxkM32AIZcw/fDbpl0kXkV9TAKwc37axp75EgjY7pOp8Mo30=
   file_glob: true
-  file: cmd/indexer/account-indexer-*.tar.gz
+  file: account-indexer-*.tar.gz
   on:
     repo: WeTrustPlatform/account-indexer
     tags: true
