@@ -11,7 +11,9 @@ type KeyValueDAO interface {
 	BatchDelete(keys [][]byte) error
 	DeleteByKey(key []byte) error
 	FindByKeyPrefix(prefix []byte, asc bool, rows int, start int) (int, []KeyValue)
+	CountByKeyPrefix(prefix []byte) int
 	FindByRange(rg *util.Range, asc bool, rows int, start int) (int, []KeyValue)
+	CountByRange(rg *util.Range) int
 	FindByKey(key []byte) (*KeyValue, error)
 	GetNFirstRecords(n int) []KeyValue
 	GetNLastRecords(n int) []KeyValue

@@ -11,6 +11,7 @@ import (
 type IndexRepo interface {
 	Store(indexData []*types.AddressIndex, blockIndex *types.BlockIndex, isBatch bool) error
 	GetTransactionByAddress(address string, rows int, start int, fromTime time.Time, toTime time.Time) (int, []types.AddressIndex)
+	GetTotalTransaction(address string, fromTime time.Time, toTime time.Time) int
 	GetLastBlock() (types.BlockIndex, error)
 	GetFirstBlock() (types.BlockIndex, error)
 	DeleteOldBlocks(untilTime *big.Int) (int, error)

@@ -52,6 +52,11 @@ func (suite *MemDbDAOTestSuite) TestFindByKeyPrefix() {
 	assert.True(suite.T(), reflect.DeepEqual(keyValues[0], prefixFound[1]))
 }
 
+func (suite *MemDbDAOTestSuite) TestCountByKeyPrefix() {
+	total := suite.dao.CountByKeyPrefix([]byte("key"))
+	assert.Equal(suite.T(), 2, total)
+}
+
 func (suite *MemDbDAOTestSuite) TestGetNFirstPredicate() {
 	// 1st test
 	pre := Predicate(func(KeyValue) bool {

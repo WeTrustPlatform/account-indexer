@@ -49,6 +49,13 @@ func (ld LevelDbDAO) DeleteByKey(key []byte) error {
 	return err
 }
 
+// CountByKeyPrefix count by a key prefix
+func (ld LevelDbDAO) CountByKeyPrefix(prefix []byte) int {
+	iter := ld.db.NewIterator(util.BytesPrefix(prefix), nil)
+	defer iter.Release()
+	return count(iter)
+}
+
 // FindByKeyPrefix find by a key prefix
 func (ld LevelDbDAO) FindByKeyPrefix(prefix []byte, asc bool, rows int, start int) (int, []KeyValue) {
 	iter := ld.db.NewIterator(util.BytesPrefix(prefix), nil)
@@ -61,6 +68,13 @@ func (ld LevelDbDAO) FindByRange(rg *util.Range, asc bool, rows int, start int) 
 	iter := ld.db.NewIterator(rg, nil)
 	defer iter.Release()
 	return findByKeyPrefix(iter, asc, rows, start)
+}
+
+// CountByRange count total of items
+func (ld LevelDbDAO) CountByRange(rg *util.Range) int {
+	iter := ld.db.NewIterator(rg, nil)
+	defer iter.Release()
+	return count(iter)
 }
 
 func findByKeyPrefix(iter iterator.Iterator, asc bool, rows int, start int) (int, []KeyValue) {
@@ -186,6 +200,14 @@ func getAllRecords(iter iterator.Iterator) []KeyValue {
 	result := []KeyValue{}
 	for iter.Next() {
 		result = append(result, CopyKeyValue(iter.Key(), iter.Value()))
+	}
+	return result
+}
+
+func count(iter iterator.Iterator) int {
+	result := 0
+	for iter.Next() {
+		result++
 	}
 	return result
 }

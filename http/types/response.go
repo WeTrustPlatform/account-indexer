@@ -9,6 +9,11 @@ import (
 	coreTypes "github.com/WeTrustPlatform/account-indexer/core/types"
 )
 
+// EITotalTransaction total transaction of an account
+type EITotalTransaction struct {
+	Total int `json:"numFound"`
+}
+
 // EITransactionsByAccount response for getTransactionsByAccount api
 type EITransactionsByAccount struct {
 	Total   string      `json:"numFound"`
