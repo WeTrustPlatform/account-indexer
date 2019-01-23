@@ -29,7 +29,7 @@ func TestMarshall(t *testing.T) {
 	idx := AddressToEIAddress(index)
 	idx.Data = []byte{1, 2}
 	response := EITransactionsByAccount{
-		Total:   10,
+		Total:   "10",
 		Start:   5,
 		Indexes: []EIAddress{idx},
 	}
@@ -39,6 +39,6 @@ func TestMarshall(t *testing.T) {
 	dataStr := string(data)
 	log.Printf("%v \n", dataStr)
 	tm := common.UnmarshallIntToTime(big.NewInt(1546848896)).Format(time.RFC3339)
-	expectedStr := fmt.Sprintf(`{"numFound":10,"start":5,"data":[{"address":"from1","txHash":"0xtx1","value":-111,"time":"%v","coupleAddress":"to1","data":"AQI=","gas":0,"gasPrice":null}]}`, tm)
+	expectedStr := fmt.Sprintf(`{"numFound":"10","start":5,"data":[{"address":"from1","txHash":"0xtx1","value":-111,"time":"%v","coupleAddress":"to1","data":"AQI=","gas":0,"gasPrice":null}]}`, tm)
 	assert.Equal(t, expectedStr, dataStr)
 }

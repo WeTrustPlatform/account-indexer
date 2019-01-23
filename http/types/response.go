@@ -11,7 +11,7 @@ import (
 
 // EITransactionsByAccount response for getTransactionsByAccount api
 type EITransactionsByAccount struct {
-	Total   int         `json:"numFound"`
+	Total   string      `json:"numFound"`
 	Start   int         `json:"start"`
 	Indexes []EIAddress `json:"data"`
 }

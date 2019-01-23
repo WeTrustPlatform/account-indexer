@@ -133,9 +133,14 @@ func (server Server) getTransactionsByAccount(c *gin.Context) {
 		}
 		addresses = append(addresses, addr)
 	}
+	totalStr := strconv.Itoa(total)
+	if total > common.NumMaxTransaction {
+		// If this address has a lot of transactions, just say +100000
+		totalStr = "+" + totalStr
+	}
 	// response automatically marshalled using json.Marshall()
 	response := httpTypes.EITransactionsByAccount{
-		Total:   total,
+		Total:   totalStr,
 		Start:   start,
 		Indexes: addresses,
 	}
