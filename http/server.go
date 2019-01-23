@@ -53,6 +53,7 @@ func (server Server) Start() {
 	api := router.Group("/api")
 	{
 		api.GET("v1/accounts/:accountNumber", server.getTransactionsByAccount)
+		api.GET("v1/accounts/:accountNumber/total", server.getTotalByAccount)
 	}
 
 	admin := router.Group("/admin", gin.BasicAuth(gin.Accounts{
@@ -76,32 +77,10 @@ func (server Server) Start() {
 }
 
 func (server Server) getTransactionsByAccount(c *gin.Context) {
-	account := c.Param("accountNumber")
-	accountByteArr, err := hexutil.Decode(account)
-	if err != nil || len(accountByteArr) == 0 {
-		c.JSON(400, gin.H{"msg": "invalid account " + account})
+	account, fromTime, toTime, err := getAccountParam(c)
+	if err != nil {
 		return
 	}
-	fromTimeStr := c.Query("from")
-	var fromTime time.Time
-	if len(fromTimeStr) > 0 {
-		fromTime, err = common.StrToTime(fromTimeStr)
-		if err != nil {
-			c.JSON(400, gin.H{"msg": "invalid from " + fromTimeStr})
-			return
-		}
-	}
-
-	toTimeStr := c.Query("to")
-	var toTime time.Time
-	if len(toTimeStr) > 0 {
-		toTime, err = common.StrToTime(toTimeStr)
-		if err != nil {
-			c.JSON(400, gin.H{"msg": "invalid to " + toTimeStr})
-			return
-		}
-	}
-
 	flParam := c.Query("fl")
 	addlFields := strings.Split(flParam, ",")
 	needTxData := common.Contains(addlFields, "data")
@@ -143,6 +122,18 @@ func (server Server) getTransactionsByAccount(c *gin.Context) {
 		Total:   totalStr,
 		Start:   start,
 		Indexes: addresses,
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+func (server Server) getTotalByAccount(c *gin.Context) {
+	account, fromTime, toTime, err := getAccountParam(c)
+	if err != nil {
+		return
+	}
+	total := server.indexRepo.GetTotalTransaction(account, fromTime, toTime)
+	response := httpTypes.EITotalTransaction{
+		Total: total,
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -218,4 +209,35 @@ func getPagingQueryParams(c *gin.Context) (int, int) {
 		start = 0
 	}
 	return rows, start
+}
+
+// Get and validate account, from, to
+func getAccountParam(c *gin.Context) (string, time.Time, time.Time, error) {
+	var fromTime time.Time
+	var toTime time.Time
+	account := c.Param("accountNumber")
+	accountByteArr, err := hexutil.Decode(account)
+	if err != nil || len(accountByteArr) == 0 {
+		c.JSON(400, gin.H{"msg": "invalid account " + account})
+		return account, fromTime, toTime, err
+	}
+	fromTimeStr := c.Query("from")
+
+	if len(fromTimeStr) > 0 {
+		fromTime, err = common.StrToTime(fromTimeStr)
+		if err != nil {
+			c.JSON(400, gin.H{"msg": "invalid from " + fromTimeStr})
+			return account, fromTime, toTime, err
+		}
+	}
+
+	toTimeStr := c.Query("to")
+	if len(toTimeStr) > 0 {
+		toTime, err = common.StrToTime(toTimeStr)
+		if err != nil {
+			c.JSON(400, gin.H{"msg": "invalid to " + toTimeStr})
+			return account, fromTime, toTime, err
+		}
+	}
+	return account, fromTime, toTime, nil
 }

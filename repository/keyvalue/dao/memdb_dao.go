@@ -49,6 +49,13 @@ func (md MemDbDAO) DeleteByKey(key []byte) error {
 	return err
 }
 
+// CountByKeyPrefix count by key prefix
+func (md MemDbDAO) CountByKeyPrefix(prefix []byte) int {
+	iter := md.db.NewIterator(util.BytesPrefix(prefix))
+	defer iter.Release()
+	return count(iter)
+}
+
 // FindByKeyPrefix implement interface
 func (md MemDbDAO) FindByKeyPrefix(prefix []byte, asc bool, rows int, start int) (int, []KeyValue) {
 	iter := md.db.NewIterator(util.BytesPrefix(prefix))
@@ -61,6 +68,13 @@ func (md MemDbDAO) FindByRange(rg *util.Range, asc bool, rows int, start int) (i
 	iter := md.db.NewIterator(rg)
 	defer iter.Release()
 	return findByKeyPrefix(iter, asc, rows, start)
+}
+
+// CountByRange count total of items
+func (md MemDbDAO) CountByRange(rg *util.Range) int {
+	iter := md.db.NewIterator(rg)
+	defer iter.Release()
+	return count(iter)
 }
 
 // FindByKey implement interface

@@ -90,6 +90,38 @@ func (repo *KVIndexRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 	return err
 }
 
+// GetTotalTransaction get total transaction of an account
+func (repo *KVIndexRepo) GetTotalTransaction(address string, fromTime time.Time, toTime time.Time) int {
+	prefix := repo.marshaller.MarshallAddressKeyPrefix(address)
+	hasFrom := !time.Time.IsZero(fromTime)
+	hasTo := !time.Time.IsZero(toTime)
+	if hasFrom || hasTo {
+		// assuming fromTime and toTime is good
+		// make toTime inclusive
+		allTimeRange := util.BytesPrefix(prefix)
+		fromPrefix := repo.marshaller.MarshallAddressKeyPrefix3(address, fromTime)
+		newToTime := toTime.Add(1 * time.Second)
+		toPrefix := repo.marshaller.MarshallAddressKeyPrefix3(address, newToTime)
+		var rg *util.Range
+		if !hasFrom {
+			rg = &util.Range{Start: allTimeRange.Start, Limit: toPrefix}
+		} else if !hasTo {
+			rg = &util.Range{Start: fromPrefix, Limit: allTimeRange.Limit}
+		} else {
+			rg = &util.Range{Start: fromPrefix, Limit: toPrefix}
+		}
+		total := repo.addressDAO.CountByRange(rg)
+		return total
+	}
+	// Search by address as LevelDB prefix
+	// bad address
+	if len(prefix) == 0 {
+		return 0
+	}
+	total := repo.addressDAO.CountByKeyPrefix(prefix)
+	return total
+}
+
 // GetTransactionByAddress main thing for this indexer
 func (repo *KVIndexRepo) GetTransactionByAddress(address string, rows int, start int, fromTime time.Time, toTime time.Time) (int, []types.AddressIndex) {
 	convertKeyValuesToAddressIndexes := func(keyValues []dao.KeyValue) []types.AddressIndex {

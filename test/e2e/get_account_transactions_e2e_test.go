@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,7 +22,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// lupus master address
+var account string = "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
+
 func TestConvertEther(t *testing.T) {
+	log.Println("TestConvertEther")
 	value1FromEtherScan := "0.16310815 Ether"
 	assert.Equal(t, "163108150000000000", esValueToString(value1FromEtherScan))
 	value2FromEtherScan := "9.56064602 Ether"
@@ -32,11 +37,10 @@ func TestConvertEther(t *testing.T) {
 
 // Get data from etherscan.com and compare to our indexer
 func TestGetAccountTransactions(t *testing.T) {
-	// lupus master address
-	account := "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
+	log.Println("TestGetAccountTransactions")
 	blockNumbers, esData := getDataFromEtherScan(t, account)
 	indexBlocks(t, blockNumbers)
-	indexData := getDataFromIndexer(t, account, len(esData))
+	indexData := getDataFromIndexer(t, account, len(esData), "", "")
 	assert.Equal(t, len(esData), len(indexData))
 	// This will print out missing data if any
 	for i, esTx := range esData {
@@ -47,6 +51,33 @@ func TestGetAccountTransactions(t *testing.T) {
 		assert.Equal(t, addr, indexData[i].CoupleAddress)
 		assert.Equal(t, value, indexData[i].Value)
 	}
+}
+
+func TestGetTransactionWithDatetime(t *testing.T) {
+	log.Println("TestGetTransactionWithDatetime")
+	from := "2019-01-01T00:00:00"
+	// no to
+	indexData := getDataFromIndexer(t, account, 100, from, "")
+	// 4 as of Jan 2019
+	assert.True(t, len(indexData) >= 4)
+	to := "2018-12-31T23:59:59"
+	// no from
+	indexData = getDataFromIndexer(t, account, 100, "", to)
+	assert.Equal(t, 38, len(indexData))
+	from = "2000-01-01T00:00:00"
+	to = "2019-01-23T00:00:00"
+	// has both from and to
+	indexData = getDataFromIndexer(t, account, 100, from, to)
+	assert.Equal(t, 42, len(indexData))
+}
+
+func TestGetTotalTransactions(t *testing.T) {
+	log.Println("TestGetTotalTransactions")
+	account := "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
+	numES := getTotalTxFromEtherScan(t, account)
+	// assuming this function run after the above function
+	numIdx := getTotalTxFromIndexer(t, account)
+	assert.Equal(t, numES, numIdx)
 }
 
 func indexBlocks(t *testing.T, blockNumbers []string) {
@@ -74,8 +105,8 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 	}
 }
 
-func getDataFromIndexer(t *testing.T, account string, rows int) []httpTypes.EIAddress {
-	url := fmt.Sprintf("http://localhost:3000/api/v1/accounts/%v?rows=%v", account, rows)
+func getDataFromIndexer(t *testing.T, account string, rows int, from string, to string) []httpTypes.EIAddress {
+	url := fmt.Sprintf("http://localhost:3000/api/v1/accounts/%v?rows=%v&from=%v&to=%v", account, rows, from, to)
 	t.Logf("Getting index data from %v \n", url)
 	res, err := http.Get(url)
 	assert.Nil(t, err)
@@ -83,23 +114,42 @@ func getDataFromIndexer(t *testing.T, account string, rows int) []httpTypes.EIAd
 	var httpResult httpTypes.EITransactionsByAccount
 	err = json.NewDecoder(res.Body).Decode(&httpResult)
 	assert.Nil(t, err)
-	assert.Equal(t, rows, len(httpResult.Indexes))
 	return httpResult.Indexes
+}
+
+func getTotalTxFromIndexer(t *testing.T, account string) int {
+	url := fmt.Sprintf("http://localhost:3000/api/v1/accounts/%v/total", account)
+	t.Logf("Getting index total transaction from %v \n", url)
+	res, err := http.Get(url)
+	assert.Nil(t, err)
+	defer res.Body.Close()
+	httpResult := httpTypes.EITotalTransaction{}
+	err = json.NewDecoder(res.Body).Decode(&httpResult)
+	assert.Nil(t, err)
+	numTx := httpResult.Total
+	log.Printf("Found number of transactions from indexer: %v", numTx)
+	return numTx
+}
+
+func getTotalTxFromEtherScan(t *testing.T, account string) int {
+	url := fmt.Sprintf("https://etherscan.io/txs?a=%v", account)
+	log.Printf("Getting total transaction from %v \n", url)
+	doc := getEtherScanDoc(t, url)
+	wholeText := doc.Text()
+	i := strings.Index(wholeText, "A total of ")
+	j := strings.Index(wholeText, " Txns found")
+	numTx := string([]byte(wholeText)[i+len("A total of ") : j])
+	log.Println("Found number of transactions from etherscan: " + numTx)
+	result, err := strconv.Atoi(numTx)
+	assert.Nil(t, err)
+	return result
 }
 
 // Return list of block numbers and list of AddressIndex
 func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.EIAddress) {
 	url := fmt.Sprintf("https://etherscan.io/txs?a=%v", account)
 	log.Printf("Getting data from %v \n", url)
-	res, err := http.Get(url)
-	assert.Nil(t, err)
-	defer res.Body.Close()
-	if res.StatusCode != 200 {
-		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
-	}
-	// Load the HTML document
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	assert.Nil(t, err)
+	doc := getEtherScanDoc(t, url)
 	blockNumbers := []string{}
 	txLines := []httpTypes.EIAddress{}
 	trSelector := "div#ContentPlaceHolder1_mainrow > div > div > div > table > tbody > tr"
@@ -130,6 +180,19 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 	log.Printf("Done getting data, number of transaction: %v \n", len(txLines))
 
 	return blockNumbers, txLines
+}
+
+func getEtherScanDoc(t *testing.T, url string) *goquery.Document {
+	res, err := http.Get(url)
+	assert.Nil(t, err)
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
+	}
+	// Load the HTML document
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	assert.Nil(t, err)
+	return doc
 }
 
 func esValueToString(str string) string {
