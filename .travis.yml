@@ -28,7 +28,7 @@ matrix:
         - golint -set_exit_status $(go list ./...)
         - cd cmd/indexer
         - go build
-        - INDEXER_USER_NAME=travis INDEXER_PASSWORD=travisindexer ./indexer --ipc wss://mainnet.infura.io/_ws --db ~/datadrive/indexer_db &
+        - INDEXER_USER_NAME=travis INDEXER_PASSWORD=travisindexer ./indexer --ipc wss://mainnet.kivutar.me:8546/2KT179di --db ~/datadrive/indexer_db &
         - sleep 3 # give server some time to boot
         - cd ../../test/e2e
         - INDEXER_USER_NAME=travis INDEXER_PASSWORD=travisindexer go test -tags=e2e -v
