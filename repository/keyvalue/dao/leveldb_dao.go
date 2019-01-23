@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -67,14 +68,12 @@ func findByKeyPrefix(iter iterator.Iterator, asc bool, rows int, start int) (int
 	count := 0
 	total := 0
 
-	addToResult := func() bool {
+	addToResult := func() {
 		if total >= start && count < rows {
 			keyValue := CopyKeyValue(iter.Key(), iter.Value())
 			result = append(result, keyValue)
 			count++
 		}
-		shouldCont := count < rows
-		return shouldCont
 	}
 
 	fn := iter.Next
@@ -92,9 +91,12 @@ func findByKeyPrefix(iter iterator.Iterator, asc bool, rows int, start int) (int
 	for fn() {
 		addToResult()
 		total++
+		// Due to the nature of LevelDB, don't want to loop thru the result if it's a lot
+		if total > common.NumMaxTransaction {
+			break
+		}
 	}
 
-	// err := iter.Error()
 	return total, result
 }
 
