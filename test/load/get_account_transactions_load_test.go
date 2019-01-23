@@ -65,8 +65,8 @@ func TestHandleMultipleRequest(t *testing.T) {
 	log.Printf("TestHandleMultipleRequest for %v addresses finished in %v \n", len(addresses), dur)
 }
 
-func TestRequestTime(t *testing.T) {
-	log.Println("TestRequestTime start")
+func TestGetTransactionRequestTime(t *testing.T) {
+	log.Println("TestGetTransactionRequestTime start")
 	// only 20 transactions in this block, should be good to test time
 	addresses := getAddressesForBlock(7000002)
 	now := time.Now()
@@ -84,6 +84,26 @@ func TestRequestTime(t *testing.T) {
 	dur := time.Since(now)
 
 	log.Printf("TestRequestTime for %v addresses finished in %v \n", len(addresses), dur)
+}
+
+func TestGetTotalRequestTime(t *testing.T) {
+	log.Println("TestGetTotalRequestTime")
+	// this address has a lot lot of transactions
+	addr := "0x8d12A197cB00D4747a1fe03395095ce2A5CC6819"
+	totalUrl := IndexerUrl + "/total"
+	url := fmt.Sprintf(totalUrl, addr)
+	now := time.Now()
+	res, err := getClient().Get(url)
+	dur := time.Since(now)
+	log.Printf("Get total transaction for %v takes %v \n", addr, dur)
+	assert.Nil(t, err)
+	defer res.Body.Close()
+	assert.Equal(t, 200, res.StatusCode)
+	httpResult := httpTypes.EITotalTransaction{}
+	err = json.NewDecoder(res.Body).Decode(&httpResult)
+	assert.Nil(t, err)
+	assert.True(t, httpResult.Total > 10000000)
+	log.Printf("Total transaction for %v: %v \n", addr, httpResult.Total)
 }
 
 // return number of milliseond
