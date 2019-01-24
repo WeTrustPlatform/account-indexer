@@ -15,6 +15,7 @@ import (
 	httpTypes "github.com/WeTrustPlatform/account-indexer/http/types"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository"
+	"github.com/WeTrustPlatform/account-indexer/service"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gin-gonic/gin"
 )
@@ -170,7 +171,8 @@ func (server Server) rerunBlock(c *gin.Context) {
 }
 
 func (server Server) getConfig(c *gin.Context) {
-	c.JSON(http.StatusOK, common.GetConfig().String())
+	ipc := service.GetIpcManager().GetIPC()
+	c.JSON(http.StatusOK, common.GetConfig().String()+" ipc="+ipc)
 }
 
 func (server Server) getBatchStatus(c *gin.Context) {

@@ -29,12 +29,12 @@ var (
 	ipcFlag = cli.StringFlag{
 		Name:  "ipc",
 		Usage: "ipc file paths separated by ','",
-		Value: "/datadrive/geth.ipc",
+		Value: common.DefaultIpc,
 	}
 	dbFlag = cli.StringFlag{
 		Name:  "db",
 		Usage: "leveldb file path",
-		Value: "/datadrive/account-indexer-db/geth_indexer_leveldb",
+		Value: common.DefaultDbPath,
 	}
 	cleanIntervalFlag = cli.IntFlag{
 		Name:  "bci",
@@ -104,6 +104,7 @@ func setConfig(ctx *cli.Context) {
 
 	config.Port = ctx.GlobalInt(portFlag.Name)
 	config.NumBatch = ctx.GlobalInt(batchFlag.Name)
+	config.StartTime = time.Now()
 	// byte range
 	if config.NumBatch < 1 || config.NumBatch > 127 {
 		log.Fatal("Number of batch should be 1 to 127")
@@ -116,6 +117,8 @@ func index(ctx *cli.Context) {
 	setConfig(ctx)
 	ipcPath := ctx.GlobalString(ipcFlag.Name)
 	dbPath := ctx.GlobalString(dbFlag.Name)
+	common.GetConfig().DbPath = dbPath
+
 	ipcs := strings.Split(ipcPath, ",")
 	service.GetIpcManager().SetIPC(ipcs)
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)
