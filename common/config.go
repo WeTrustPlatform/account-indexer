@@ -15,11 +15,13 @@ type Configuration struct {
 	OOSThreshold time.Duration
 	Port         int
 	NumBatch     int
+	DbPath       string
+	StartTime    time.Time
 }
 
 func (con *Configuration) String() string {
-	return fmt.Sprintf("CleanInterval=%v BlockTTL=%v WatcherInterval=%v OOSThreshold=%v Port=%v NumBatch=%v",
-		con.CleanInterval, con.BlockTTL, con.WatcherInterval, con.OOSThreshold, con.Port, con.NumBatch)
+	return fmt.Sprintf("CleanInterval=%v BlockTTL=%v WatcherInterval=%v OOSThreshold=%v Port=%v NumBatch=%v DbPath=%v StartTime=%v",
+		con.CleanInterval, con.BlockTTL, con.WatcherInterval, con.OOSThreshold, con.Port, con.NumBatch, con.DbPath, con.StartTime.Format(time.RFC3339))
 }
 
 var config *Configuration
