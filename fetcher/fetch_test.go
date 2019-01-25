@@ -61,6 +61,10 @@ func (mec MockEthClient) TransactionByHash(ctx context.Context, hash common.Hash
 	return &gethtypes.Transaction{}, false, nil
 }
 
+func (mec MockEthClient) Close() {
+
+}
+
 func TestFetchData(t *testing.T) {
 	fetcher := ChainFetch{
 		Client: MockEthClient{},

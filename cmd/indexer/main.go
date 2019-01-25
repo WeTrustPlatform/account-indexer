@@ -36,24 +36,24 @@ var (
 		Usage: "leveldb file path",
 		Value: common.DefaultDbPath,
 	}
-	cleanIntervalFlag = cli.IntFlag{
+	cleanIntervalFlag = cli.Float64Flag{
 		Name:  "bci",
 		Usage: "block clean interval (int) in minute",
 		Value: common.DefaultCleanInterval,
 	}
-	blockTimeToLiveFlag = cli.IntFlag{
+	blockTimeToLiveFlag = cli.Float64Flag{
 		Name:  "bttl",
 		Usage: "block time to live (int) in hour",
 		Value: common.DefaultBlockTTL,
 	}
-	watcherIntervalFlag = cli.IntFlag{
+	watcherIntervalFlag = cli.Float64Flag{
 		Name:  "w",
 		Usage: "watcher interval (int) in minute",
 		Value: common.DefaultWatcherInterval,
 	}
-	oosThresholdFlag = cli.IntFlag{
+	oosThresholdFlag = cli.Float64Flag{
 		Name:  "oos",
-		Usage: "threshold (in minute) to consider a node as out of sync",
+		Usage: "threshold (in second) to consider a node as out of sync",
 		Value: common.DefaultOOSThreshold,
 	}
 	portFlag = cli.IntFlag{
@@ -92,15 +92,27 @@ func newApp() *cli.App {
 }
 
 func setConfig(ctx *cli.Context) {
-	clearInterval := ctx.GlobalInt(cleanIntervalFlag.Name)
-	blockTTL := ctx.GlobalInt(blockTimeToLiveFlag.Name)
-	watcherInterval := ctx.GlobalInt(watcherIntervalFlag.Name)
-	oosThreshold := ctx.GlobalInt(oosThresholdFlag.Name)
+	clearInterval := ctx.GlobalFloat64(cleanIntervalFlag.Name)
+	blockTTL := ctx.GlobalFloat64(blockTimeToLiveFlag.Name)
+	watcherInterval := ctx.GlobalFloat64(watcherIntervalFlag.Name)
+	oosThreshold := ctx.GlobalFloat64(oosThresholdFlag.Name)
 	config := common.GetConfig()
 	config.CleanInterval = time.Duration(clearInterval) * time.Minute
+	if config.CleanInterval < 1*time.Second {
+		log.Fatalf("CleanInterval of %v is not valid \n", config.CleanInterval)
+	}
 	config.BlockTTL = time.Duration(blockTTL) * time.Hour
+	if config.BlockTTL < 1*time.Hour {
+		log.Fatalf("BlockTTL of %v is not valid. Should not be less than 1 hour \n", config.BlockTTL)
+	}
 	config.WatcherInterval = time.Duration(watcherInterval) * time.Minute
-	config.OOSThreshold = time.Duration(oosThreshold) * time.Minute
+	if config.WatcherInterval < 1*time.Second {
+		log.Fatalf("WatcherInterval of %v is not valid \n", config.WatcherInterval)
+	}
+	config.OOSThreshold = time.Duration(oosThreshold) * time.Second
+	if config.OOSThreshold < 1*time.Second {
+		log.Fatalf("OOSThreshold of %v is not valid \n", config.OOSThreshold)
+	}
 
 	config.Port = ctx.GlobalInt(portFlag.Name)
 	config.NumBatch = ctx.GlobalInt(batchFlag.Name)
@@ -139,7 +151,7 @@ func index(ctx *cli.Context) {
 	indexRepo := keyvalue.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB))
 	batchRepo := keyvalue.NewKVBatchRepo(dao.NewLevelDbDAO(batchDB))
 	idx := indexer.NewIndexer(indexRepo, batchRepo, nil)
-	go idx.IndexWithWatcher()
+	go idx.FirstIndex()
 	cleaner := watcher.NewCleaner(indexRepo)
 	go cleaner.CleanBlockDB()
 	server := http.NewServer(idx)
