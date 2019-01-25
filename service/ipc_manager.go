@@ -9,6 +9,7 @@ import (
 // IpcSubscriber interface for subscribers
 type IpcSubscriber interface {
 	IpcUpdated(ipc string)
+	Name() string
 }
 
 // IpcManager has the global IPC, it takes care of informing all fetcher when IPC is changed
@@ -23,6 +24,12 @@ var once sync.Once
 
 // Subscribe method for a subscriber to call
 func (im *IpcManager) Subscribe(sub *IpcSubscriber) {
+	for _, oldSub := range im.subscribers {
+		if oldSub == sub {
+			log.Printf("Already has the subscription for %v, no need to subscribe again \n", (*sub).Name())
+			break
+		}
+	}
 	im.subscribers = append(im.subscribers, sub)
 }
 
@@ -60,8 +67,9 @@ func (im *IpcManager) ChangeIPC() {
 		return
 	}
 	im.curIPC = NextIPC(im.curIPC, im.ipcList)
-	log.Printf("New IPC: %v \n", im.curIPC)
+	log.Printf("New IPC: %v, number of subscriber to update: %v \n", im.curIPC, len(im.subscribers))
 	for _, sub := range im.subscribers {
+		log.Printf("Updating new ipc to %v \n", (*sub).Name())
 		(*sub).IpcUpdated(im.curIPC)
 	}
 }

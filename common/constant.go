@@ -15,8 +15,8 @@ const (
 	DefaultBlockTTL = 4
 	// DefaultWatcherInterval in minute
 	DefaultWatcherInterval = 5
-	// DefaultOOSThreshold in minute
-	DefaultOOSThreshold = 10
+	// DefaultOOSThreshold in second
+	DefaultOOSThreshold = 300
 	// DefaultHTTPPort default http port
 	DefaultHTTPPort = 3000
 	// DefaultNumBatch default number of init batch

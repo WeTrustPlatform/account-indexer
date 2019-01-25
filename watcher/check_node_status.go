@@ -28,21 +28,21 @@ func NewNodeStatusWatcher(indexRepo repository.IndexRepo, batchRepo repository.B
 
 // Watch entry point of this struct
 func (n NodeStatusWatcher) Watch() {
-	// Watcher every 5 minute -> 5*60/15 ~ 20 blocks
 	ticker := time.NewTicker(common.GetConfig().WatcherInterval)
 	for t := range ticker.C {
 		log.Println("Watcher: Watch geth node status at", t)
-		n.watch()
+		n.watch(ticker)
 	}
 }
 
-func (n NodeStatusWatcher) watch() {
+func (n NodeStatusWatcher) watch(ticker *time.Ticker) {
 	lastBlock, err := n.indexRepo.GetLastBlock()
 	if err != nil {
 		log.Println("Watcher warning: error=", err.Error())
 		return
 	}
 	if shouldChangeIPC(lastBlock) {
+		ticker.Stop()
 		// TODO: update event database
 		service.GetIpcManager().ChangeIPC()
 	}
@@ -51,11 +51,12 @@ func (n NodeStatusWatcher) watch() {
 func shouldChangeIPC(lastBlock types.BlockIndex) bool {
 	createdAt := common.UnmarshallIntToTime(lastBlock.CreatedAt)
 	blockTime := common.UnmarshallIntToTime(lastBlock.Time)
-	// 20 minutes -> 80 blocks
+	// check if no new block is received for a long time
 	createdAtDelay := time.Since(createdAt)
+	// check if the last received block is on time or not
 	blockDelay := createdAt.Sub(blockTime)
 	if createdAtDelay > common.GetConfig().OOSThreshold || blockDelay > common.GetConfig().OOSThreshold {
-		log.Printf("Geth node is out of date, createdAtDelay=%v, blockDelay=%v \n", createdAtDelay, blockDelay)
+		log.Printf("Geth node is out of date, createdAtDelay=%v, blockDelay=%v OOSThreshold=%v \n", createdAtDelay, blockDelay, common.GetConfig().OOSThreshold)
 		return true
 	}
 	return false

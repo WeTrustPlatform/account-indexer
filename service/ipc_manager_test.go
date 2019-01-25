@@ -34,6 +34,10 @@ func (is *IpcSubscriberImpl) IpcUpdated(ipc string) {
 	is.count++
 }
 
+func (is *IpcSubscriberImpl) Name() string {
+	return "TestIPCSub"
+}
+
 func TestChangeIPC(t *testing.T) {
 	im := GetIpcManager()
 	err := im.SetIPC([]string{"ipc1", "ipc2"})
