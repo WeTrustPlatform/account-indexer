@@ -51,6 +51,9 @@ func TestStrToTime(t *testing.T) {
 	tm, err = StrToTime("2019-01-19T15:04:05")
 	log.Println(tm)
 	assert.Nil(t, err)
+	tm, err = StrToTime("2019-01-25T07:01:00.691Z")
+	log.Println(tm)
+	assert.Nil(t, err)
 }
 
 func TestPerformance(t *testing.T) {
