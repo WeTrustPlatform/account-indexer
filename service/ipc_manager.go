@@ -8,8 +8,6 @@ import (
 	"sync/atomic"
 )
 
-var mutex = &sync.Mutex{}
-
 // IpcSubscriber interface for subscribers
 type IpcSubscriber interface {
 	IpcUpdated(ipc string)
