@@ -74,7 +74,7 @@ func (repo *KVIndexRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) er
 	}
 	err := repo.addressDAO.BatchPut(keyValues)
 	if err != nil {
-		log.Fatal("Cannot write to address leveldb")
+		log.Fatal("Cannot write to address leveldb", err)
 	}
 	return err
 }
@@ -85,7 +85,7 @@ func (repo *KVIndexRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 	value := repo.marshaller.MarshallBlockValue(blockIndex)
 	err := repo.blockDAO.Put(dao.NewKeyValue(key, value))
 	if err != nil {
-		log.Fatal("Cannot write to block leveldb")
+		log.Fatal("Cannot write to block leveldb", err)
 	}
 	return err
 }
