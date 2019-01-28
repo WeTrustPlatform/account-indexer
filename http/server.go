@@ -39,17 +39,42 @@ type Server struct {
 
 // NewServer Rest API
 func NewServer(idx indexer.Indexer) Server {
+
 	indexRepo := idx.IndexRepo
 	batchRepo := idx.BatchRepo
+
+	server := Server{indexRepo: indexRepo, batchRepo: batchRepo, indexer: idx}
+	var sub service.IpcSubscriber = &server
+	service.GetIpcManager().Subscribe(&sub)
+	// Don't care the error, if there is error then IPCUpdate will call
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
-		log.Fatal("IPC path is not correct error:", err.Error())
+		log.Println("Server: cannot create fetcher err=", err)
+	} else {
+		server.fetcher = fetcher
 	}
-	return Server{indexRepo: indexRepo, batchRepo: batchRepo, indexer: idx, fetcher: fetcher}
+	return server
+}
+
+// IpcUpdated implements IpcSubscriber interface
+func (server *Server) IpcUpdated(ipcPath string) {
+	// Don't care the error, if there is error then IPCUpdate will call
+	fetcher, err := fetcher.NewChainFetch()
+	if err != nil {
+		log.Println("Server - IPCUpdated: cannot create net fetcher err=", err)
+		return
+	}
+	log.Println("Server - IPCUpdated: update to new IPC successfully")
+	server.fetcher = fetcher
+}
+
+// Name implements IpcSubscriber interface
+func (server *Server) Name() string {
+	return "Server"
 }
 
 // Start start http server
-func (server Server) Start() {
+func (server *Server) Start() {
 	router := gin.Default()
 	api := router.Group("/api")
 	{
@@ -71,13 +96,13 @@ func (server Server) Start() {
 	// Start and run the server
 	err := router.Run(fmt.Sprintf(":%v", common.GetConfig().Port))
 	if err == nil {
-		log.Println("Started server successfully at port ", common.GetConfig().Port)
+		log.Println("Server: Started server successfully at port ", common.GetConfig().Port)
 	} else {
-		log.Fatal("Cannot start http server", err.Error())
+		log.Fatal("Server: Cannot start http server", err.Error())
 	}
 }
 
-func (server Server) getTransactionsByAccount(c *gin.Context) {
+func (server *Server) getTransactionsByAccount(c *gin.Context) {
 	account, fromTime, toTime, err := getAccountParam(c)
 	if err != nil {
 		return
@@ -89,7 +114,7 @@ func (server Server) getTransactionsByAccount(c *gin.Context) {
 	needGasPrice := common.Contains(addlFields, "gasPrice")
 
 	rows, start := getPagingQueryParams(c)
-	log.Printf("Getting transactions for account %v\n", account)
+	log.Printf("Server: Getting transactions for account %v\n", account)
 	total, addressIndexes := server.indexRepo.GetTransactionByAddress(account, rows, start, fromTime, toTime)
 	addresses := []httpTypes.EIAddress{}
 	for _, idx := range addressIndexes {
@@ -108,7 +133,7 @@ func (server Server) getTransactionsByAccount(c *gin.Context) {
 				}
 
 			} else {
-				log.Println("Warning: cannot get additional data for transaction ", addr.TxHash)
+				log.Println("Server: Warning: cannot get additional data for transaction ", addr.TxHash)
 			}
 		}
 		addresses = append(addresses, addr)
@@ -127,7 +152,7 @@ func (server Server) getTransactionsByAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (server Server) getTotalByAccount(c *gin.Context) {
+func (server *Server) getTotalByAccount(c *gin.Context) {
 	account, fromTime, toTime, err := getAccountParam(c)
 	if err != nil {
 		return
@@ -139,7 +164,7 @@ func (server Server) getTotalByAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (server Server) getBlock(c *gin.Context) {
+func (server *Server) getBlock(c *gin.Context) {
 	blockNumber := c.Param("blockNumber")
 	rows, start := getPagingQueryParams(c)
 	total, blocks := server.indexRepo.GetBlocks(blockNumber, rows, start)
@@ -148,13 +173,13 @@ func (server Server) getBlock(c *gin.Context) {
 		Start:   start,
 		Indexes: blocks,
 	}
-	log.Printf("Number of found blocks : %v \n", len(blocks))
+	log.Printf("Server: Number of found blocks : %v \n", len(blocks))
 	c.JSON(http.StatusOK, response)
 }
 
-func (server Server) rerunBlock(c *gin.Context) {
+func (server *Server) rerunBlock(c *gin.Context) {
 	blockNumberStr := c.Param("blockNumber")
-	log.Printf("Getting block %v from http param", blockNumberStr)
+	log.Printf("Server: Getting block %v from http param", blockNumberStr)
 	blockNumber := new(big.Int)
 	blockNumber, ok := blockNumber.SetString(blockNumberStr, 10)
 	if !ok {
@@ -170,12 +195,12 @@ func (server Server) rerunBlock(c *gin.Context) {
 	c.JSON(http.StatusOK, fmt.Sprintf("Indexer processed block %v successfully", blockNumberStr))
 }
 
-func (server Server) getConfig(c *gin.Context) {
+func (server *Server) getConfig(c *gin.Context) {
 	ipc := service.GetIpcManager().GetIPC()
 	c.JSON(http.StatusOK, common.GetConfig().String()+" ipc="+ipc)
 }
 
-func (server Server) getBatchStatus(c *gin.Context) {
+func (server *Server) getBatchStatus(c *gin.Context) {
 	batchStatuses := server.batchRepo.GetAllBatchStatuses()
 	response := []httpTypes.EIBatchStatus{}
 	for _, batch := range batchStatuses {

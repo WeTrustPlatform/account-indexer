@@ -17,8 +17,9 @@ type Watcher interface {
 
 // NodeStatusWatcher watch status of geth node
 type NodeStatusWatcher struct {
-	indexRepo repository.IndexRepo
-	batchRepo repository.BatchRepo
+	indexRepo  repository.IndexRepo
+	batchRepo  repository.BatchRepo
+	isWatching bool
 }
 
 // NewNodeStatusWatcher create NodeStatusWatcher
@@ -27,7 +28,13 @@ func NewNodeStatusWatcher(indexRepo repository.IndexRepo, batchRepo repository.B
 }
 
 // Watch entry point of this struct
-func (n NodeStatusWatcher) Watch() {
+func (n *NodeStatusWatcher) Watch() {
+	if n.isWatching {
+		// Don't start new ticker again
+		log.Println("Watcher: waching, no need to watch again")
+		return
+	}
+	n.isWatching = true
 	ticker := time.NewTicker(common.GetConfig().WatcherInterval)
 	for t := range ticker.C {
 		log.Println("Watcher: Watch geth node status at", t)
@@ -35,13 +42,14 @@ func (n NodeStatusWatcher) Watch() {
 	}
 }
 
-func (n NodeStatusWatcher) watch(ticker *time.Ticker) {
+func (n *NodeStatusWatcher) watch(ticker *time.Ticker) {
 	lastBlock, err := n.indexRepo.GetLastBlock()
 	if err != nil {
-		log.Println("Watcher warning: error=", err.Error())
+		log.Println("Watcher: warning: error=", err.Error())
 		return
 	}
 	if shouldChangeIPC(lastBlock) {
+		n.isWatching = false
 		ticker.Stop()
 		// TODO: update event database
 		service.GetIpcManager().ChangeIPC()
@@ -56,7 +64,7 @@ func shouldChangeIPC(lastBlock types.BlockIndex) bool {
 	// check if the last received block is on time or not
 	blockDelay := createdAt.Sub(blockTime)
 	if createdAtDelay > common.GetConfig().OOSThreshold || blockDelay > common.GetConfig().OOSThreshold {
-		log.Printf("Geth node is out of date, createdAtDelay=%v, blockDelay=%v OOSThreshold=%v \n", createdAtDelay, blockDelay, common.GetConfig().OOSThreshold)
+		log.Printf("Watcher: Geth node is out of date, createdAtDelay=%v, blockDelay=%v OOSThreshold=%v \n", createdAtDelay, blockDelay, common.GetConfig().OOSThreshold)
 		return true
 	}
 	return false
