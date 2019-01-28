@@ -46,7 +46,13 @@ type ChainFetch struct {
 func NewChainFetch() (*ChainFetch, error) {
 	ipcPath := service.GetIpcManager().GetIPC()
 	client, err := ethclient.Dial(ipcPath)
+	if err != nil {
+		log.Printf("ChainFetch: Cannot dial, ipc %v is wrong, error: %v", ipcPath, err.Error())
+		switchIPC()
+		return nil, err
+	}
 	fetcher := &ChainFetch{Client: client}
+	fetcher.blockHeaderChannel = nil
 	return fetcher, err
 }
 
@@ -73,19 +79,19 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 	// don't subscribe ever, let indexer do it
 	ctx := context.Background()
 	cf.blockHeaderChannel = make(chan *gethtypes.Header)
-	go func() {
-		ethSub, err := cf.Client.SubscribeNewHead(ctx, cf.blockHeaderChannel)
-		if err != nil {
-			log.Fatalf("ChainFetch: Cannot do newHead subscribe to this ipc %v\n", service.GetIpcManager().GetIPC())
-		}
-		cf.ethSub = ethSub
-	}()
+	ethSub, err := cf.Client.SubscribeNewHead(ctx, cf.blockHeaderChannel)
+	if err != nil {
+		log.Printf("ChainFetch: Cannot do newHead subscribe to this ipc %v\n", service.GetIpcManager().GetIPC())
+		switchIPC()
+		return
+	}
+	cf.ethSub = ethSub
 
 	log.Println("ChainFetch: RealtimeFetch Waiting for new block hearders...")
 	for {
 		receivedHeader, ok := <-cf.blockHeaderChannel
 		if !ok {
-			// switch ipc
+			// switched ipc
 			log.Println("ChainFetch: Stopping SubscribeNewHead, ipc is switched?")
 			close(ch)
 			break
@@ -95,7 +101,10 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 		if err == nil {
 			ch <- blockDetail
 		} else {
-			log.Fatal("ChainFetch: Cannot get block detail for block " + blockNumber.String())
+			// Finish the Realtime process, someone will switch the IPC
+			log.Println("ChainFetch: RealtimeFetch Cannot get block detail for block " + blockNumber.String())
+			close(ch)
+			break
 		}
 	}
 	log.Println("ChainFetch: Stopped RealtimeFetch")
@@ -106,14 +115,19 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 	ctx := context.Background()
 	aBlock, err := cf.Client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
-		log.Fatal("ChainFetch: RealtimeFetch BlockByNumber returns error " + err.Error())
+		log.Println("ChainFetch: FetchABlock BlockByNumber returns error " + err.Error())
+		switchIPC()
 		return &types.BLockDetail{}, err
 	}
 	transactions := []types.TransactionDetail{}
 	if len(aBlock.Transactions()) > 0 {
 		for index, tx := range aBlock.Transactions() {
-			sender, _ := cf.Client.TransactionSender(ctx, tx, aBlock.Hash(), uint(index))
-			// log.Println(fmt.Sprintf("ChainFetch: Hash %s --- Value %d -- Sender %s", tx.Hash().String(), tx.Value(), sender.String()))
+			sender, err := cf.Client.TransactionSender(ctx, tx, aBlock.Hash(), uint(index))
+			if err != nil {
+				log.Println("ChainFetch: FetchABlock TransactionSender returns error " + err.Error())
+				switchIPC()
+				return &types.BLockDetail{}, err
+			}
 			// Some transactions have nil To, for example Contract creation
 			to := ""
 			if tx.To() != nil {
@@ -140,7 +154,9 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 						transactions = append(transactions, transaction)
 					}
 				} else {
-					log.Printf("ChainFetch: cannot get receipt for transaction %v, error=%v \n", tx.Hash().String(), err.Error())
+					log.Printf("ChainFetch: FetchABlock cannot get receipt for transaction %v, error=%v \n", tx.Hash().String(), err.Error())
+					switchIPC()
+					return &types.BLockDetail{}, err
 				}
 			}
 		}
@@ -178,8 +194,13 @@ func (cf *ChainFetch) GetLatestBlock() (*big.Int, error) {
 	// nil means latest known header according to ethclient doc
 	header, err := cf.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
+		switchIPC()
 		return big.NewInt(-1), err
 	}
 	blockNumber := header.Number
 	return blockNumber, nil
+}
+
+func switchIPC() {
+	go service.GetIpcManager().ForceChangeIPC()
 }

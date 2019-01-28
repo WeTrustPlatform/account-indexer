@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 	"github.com/WeTrustPlatform/account-indexer/service"
+	"github.com/WeTrustPlatform/account-indexer/watcher"
 
 	"github.com/WeTrustPlatform/account-indexer/http"
-	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
-	"github.com/WeTrustPlatform/account-indexer/watcher"
 	"github.com/ethereum/go-ethereum/console"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/syndtr/goleveldb/leveldb"

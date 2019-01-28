@@ -46,8 +46,10 @@ func TestChangeIPC(t *testing.T) {
 	assert.Equal(t, 0, sub.count)
 	var tmp IpcSubscriber = &sub
 	im.Subscribe(&tmp)
+	im.EnableSwitchIPC()
 	im.ChangeIPC()
 	assert.Equal(t, 1, sub.count)
+	im.EnableSwitchIPC()
 	im.ChangeIPC()
 	assert.Equal(t, 2, sub.count)
 }
