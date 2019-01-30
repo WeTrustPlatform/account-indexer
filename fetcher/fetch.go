@@ -154,9 +154,11 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 						transactions = append(transactions, transaction)
 					}
 				} else {
-					log.Printf("ChainFetch: FetchABlock cannot get receipt for transaction %v, error=%v \n", tx.Hash().String(), err.Error())
-					switchIPC()
-					return &types.BLockDetail{}, err
+					log.Printf("ChainFetch: FetchABlock warning cannot get receipt for transaction %v, error=%v \n", tx.Hash().String(), err.Error())
+					// https://github.com/WeTrustPlatform/account-indexer/issues/18
+					// We trust our geth nodes, some other nodes always return error for this API
+					// switchIPC()
+					// return &types.BLockDetail{}, err
 				}
 			}
 		}
