@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/common/config"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 	"github.com/WeTrustPlatform/account-indexer/service"
@@ -96,7 +97,7 @@ func setConfig(ctx *cli.Context) {
 	blockTTL := ctx.GlobalFloat64(blockTimeToLiveFlag.Name)
 	watcherInterval := ctx.GlobalFloat64(watcherIntervalFlag.Name)
 	oosThreshold := ctx.GlobalFloat64(oosThresholdFlag.Name)
-	config := common.GetConfig()
+	config := config.GetConfig()
 	config.CleanInterval = time.Duration(clearInterval) * time.Minute
 	if config.CleanInterval < 1*time.Second {
 		log.Fatalf("CleanInterval of %v is not valid \n", config.CleanInterval)
@@ -121,7 +122,7 @@ func setConfig(ctx *cli.Context) {
 	if config.NumBatch < 1 || config.NumBatch > 127 {
 		log.Fatal("Number of batch should be 1 to 127")
 	}
-	log.Printf("configuration: %v \n", common.GetConfig())
+	log.Printf("configuration: %v \n", config)
 }
 
 // Entry point
@@ -129,7 +130,7 @@ func index(ctx *cli.Context) {
 	setConfig(ctx)
 	ipcPath := ctx.GlobalString(ipcFlag.Name)
 	dbPath := ctx.GlobalString(dbFlag.Name)
-	common.GetConfig().DbPath = dbPath
+	config.GetConfig().DbPath = dbPath
 
 	ipcs := strings.Split(ipcPath, ",")
 	service.GetIpcManager().SetIPC(ipcs)

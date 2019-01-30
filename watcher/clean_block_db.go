@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/common/config"
 	"github.com/WeTrustPlatform/account-indexer/repository"
 )
 
@@ -22,7 +23,7 @@ func NewCleaner(repo repository.IndexRepo) Cleaner {
 // CleanBlockDB clean block db regularly
 func (c Cleaner) CleanBlockDB() {
 	// Clean every 5 minute -> 5*60/15 ~ 20 blocks
-	ticker := time.NewTicker(common.GetConfig().CleanInterval)
+	ticker := time.NewTicker(config.GetConfig().CleanInterval)
 	for t := range ticker.C {
 		log.Println("Cleaner: Clean Block DB at", t)
 		c.cleanBlockDB()
@@ -36,7 +37,7 @@ func (c Cleaner) cleanBlockDB() {
 		return
 	}
 	lastUpdated := common.UnmarshallIntToTime(lastBlock.CreatedAt)
-	untilTime := lastUpdated.Add(-common.GetConfig().BlockTTL)
+	untilTime := lastUpdated.Add(-config.GetConfig().BlockTTL)
 	total, err := c.repo.DeleteOldBlocks(big.NewInt(untilTime.Unix()))
 	if err != nil {
 		log.Println("Cleaner: Deleting old blocks have error", err.Error())

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/common/config"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
 	httpTypes "github.com/WeTrustPlatform/account-indexer/http/types"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
@@ -92,11 +93,12 @@ func (server *Server) Start() {
 		admin.POST("/blocks/:blockNumber", server.rerunBlock)
 		admin.GET("/blocks", server.getBlock)
 		admin.GET("/config", server.getConfig)
+		admin.GET("/version", server.getVersion)
 	}
 	// Start and run the server
-	err := router.Run(fmt.Sprintf(":%v", common.GetConfig().Port))
+	err := router.Run(fmt.Sprintf(":%v", config.GetConfig().Port))
 	if err == nil {
-		log.Println("Server: Started server successfully at port ", common.GetConfig().Port)
+		log.Println("Server: Started server successfully at port ", config.GetConfig().Port)
 	} else {
 		log.Fatal("Server: Cannot start http server", err.Error())
 	}
@@ -197,7 +199,11 @@ func (server *Server) rerunBlock(c *gin.Context) {
 
 func (server *Server) getConfig(c *gin.Context) {
 	ipc := service.GetIpcManager().GetIPC()
-	c.JSON(http.StatusOK, common.GetConfig().String()+" ipc="+ipc)
+	c.JSON(http.StatusOK, config.GetConfig().String()+" ipc="+ipc)
+}
+
+func (server *Server) getVersion(c *gin.Context) {
+	c.JSON(http.StatusOK, config.GetVersion())
 }
 
 func (server *Server) getBatchStatus(c *gin.Context) {
