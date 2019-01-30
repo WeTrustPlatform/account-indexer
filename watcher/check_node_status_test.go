@@ -7,12 +7,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/common/config"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 )
 
 func TestShouldChangeIPC(t *testing.T) {
-	config := common.GetConfig()
+	config := config.GetConfig()
 	config.OOSThreshold = 5 * time.Minute
 	// both are good
 	lastBlock := types.BlockIndex{

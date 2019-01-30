@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
+	"github.com/WeTrustPlatform/account-indexer/common/config"
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
 	"github.com/WeTrustPlatform/account-indexer/repository"
@@ -126,7 +127,7 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 	if len(allBatches) == 0 {
 		// Ethereum mainnet has genesis block as 0
 		genesisBlock := big.NewInt(0)
-		batches = GetInitBatches(common.GetConfig().NumBatch, genesisBlock, latestBlock)
+		batches = GetInitBatches(config.GetConfig().NumBatch, genesisBlock, latestBlock)
 	} else {
 		// Get latest block in block database
 		lastBlock, _ := indexer.IndexRepo.GetLastBlock()
