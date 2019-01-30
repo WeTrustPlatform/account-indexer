@@ -36,7 +36,7 @@ matrix:
 before_deploy:
   - cd ../../cmd/indexer
   - go clean
-  - go build
+  - go build -ldflags "-X github.com/WeTrustPlatform/account-indexer/common/config.version=$TRAVIS_TAG -X github.com/WeTrustPlatform/account-indexer/common/config.buildID=$TRAVIS_BUILD_NUMBER -X github.com/WeTrustPlatform/account-indexer/common/config.githash=$TRAVIS_COMMIT"
   - mkdir account-indexer-linux-x86_64-${TRAVIS_TAG:1}
   - cp ../../README.md account-indexer-linux-x86_64-${TRAVIS_TAG:1}/
   - cp ../../LICENSE account-indexer-linux-x86_64-${TRAVIS_TAG:1}/
