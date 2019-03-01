@@ -22,8 +22,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// lupus master address
-var account string = "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
+const (
+	// Max time to fetch a block and index
+	IndexTimeOutInSec = 2
+	// lupus master address
+	TestAccount = "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
+)
 
 func TestConvertEther(t *testing.T) {
 	log.Println("e2e: TestConvertEther")
@@ -38,9 +42,9 @@ func TestConvertEther(t *testing.T) {
 // Get data from etherscan.com and compare to our indexer
 func TestGetAccountTransactions(t *testing.T) {
 	log.Println("e2e: TestGetAccountTransactions")
-	blockNumbers, esData := getDataFromEtherScan(t, account)
+	blockNumbers, esData := getDataFromEtherScan(t, TestAccount)
 	indexBlocks(t, blockNumbers)
-	indexData := getDataFromIndexer(t, account, len(esData), "", "")
+	indexData := getDataFromIndexer(t, TestAccount, len(esData), "", "")
 	assert.Equal(t, len(esData), len(indexData))
 	// This will print out missing data if any
 	for i, esTx := range esData {
@@ -57,26 +61,25 @@ func TestGetTransactionWithDatetime(t *testing.T) {
 	log.Println("e2e: TestGetTransactionWithDatetime")
 	from := "2019-01-01T00:00:00"
 	// no to
-	indexData := getDataFromIndexer(t, account, 100, from, "")
+	indexData := getDataFromIndexer(t, TestAccount, 100, from, "")
 	// 4 as of Jan 2019
 	assert.True(t, len(indexData) >= 4)
 	to := "2018-12-31T23:59:59"
 	// no from
-	indexData = getDataFromIndexer(t, account, 100, "", to)
+	indexData = getDataFromIndexer(t, TestAccount, 100, "", to)
 	assert.Equal(t, 38, len(indexData))
 	from = "2000-01-01T00:00:00"
 	to = "2019-01-23T00:00:00"
 	// has both from and to
-	indexData = getDataFromIndexer(t, account, 100, from, to)
+	indexData = getDataFromIndexer(t, TestAccount, 100, from, to)
 	assert.Equal(t, 42, len(indexData))
 }
 
 func TestGetTotalTransactions(t *testing.T) {
 	log.Println("e2e: TestGetTotalTransactions")
-	account := "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
-	numES := getTotalTxFromEtherScan(t, account)
+	numES := getTotalTxFromEtherScan(t, TestAccount)
 	// assuming this function run after the above function
-	numIdx := getTotalTxFromIndexer(t, account)
+	numIdx := getTotalTxFromIndexer(t, TestAccount)
 	assert.Equal(t, numES, numIdx)
 }
 
@@ -85,7 +88,7 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 	password := os.Getenv(indexerHttp.AdminPassword)
 	encoded := base64.StdEncoding.EncodeToString([]byte(userName + ":" + password))
 	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: IndexTimeOutInSec * time.Second,
 	}
 	for _, block := range blockNumbers {
 		url := fmt.Sprintf("http://localhost:3000/admin/blocks/%v", block)
