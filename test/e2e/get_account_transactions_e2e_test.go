@@ -137,7 +137,7 @@ func getTotalTxFromEtherScan(t *testing.T, account string) int {
 	doc := getEtherScanDoc(t, url)
 	wholeText := doc.Text()
 	i := strings.Index(wholeText, "A total of ")
-	j := strings.Index(wholeText, " Txns found")
+	j := strings.Index(wholeText, " transactions found")
 	numTx := string([]byte(wholeText)[i+len("A total of ") : j])
 	log.Println("e2e: Found number of transactions from etherscan: " + numTx)
 	result, err := strconv.Atoi(numTx)
@@ -152,12 +152,12 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 	doc := getEtherScanDoc(t, url)
 	blockNumbers := []string{}
 	txLines := []httpTypes.EIAddress{}
-	trSelector := "div#ContentPlaceHolder1_mainrow > div > div > div > table > tbody > tr"
+	trSelector := "div#ContentPlaceHolder1_mainrow > table > tbody > tr"
 	doc.Find(trSelector).Each(func(i int, s *goquery.Selection) {
 		// line by line
-		blockNumber := s.Find("td.hidden-sm > a").Text()
+		blockNumber := s.Find("td.d-none > a").Text()
 		blockNumbers = append(blockNumbers, blockNumber)
-		txOrAddr := s.Find("td > span.address-tag > a")
+		txOrAddr := s.Find("td > span.hash-tag > a")
 		tx := txOrAddr.First().Text()
 		addrNode := txOrAddr.Last()
 		addrHref, ok := addrNode.Attr("href")
@@ -177,7 +177,10 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 		})
 	})
 
-	log.Printf("e2e: Done getting data, number of transaction: %v \n", len(txLines))
+	// should be at least 42 as of Feb 2019
+	assert.True(t, len(txLines) >= 42)
+
+	log.Printf("e2e: Done getDataFromEtherScan, number of transaction: %v \n", len(txLines))
 
 	return blockNumbers, txLines
 }
