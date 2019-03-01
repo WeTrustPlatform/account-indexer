@@ -18,10 +18,14 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/memdb"
 )
 
+const (
+	IPC = "wss://mainnet.kivutar.me:8546/2KT179di"
+	// IPC = "wss://mainnet.infura.io/_ws"
+)
+
 func TestContractCreation(t *testing.T) {
 	// Setup
-	// ipcs := []string{"wss://mainnet.kivutar.me:8546/2KT179di"}
-	ipcs := []string{"wss://mainnet.infura.io/_ws"}
+	ipcs := []string{IPC}
 	t.Logf("TestContractCreation ipcs=%v \n ", ipcs)
 	service.GetIpcManager().SetIPC(ipcs)
 	fetcher, err := fetcher.NewChainFetch()
@@ -44,6 +48,37 @@ func TestContractCreation(t *testing.T) {
 	assert.True(t, strings.EqualFold("0x61278dd960415eadf11cfe17a6c38397af658e77bbdd367db70e19ee3a193bdd", tx))
 	tm := common.UnmarshallIntToTime(addressIndexes[0].Time)
 	t.Logf("TestContractCreation found transaction at %v \n", tm)
+}
+
+func TestFailedTransaction(t *testing.T) {
+	// If a transaction is failed, do not index it
+	// Setup
+	ipcs := []string{IPC}
+	t.Logf("TestFailedTransaction ipcs=%v \n ", ipcs)
+	service.GetIpcManager().SetIPC(ipcs)
+	fetcher, err := fetcher.NewChainFetch()
+	assert.Nil(t, err)
+	blockNumber := big.NewInt(7156456)
+	// This block has 162 transactions but 3 failed
+	blockDetail, err := fetcher.FetchABlock(blockNumber)
+	assert.Nil(t, err)
+	numSuccess := 0
+	for _, tx := range blockDetail.Transactions {
+		if tx.Status {
+			numSuccess++
+		}
+	}
+	assert.Equal(t, 159, numSuccess)
+	found := false
+	for _, tx := range blockDetail.Transactions {
+		// one of the failed transaction, but it's still included in the block
+		if tx.TxHash == "0x62a1c5a48137c5a649b808b6756a9d4d2fd500a7bde984fe671c95ad911639d5" {
+			assert.False(t, tx.Status)
+			found = true
+			break
+		}
+	}
+	assert.True(t, found)
 }
 
 func NewTestIndexer() indexer.Indexer {

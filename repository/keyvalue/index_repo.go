@@ -65,7 +65,7 @@ func (repo *KVIndexRepo) Store(addressIndex []*types.AddressIndex, blockIndex *t
 
 // SaveAddressIndex save to address db
 func (repo *KVIndexRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) error {
-	keyValues := []dao.KeyValue{}
+	keyValues := make([]dao.KeyValue, 0, len(addressIndex))
 	for _, item := range addressIndex {
 		key := repo.marshaller.MarshallAddressKey(item)
 		value := repo.marshaller.MarshallAddressValue(item)
@@ -125,7 +125,7 @@ func (repo *KVIndexRepo) GetTotalTransaction(address string, fromTime time.Time,
 // GetTransactionByAddress main thing for this indexer
 func (repo *KVIndexRepo) GetTransactionByAddress(address string, rows int, start int, fromTime time.Time, toTime time.Time) (int, []types.AddressIndex) {
 	convertKeyValuesToAddressIndexes := func(keyValues []dao.KeyValue) []types.AddressIndex {
-		result := []types.AddressIndex{}
+		result := make([]types.AddressIndex, 0, len(keyValues))
 		for _, keyValue := range keyValues {
 			addressIndex := repo.keyValueToAddressIndex(keyValue)
 			result = append(result, addressIndex)
@@ -219,7 +219,7 @@ func (repo *KVIndexRepo) DeleteOldBlocks(untilTime *big.Int) (int, error) {
 		return blockIndex.CreatedAt.Cmp(untilTime) < 0
 	}
 	kvsToDel := repo.blockDAO.GetNFirstPredicate(pre)
-	keys := [][]byte{}
+	keys := make([][]byte, 0, len(kvsToDel))
 	for _, kv := range kvsToDel {
 		keys = append(keys, kv.Key)
 	}

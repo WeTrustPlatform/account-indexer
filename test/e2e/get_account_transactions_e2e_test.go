@@ -26,7 +26,7 @@ import (
 var account string = "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
 
 func TestConvertEther(t *testing.T) {
-	log.Println("TestConvertEther")
+	log.Println("e2e: TestConvertEther")
 	value1FromEtherScan := "0.16310815 Ether"
 	assert.Equal(t, "163108150000000000", esValueToString(value1FromEtherScan))
 	value2FromEtherScan := "9.56064602 Ether"
@@ -37,7 +37,7 @@ func TestConvertEther(t *testing.T) {
 
 // Get data from etherscan.com and compare to our indexer
 func TestGetAccountTransactions(t *testing.T) {
-	log.Println("TestGetAccountTransactions")
+	log.Println("e2e: TestGetAccountTransactions")
 	blockNumbers, esData := getDataFromEtherScan(t, account)
 	indexBlocks(t, blockNumbers)
 	indexData := getDataFromIndexer(t, account, len(esData), "", "")
@@ -54,7 +54,7 @@ func TestGetAccountTransactions(t *testing.T) {
 }
 
 func TestGetTransactionWithDatetime(t *testing.T) {
-	log.Println("TestGetTransactionWithDatetime")
+	log.Println("e2e: TestGetTransactionWithDatetime")
 	from := "2019-01-01T00:00:00"
 	// no to
 	indexData := getDataFromIndexer(t, account, 100, from, "")
@@ -72,7 +72,7 @@ func TestGetTransactionWithDatetime(t *testing.T) {
 }
 
 func TestGetTotalTransactions(t *testing.T) {
-	log.Println("TestGetTotalTransactions")
+	log.Println("e2e: TestGetTotalTransactions")
 	account := "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
 	numES := getTotalTxFromEtherScan(t, account)
 	// assuming this function run after the above function
@@ -96,9 +96,9 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 		assert.Nil(t, err)
 		if err == nil {
 			assert.Equal(t, 200, res.StatusCode)
-			log.Printf("Index block %v successfully \n", block)
+			log.Printf("e2e: Index block %v successfully \n", block)
 		} else {
-			log.Fatal("Error indexing block, error=" + err.Error())
+			log.Fatal("e2e: Error indexing block, error=" + err.Error())
 		}
 
 		defer res.Body.Close()
@@ -127,19 +127,19 @@ func getTotalTxFromIndexer(t *testing.T, account string) int {
 	err = json.NewDecoder(res.Body).Decode(&httpResult)
 	assert.Nil(t, err)
 	numTx := httpResult.Total
-	log.Printf("Found number of transactions from indexer: %v", numTx)
+	log.Printf("e2e: Found number of transactions from indexer: %v", numTx)
 	return numTx
 }
 
 func getTotalTxFromEtherScan(t *testing.T, account string) int {
 	url := fmt.Sprintf("https://etherscan.io/txs?a=%v", account)
-	log.Printf("Getting total transaction from %v \n", url)
+	log.Printf("e2e: Getting total transaction from %v \n", url)
 	doc := getEtherScanDoc(t, url)
 	wholeText := doc.Text()
 	i := strings.Index(wholeText, "A total of ")
 	j := strings.Index(wholeText, " Txns found")
 	numTx := string([]byte(wholeText)[i+len("A total of ") : j])
-	log.Println("Found number of transactions from etherscan: " + numTx)
+	log.Println("e2e: Found number of transactions from etherscan: " + numTx)
 	result, err := strconv.Atoi(numTx)
 	assert.Nil(t, err)
 	return result
@@ -148,7 +148,7 @@ func getTotalTxFromEtherScan(t *testing.T, account string) int {
 // Return list of block numbers and list of AddressIndex
 func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.EIAddress) {
 	url := fmt.Sprintf("https://etherscan.io/txs?a=%v", account)
-	log.Printf("Getting data from %v \n", url)
+	log.Printf("e2e: Getting data from %v \n", url)
 	doc := getEtherScanDoc(t, url)
 	blockNumbers := []string{}
 	txLines := []httpTypes.EIAddress{}
@@ -177,7 +177,7 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 		})
 	})
 
-	log.Printf("Done getting data, number of transaction: %v \n", len(txLines))
+	log.Printf("e2e: Done getting data, number of transaction: %v \n", len(txLines))
 
 	return blockNumbers, txLines
 }
@@ -187,7 +187,7 @@ func getEtherScanDoc(t *testing.T, url string) *goquery.Document {
 	assert.Nil(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
+		log.Fatalf("e2e: status code error: %d %s", res.StatusCode, res.Status)
 	}
 	// Load the HTML document
 	doc, err := goquery.NewDocumentFromReader(res.Body)

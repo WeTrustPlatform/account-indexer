@@ -26,7 +26,7 @@ func NewKVBatchRepo(batchDAO dao.KeyValueDAO) *KVBatchRepo {
 // GetAllBatchStatuses get all batches
 func (repo *KVBatchRepo) GetAllBatchStatuses() []types.BatchStatus {
 	keyValues := repo.batchDAO.GetAllRecords()
-	batches := []types.BatchStatus{}
+	batches := make([]types.BatchStatus, 0, len(keyValues))
 	for _, keyValue := range keyValues {
 		batch := repo.keyValueToBatchStatus(keyValue)
 		batches = append(batches, batch)

@@ -23,13 +23,16 @@ var header = &gethtypes.Header{
 
 var fromStr = "address From"
 var toStr = "address To"
+var toStr2 = "address To2"
 var from = gethCommon.BytesToAddress([]byte(fromStr))
 var to = gethCommon.BytesToAddress([]byte(toStr))
+var to2 = gethCommon.BytesToAddress([]byte(toStr2))
 
 var amount = big.NewInt(100)
 
 var transactions = []*gethtypes.Transaction{
 	gethtypes.NewTransaction(uint64(1), to, amount, uint64(21000), big.NewInt(100), nil),
+	gethtypes.NewTransaction(uint64(1), to2, amount, uint64(21000), big.NewInt(100), nil),
 }
 
 func (mec MockEthClient) SubscribeNewHead(ctx context.Context, ch chan<- *gethtypes.Header) (ethereum.Subscription, error) {
@@ -54,7 +57,14 @@ func (mec MockEthClient) HeaderByNumber(ctx context.Context, number *big.Int) (*
 }
 
 func (mec MockEthClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*gethtypes.Receipt, error) {
-	return &gethtypes.Receipt{}, nil
+	// 1st transaction has good tx receipt
+	if txHash == transactions[0].Hash() {
+		return &gethtypes.Receipt{Status: 1}, nil
+	}
+	// 2nd transaction has bad tx receipt
+	// Should not include this in the result
+	return &gethtypes.Receipt{Status: 0}, nil
+
 }
 
 func (mec MockEthClient) TransactionByHash(ctx context.Context, hash common.Hash) (*gethtypes.Transaction, bool, error) {
@@ -71,10 +81,18 @@ func TestFetchData(t *testing.T) {
 	}
 	indexerChannel := make(chan *types.BLockDetail)
 	go fetcher.RealtimeFetch(indexerChannel)
-	// time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 1)
 	blockDetail := <-indexerChannel
 	assert.Equal(t, header.Number.Uint64(), blockDetail.BlockNumber.Uint64())
+	assert.Equal(t, 2, len(blockDetail.Transactions))
+	// 1st transaction
 	transaction := blockDetail.Transactions[0]
 	assert.Equal(t, from.String(), transaction.From)
 	assert.Equal(t, to.String(), transaction.To)
+	assert.True(t, transaction.Status)
+	// 2nd transaction
+	transaction = blockDetail.Transactions[1]
+	assert.Equal(t, from.String(), transaction.From)
+	assert.Equal(t, to2.String(), transaction.To)
+	assert.False(t, transaction.Status)
 }

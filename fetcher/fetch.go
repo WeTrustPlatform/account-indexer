@@ -2,8 +2,10 @@ package fetcher
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
@@ -113,62 +115,96 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 // FetchABlock fetch a block by block number
 func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, error) {
 	ctx := context.Background()
-	aBlock, err := cf.Client.BlockByNumber(ctx, blockNumber)
+	block, err := cf.Client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
 		log.Println("ChainFetch: FetchABlock BlockByNumber returns error " + err.Error())
 		switchIPC()
 		return &types.BLockDetail{}, err
 	}
-	transactions := []types.TransactionDetail{}
-	if len(aBlock.Transactions()) > 0 {
-		for index, tx := range aBlock.Transactions() {
-			sender, err := cf.Client.TransactionSender(ctx, tx, aBlock.Hash(), uint(index))
-			if err != nil {
-				log.Println("ChainFetch: FetchABlock TransactionSender returns error " + err.Error())
-				switchIPC()
-				return &types.BLockDetail{}, err
-			}
-			// Some transactions have nil To, for example Contract creation
-			to := ""
-			if tx.To() != nil {
-				to = tx.To().String()
-			}
-			transaction := types.TransactionDetail{
-				From:   sender.String(),
-				To:     to,
-				TxHash: tx.Hash().String(),
-				Value:  tx.Value(),
-			}
-			transactions = append(transactions, transaction)
-			// Index transactions that create contract too
-			if tx.To() == nil && (tx.Value() == nil || tx.Value().Int64() == 0) {
-				txRecp, err := cf.Client.TransactionReceipt(ctx, tx.Hash())
-				if err == nil {
-					if txRecp != nil {
-						transaction := types.TransactionDetail{
-							From:   "",
-							To:     txRecp.ContractAddress.String(),
-							TxHash: tx.Hash().String(),
-							Value:  tx.Value(),
-						}
-						transactions = append(transactions, transaction)
-					}
-				} else {
-					log.Printf("ChainFetch: FetchABlock warning cannot get receipt for transaction %v, error=%v \n", tx.Hash().String(), err.Error())
-					// https://github.com/WeTrustPlatform/account-indexer/issues/18
-					// We trust our geth nodes, some other nodes always return error for this API
-					// switchIPC()
-					// return &types.BLockDetail{}, err
-				}
-			}
+	numTrans := len(block.Transactions())
+	// each goroutine below occupies 2 items maximum
+	txDetails := make([]*types.TransactionDetail, 2*numTrans)
+	// each goroutine below may return an error or not
+	errs := make([]error, numTrans)
+	if numTrans > 0 {
+		allTransactions := block.Transactions()
+		wg := sync.WaitGroup{}
+		wg.Add(numTrans)
+		for index, tx := range allTransactions {
+			go cf.getTransactionDetail(&wg, index, tx, block.Hash(), txDetails, errs)
+		}
+		wg.Wait()
+	}
+
+	for _, err = range errs {
+		if err != nil {
+			log.Println(err.Error())
+			switchIPC()
+			return &types.BLockDetail{}, err
 		}
 	}
+
+	finalTx := make([]types.TransactionDetail, 0, 2*numTrans)
+	for _, tx := range txDetails {
+		if tx != nil {
+			finalTx = append(finalTx, *tx)
+		}
+	}
+
 	blockDetail := types.BLockDetail{
-		BlockNumber:  aBlock.Number(),
-		Time:         aBlock.Time(),
-		Transactions: transactions,
+		BlockNumber:  block.Number(),
+		Time:         block.Time(),
+		Transactions: finalTx,
 	}
 	return &blockDetail, nil
+}
+
+/**
+ * This function runs in a goroutine of for loop, once done it updates data in txDetails[2*index] or txDetails[2*index+1] or errs[index]
+ */
+func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx *gethtypes.Transaction, blockHash gethcommon.Hash, txDetails []*types.TransactionDetail, errs []error) {
+	defer wg.Done()
+	ctx := context.Background()
+	sender, err := cf.Client.TransactionSender(ctx, tx, blockHash, uint(index))
+	if err != nil {
+		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get sender for transaction %v, error=%v", tx.Hash().String(), err.Error())
+		return
+	}
+	// Some txDetails have nil To, for example Contract creation
+	to := ""
+	if tx.To() != nil {
+		to = tx.To().String()
+	}
+
+	txRecp, err := cf.Client.TransactionReceipt(ctx, tx.Hash())
+	if err != nil {
+		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get receipt for transaction %v, error=%v", tx.Hash().String(), err.Error())
+		return
+	}
+	isSuccessTx := txRecp.Status != 0
+
+	mainTx := types.TransactionDetail{
+		From:   sender.String(),
+		To:     to,
+		TxHash: tx.Hash().String(),
+		Value:  tx.Value(),
+		Status: isSuccessTx,
+	}
+	txDetails[2*index] = &mainTx
+
+	if isSuccessTx {
+		// Index transactions that create contract too
+		if tx.To() == nil && (tx.Value() == nil || tx.Value().Int64() == 0) {
+			contractTx := types.TransactionDetail{
+				From:   "",
+				To:     txRecp.ContractAddress.String(),
+				TxHash: tx.Hash().String(),
+				Value:  tx.Value(),
+				Status: true,
+			}
+			txDetails[2*index+1] = &contractTx
+		}
+	}
 }
 
 // TransactionByHash query geth node to get addtional data of tx
