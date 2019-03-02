@@ -72,13 +72,12 @@ func (indexer *Indexer) index(indexAfterIPCChange bool) {
 		var sub service.IpcSubscriber = indexer
 		service.GetIpcManager().Subscribe(&sub)
 	}
-	fetcher, err := fetcher.NewChainFetch()
-	if err != nil {
+
+	indexer.createRealtimeFetcher()
+	if indexer.realtimeFetcher == nil {
 		log.Println("Indexer: index stopped because cannot create new fetch for realtime goroutine")
-		indexer.realtimeFetcher = nil
 		return
 	}
-	indexer.realtimeFetcher = fetcher
 
 	latestBlock, err := indexer.realtimeFetcher.GetLatestBlock()
 	if err != nil {
@@ -224,15 +223,13 @@ func (indexer *Indexer) ProcessBlock(blockDetail *types.BLockDetail, isBatch boo
 
 // FetchAndProcess fetch a block data from blockchain and process it
 func (indexer *Indexer) FetchAndProcess(blockNumber *big.Int) error {
-	fetcher, err := fetcher.NewChainFetch()
+	indexer.createRealtimeFetcher()
+	log.Printf("Indexer: Fetching block %v", blockNumber)
+	blockDetail, err := indexer.realtimeFetcher.FetchABlock(blockNumber)
 	if err != nil {
 		return err
 	}
-	blockDetail, err := fetcher.FetchABlock(blockNumber)
-	if err != nil {
-		return err
-	}
-	log.Printf("Indexer: Fetching block %v successfully", blockNumber)
+	log.Printf("Indexer: Fetched block %v successfully", blockNumber)
 	isBatch := true
 	err = indexer.ProcessBlock(blockDetail, isBatch)
 	if err != nil {
@@ -247,7 +244,6 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 	addressIndex := make([]*types.AddressIndex, 0, 2*len(blockDetail.Transactions))
 	blockIndex := &types.BlockIndex{
 		BlockNumber: blockDetail.BlockNumber.String(),
-		Addresses:   []types.AddressSequence{},
 		Time:        blockDetail.Time,
 		CreatedAt:   big.NewInt(time.Now().Unix()),
 	}
@@ -277,6 +273,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 				Time:   blockDetail.Time,
 				// BlockNumber:   blockDetail.BlockNumber,
 				CoupleAddress: to,
+				Status:        transaction.Status,
 			}
 			if _, ok := sequenceMap[from]; !ok {
 				sequenceMap[from] = 0
@@ -294,6 +291,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 				Time:   blockDetail.Time,
 				// BlockNumber:   blockDetail.BlockNumber,
 				CoupleAddress: from,
+				Status:        transaction.Status,
 			}
 			if _, ok := sequenceMap[to]; !ok {
 				sequenceMap[to] = 0
@@ -304,6 +302,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 			addressIndex = append(addressIndex, &toIndex)
 		}
 	}
+	blockIndex.Addresses = make([]types.AddressSequence, 0, len(sequenceMap))
 	for k, v := range sequenceMap {
 		blockIndex.Addresses = append(blockIndex.Addresses, types.AddressSequence{Address: k, Sequence: v})
 	}
@@ -312,7 +311,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 
 // GetInitBatches create batch initially
 func GetInitBatches(numBatch int, genesisBlock *big.Int, latestBlock *big.Int) []types.BatchStatus {
-	result := []types.BatchStatus{}
+	result := make([]types.BatchStatus, 0, numBatch)
 	now := big.NewInt(time.Now().Unix())
 	for i := 0; i < numBatch; i++ {
 		from := new(big.Int)
@@ -326,4 +325,18 @@ func GetInitBatches(numBatch int, genesisBlock *big.Int, latestBlock *big.Int) [
 		result = append(result, batch)
 	}
 	return result
+}
+
+func (indexer *Indexer) createRealtimeFetcher() {
+	if indexer.realtimeFetcher != nil {
+		return
+	}
+
+	fe, err := fetcher.NewChainFetch()
+	if err != nil {
+		log.Println("Indexer: createRealtimeFetcher failed", err)
+		indexer.realtimeFetcher = nil
+		return
+	}
+	indexer.realtimeFetcher = fe
 }

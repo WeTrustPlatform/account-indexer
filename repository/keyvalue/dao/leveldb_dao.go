@@ -78,7 +78,7 @@ func (ld LevelDbDAO) CountByRange(rg *util.Range) int {
 }
 
 func findByKeyPrefix(iter iterator.Iterator, asc bool, rows int, start int) (int, []KeyValue) {
-	result := []KeyValue{}
+	result := make([]KeyValue, 0, rows)
 	count := 0
 	total := 0
 
@@ -133,7 +133,7 @@ func (ld LevelDbDAO) GetNFirstRecords(n int) []KeyValue {
 
 func getNFirstRecords(iter iterator.Iterator, n int) []KeyValue {
 	count := 0
-	result := []KeyValue{}
+	result := make([]KeyValue, 0, n)
 	for count < n && iter.Next() {
 		count++
 		result = append(result, CopyKeyValue(iter.Key(), iter.Value()))
@@ -149,7 +149,7 @@ func (ld LevelDbDAO) GetNLastRecords(n int) []KeyValue {
 }
 
 func getNLastRecords(iter iterator.Iterator, n int) []KeyValue {
-	result := []KeyValue{}
+	result := make([]KeyValue, 0, n)
 	if !iter.Last() {
 		return result
 	}

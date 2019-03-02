@@ -21,6 +21,7 @@ var index = AddressIndex{
 	Time:   big.NewInt(1546848896),
 	// BlockNumber:   big.NewInt(2018),
 	CoupleAddress: "to1",
+	Status:        true,
 }
 
 func TestMarshall(t *testing.T) {
@@ -29,7 +30,7 @@ func TestMarshall(t *testing.T) {
 	dataStr := string(data)
 	log.Printf("%v \n", dataStr)
 	// expectedJSON := `{"address":"from1","sequence":1,"tx_hash":"0xtx1","value":-111,"time":1546848896,"blockNumber":2018,"coupleAddress":"to1"}`
-	expectedJSON := `{"address":"from1","sequence":1,"tx_hash":"0xtx1","value":-111,"time":1546848896,"coupleAddress":"to1"}`
+	expectedJSON := `{"address":"from1","sequence":1,"tx_hash":"0xtx1","value":-111,"time":1546848896,"coupleAddress":"to1","status":true}`
 	assert.Equal(t, expectedJSON, dataStr)
 	data2, err := json.Marshal(&index)
 	assert.Nil(t, err)

@@ -60,7 +60,6 @@ func (bm ByteMarshaller) MarshallBlockValue(blockIndex *types.BlockIndex) []byte
 
 // UnmarshallBlockValue unmarshall a byte array into array of address, this is for Block db
 func (bm ByteMarshaller) UnmarshallBlockValue(value []byte) types.BlockIndex {
-	addrResult := []types.AddressSequence{}
 	addressSeqLen := gethcommon.AddressLength + 1
 	// 4 first bytes are for CreatedAt
 	createdAt := common.UnmarshallTimeToInt(value[:TimestampByteLength])
@@ -69,6 +68,7 @@ func (bm ByteMarshaller) UnmarshallBlockValue(value []byte) types.BlockIndex {
 	numAddress := (len(value) - 2*TimestampByteLength) / (addressSeqLen)
 	// remaining is for address_seq*
 	addrValue := value[2*TimestampByteLength:]
+	addrResult := make([]types.AddressSequence, 0, numAddress)
 	for i := 0; i < numAddress; i++ {
 		address := hexutil.Encode(addrValue[i*addressSeqLen : (i+1)*addressSeqLen-1])
 		sequence := addrValue[(i+1)*addressSeqLen-1]
@@ -139,6 +139,11 @@ func (bm ByteMarshaller) MarshallAddressValue(index *types.AddressIndex) []byte 
 	// blockNumber
 	// blockNumber := blockNumberWidPad(index.BlockNumber.String())
 	// buf.Write([]byte(blockNumber))
+	var status byte // 0 by default
+	if index.Status {
+		status = 1
+	}
+	buf.WriteByte(status)
 	valueByteArr := index.Value.Bytes()
 	buf.Write(valueByteArr)
 	return buf.Bytes()
@@ -168,6 +173,13 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 	// blockNumberStr := string(value[prevIndex:index])
 	// blockNumber := new(big.Int)
 	// blockNumber.SetString(blockNumberStr, 10)
+	// status
+	statusByte := value[index]
+	index++
+	status := false
+	if statusByte > 0 {
+		status = true
+	}
 	prevIndex = index
 	txValueBI := new(big.Int)
 	txValueBI.SetBytes(value[prevIndex:])
@@ -176,6 +188,7 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 		CoupleAddress: address,
 		Value:         txValueBI,
 		// BlockNumber:   blockNumber,
+		Status: status,
 	}
 	return result
 }

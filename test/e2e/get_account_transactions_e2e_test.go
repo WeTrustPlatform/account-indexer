@@ -22,11 +22,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// lupus master address
-var account string = "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
+const (
+	// Max time to fetch a block and index
+	IndexTimeOutInSec = 2
+	// lupus master address
+	TestAccount = "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
+)
 
 func TestConvertEther(t *testing.T) {
-	log.Println("TestConvertEther")
+	log.Println("e2e: TestConvertEther")
 	value1FromEtherScan := "0.16310815 Ether"
 	assert.Equal(t, "163108150000000000", esValueToString(value1FromEtherScan))
 	value2FromEtherScan := "9.56064602 Ether"
@@ -37,46 +41,47 @@ func TestConvertEther(t *testing.T) {
 
 // Get data from etherscan.com and compare to our indexer
 func TestGetAccountTransactions(t *testing.T) {
-	log.Println("TestGetAccountTransactions")
-	blockNumbers, esData := getDataFromEtherScan(t, account)
+	log.Println("e2e: TestGetAccountTransactions")
+	blockNumbers, esData := getDataFromEtherScan(t, TestAccount)
 	indexBlocks(t, blockNumbers)
-	indexData := getDataFromIndexer(t, account, len(esData), "", "")
+	indexData := getDataFromIndexer(t, TestAccount, len(esData), "", "")
 	assert.Equal(t, len(esData), len(indexData))
 	// This will print out missing data if any
 	for i, esTx := range esData {
 		tx := esTx.TxHash
 		addr := esTx.CoupleAddress
 		value := esTx.Value
+		status := esTx.Status
 		assert.Equal(t, tx, indexData[i].TxHash)
 		assert.Equal(t, addr, indexData[i].CoupleAddress)
 		assert.Equal(t, value, indexData[i].Value)
+		assert.Equal(t, status, indexData[i].Status)
 	}
 }
 
 func TestGetTransactionWithDatetime(t *testing.T) {
-	log.Println("TestGetTransactionWithDatetime")
+	log.Println("e2e: TestGetTransactionWithDatetime")
 	from := "2019-01-01T00:00:00"
 	// no to
-	indexData := getDataFromIndexer(t, account, 100, from, "")
+	indexData := getDataFromIndexer(t, TestAccount, 100, from, "")
 	// 4 as of Jan 2019
 	assert.True(t, len(indexData) >= 4)
 	to := "2018-12-31T23:59:59"
 	// no from
-	indexData = getDataFromIndexer(t, account, 100, "", to)
+	indexData = getDataFromIndexer(t, TestAccount, 100, "", to)
 	assert.Equal(t, 38, len(indexData))
 	from = "2000-01-01T00:00:00"
 	to = "2019-01-23T00:00:00"
 	// has both from and to
-	indexData = getDataFromIndexer(t, account, 100, from, to)
+	indexData = getDataFromIndexer(t, TestAccount, 100, from, to)
 	assert.Equal(t, 42, len(indexData))
 }
 
 func TestGetTotalTransactions(t *testing.T) {
-	log.Println("TestGetTotalTransactions")
-	account := "0x7C419672d84a53B0a4eFed57656Ba5e4A0379084"
-	numES := getTotalTxFromEtherScan(t, account)
+	log.Println("e2e: TestGetTotalTransactions")
+	numES := getTotalTxFromEtherScan(t, TestAccount)
 	// assuming this function run after the above function
-	numIdx := getTotalTxFromIndexer(t, account)
+	numIdx := getTotalTxFromIndexer(t, TestAccount)
 	assert.Equal(t, numES, numIdx)
 }
 
@@ -85,7 +90,7 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 	password := os.Getenv(indexerHttp.AdminPassword)
 	encoded := base64.StdEncoding.EncodeToString([]byte(userName + ":" + password))
 	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: IndexTimeOutInSec * time.Second,
 	}
 	for _, block := range blockNumbers {
 		url := fmt.Sprintf("http://localhost:3000/admin/blocks/%v", block)
@@ -96,9 +101,9 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 		assert.Nil(t, err)
 		if err == nil {
 			assert.Equal(t, 200, res.StatusCode)
-			log.Printf("Index block %v successfully \n", block)
+			log.Printf("e2e: Index block %v successfully \n", block)
 		} else {
-			log.Fatal("Error indexing block, error=" + err.Error())
+			log.Fatal("e2e: Error indexing block, error=" + err.Error())
 		}
 
 		defer res.Body.Close()
@@ -127,19 +132,19 @@ func getTotalTxFromIndexer(t *testing.T, account string) int {
 	err = json.NewDecoder(res.Body).Decode(&httpResult)
 	assert.Nil(t, err)
 	numTx := httpResult.Total
-	log.Printf("Found number of transactions from indexer: %v", numTx)
+	log.Printf("e2e: Found number of transactions from indexer: %v", numTx)
 	return numTx
 }
 
 func getTotalTxFromEtherScan(t *testing.T, account string) int {
 	url := fmt.Sprintf("https://etherscan.io/txs?a=%v", account)
-	log.Printf("Getting total transaction from %v \n", url)
+	log.Printf("e2e: Getting total transaction from %v \n", url)
 	doc := getEtherScanDoc(t, url)
 	wholeText := doc.Text()
 	i := strings.Index(wholeText, "A total of ")
-	j := strings.Index(wholeText, " Txns found")
+	j := strings.Index(wholeText, " transactions found")
 	numTx := string([]byte(wholeText)[i+len("A total of ") : j])
-	log.Println("Found number of transactions from etherscan: " + numTx)
+	log.Println("e2e: Found number of transactions from etherscan: " + numTx)
 	result, err := strconv.Atoi(numTx)
 	assert.Nil(t, err)
 	return result
@@ -148,16 +153,16 @@ func getTotalTxFromEtherScan(t *testing.T, account string) int {
 // Return list of block numbers and list of AddressIndex
 func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.EIAddress) {
 	url := fmt.Sprintf("https://etherscan.io/txs?a=%v", account)
-	log.Printf("Getting data from %v \n", url)
+	log.Printf("e2e: Getting data from %v \n", url)
 	doc := getEtherScanDoc(t, url)
 	blockNumbers := []string{}
 	txLines := []httpTypes.EIAddress{}
-	trSelector := "div#ContentPlaceHolder1_mainrow > div > div > div > table > tbody > tr"
+	trSelector := "div#ContentPlaceHolder1_mainrow > table > tbody > tr"
 	doc.Find(trSelector).Each(func(i int, s *goquery.Selection) {
 		// line by line
-		blockNumber := s.Find("td.hidden-sm > a").Text()
+		blockNumber := s.Find("td.d-none > a").Text()
 		blockNumbers = append(blockNumbers, blockNumber)
-		txOrAddr := s.Find("td > span.address-tag > a")
+		txOrAddr := s.Find("td > span.hash-tag > a")
 		tx := txOrAddr.First().Text()
 		addrNode := txOrAddr.Last()
 		addrHref, ok := addrNode.Attr("href")
@@ -174,10 +179,15 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 			TxHash:        tx,
 			CoupleAddress: addr,
 			Value:         value,
+			// The tested account does not have failed transaction
+			Status: true,
 		})
 	})
 
-	log.Printf("Done getting data, number of transaction: %v \n", len(txLines))
+	// should be at least 42 as of Feb 2019
+	assert.True(t, len(txLines) >= 42)
+
+	log.Printf("e2e: Done getDataFromEtherScan, number of transaction: %v \n", len(txLines))
 
 	return blockNumbers, txLines
 }
@@ -187,7 +197,7 @@ func getEtherScanDoc(t *testing.T, url string) *goquery.Document {
 	assert.Nil(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
+		log.Fatalf("e2e: status code error: %d %s", res.StatusCode, res.Status)
 	}
 	// Load the HTML document
 	doc, err := goquery.NewDocumentFromReader(res.Body)

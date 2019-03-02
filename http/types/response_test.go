@@ -23,6 +23,7 @@ var index = coreTypes.AddressIndex{
 	Time:   big.NewInt(1546848896),
 	// BlockNumber:   big.NewInt(2018),
 	CoupleAddress: "to1",
+	Status:        true,
 }
 
 func TestMarshall(t *testing.T) {
@@ -39,6 +40,6 @@ func TestMarshall(t *testing.T) {
 	dataStr := string(data)
 	log.Printf("%v \n", dataStr)
 	tm := common.UnmarshallIntToTime(big.NewInt(1546848896)).Format(time.RFC3339)
-	expectedStr := fmt.Sprintf(`{"numFound":"10","start":5,"data":[{"address":"from1","txHash":"0xtx1","value":-111,"time":"%v","coupleAddress":"to1","data":"AQI=","gas":0,"gasPrice":null}]}`, tm)
+	expectedStr := fmt.Sprintf(`{"numFound":"10","start":5,"data":[{"address":"from1","txHash":"0xtx1","value":-111,"time":"%v","coupleAddress":"to1","data":"AQI=","gas":0,"gasPrice":null,"status":true}]}`, tm)
 	assert.Equal(t, expectedStr, dataStr)
 }

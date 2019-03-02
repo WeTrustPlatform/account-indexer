@@ -25,12 +25,14 @@ var blockDetail = types.BLockDetail{
 			To:     "to1",
 			TxHash: "0xtx1",
 			Value:  big.NewInt(111),
+			Status: true,
 		},
 		types.TransactionDetail{
 			From:   "from2",
 			To:     "to1", // This demonstrates 2 transactions with same "to" address, Sequence should be increased
 			TxHash: "0xtx2",
 			Value:  big.NewInt(222),
+			Status: false,
 		},
 	},
 }
@@ -46,6 +48,7 @@ var expectedIndexes = []*types.AddressIndex{
 		Time:   blockTime,
 		// BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "to1",
+		Status:        true,
 	},
 	&types.AddressIndex{
 		AddressSequence: types.AddressSequence{
@@ -57,6 +60,7 @@ var expectedIndexes = []*types.AddressIndex{
 		Time:   blockTime,
 		// BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "from1",
+		Status:        true,
 	},
 	&types.AddressIndex{
 		AddressSequence: types.AddressSequence{
@@ -68,6 +72,7 @@ var expectedIndexes = []*types.AddressIndex{
 		Time:   blockTime,
 		// BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "to1",
+		Status:        false,
 	},
 	&types.AddressIndex{
 		AddressSequence: types.AddressSequence{
@@ -79,6 +84,7 @@ var expectedIndexes = []*types.AddressIndex{
 		Time:   blockTime,
 		// BlockNumber:   big.NewInt(2018),
 		CoupleAddress: "from2",
+		Status:        false,
 	},
 }
 

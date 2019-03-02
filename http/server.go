@@ -118,7 +118,7 @@ func (server *Server) getTransactionsByAccount(c *gin.Context) {
 	rows, start := getPagingQueryParams(c)
 	log.Printf("Server: Getting transactions for account %v\n", account)
 	total, addressIndexes := server.indexRepo.GetTransactionByAddress(account, rows, start, fromTime, toTime)
-	addresses := []httpTypes.EIAddress{}
+	addresses := make([]httpTypes.EIAddress, 0, len(addressIndexes))
 	for _, idx := range addressIndexes {
 		addr := httpTypes.AddressToEIAddress(idx)
 		if needTxData || needGas || needGasPrice {
@@ -208,7 +208,7 @@ func (server *Server) getVersion(c *gin.Context) {
 
 func (server *Server) getBatchStatus(c *gin.Context) {
 	batchStatuses := server.batchRepo.GetAllBatchStatuses()
-	response := []httpTypes.EIBatchStatus{}
+	response := make([]httpTypes.EIBatchStatus, 0, len(batchStatuses))
 	for _, batch := range batchStatuses {
 		current := ""
 		if batch.Current != nil {

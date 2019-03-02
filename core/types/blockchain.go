@@ -14,6 +14,7 @@ type TransactionDetail struct {
 	To     string
 	TxHash string
 	Value  *big.Int
+	Status bool
 }
 
 // TransactionExtra additional data to query geth node on the fly, this is not store in indexer DB
