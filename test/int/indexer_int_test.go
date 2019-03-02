@@ -68,6 +68,8 @@ func TestFailedTransaction(t *testing.T) {
 			numSuccess++
 		}
 	}
+
+	// Test fetcher
 	assert.Equal(t, 159, numSuccess)
 	found := false
 	for _, tx := range blockDetail.Transactions {
@@ -79,6 +81,17 @@ func TestFailedTransaction(t *testing.T) {
 		}
 	}
 	assert.True(t, found)
+
+	// Test indexer
+	idx := NewTestIndexer()
+	isBatch := true
+	idx.ProcessBlock(blockDetail, isBatch)
+	address := "0x38F88D57A2589C4972eA360e3FC38E92bb7dd110"
+	fromTime, _ := common.StrToTime("2019-02-01T00:00:00")
+	toTime, _ := common.StrToTime("2019-02-01T23:59:59")
+	total, addressIndexes := idx.IndexRepo.GetTransactionByAddress(address, 10, 0, fromTime, toTime)
+	assert.Equal(t, 1, total)
+	assert.False(t, addressIndexes[0].Status)
 }
 
 func NewTestIndexer() indexer.Indexer {

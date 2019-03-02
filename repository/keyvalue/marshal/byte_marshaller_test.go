@@ -70,12 +70,14 @@ func TestByteMarshallAddressValue(t *testing.T) {
 		// BlockNumber:   blockNumber,
 		TxHash: "0x9bdbd233827534e48cc23801d145c64c4f4bab6b2c4c74a54673633e4c6c1591",
 		Value:  value,
+		Status: true,
 	}
 	indexValue := bm.MarshallAddressValue(addressIndex)
 	addressIndex2 := bm.UnmarshallAddressValue(indexValue)
 	assert.True(t, strings.EqualFold(addressIndex2.TxHash, addressIndex.TxHash))
 	assert.True(t, strings.EqualFold(addressIndex2.CoupleAddress, addressIndex.CoupleAddress))
 	assert.True(t, strings.EqualFold(addressIndex2.Value.String(), addressIndex.Value.String()))
+	assert.True(t, addressIndex2.Status)
 	// assert.Equal(t, blockNumber, addressIndex2.BlockNumber)
 }
 

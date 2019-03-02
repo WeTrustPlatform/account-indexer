@@ -273,6 +273,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 				Time:   blockDetail.Time,
 				// BlockNumber:   blockDetail.BlockNumber,
 				CoupleAddress: to,
+				Status:        transaction.Status,
 			}
 			if _, ok := sequenceMap[from]; !ok {
 				sequenceMap[from] = 0
@@ -290,6 +291,7 @@ func (indexer *Indexer) CreateIndexData(blockDetail *types.BLockDetail) ([]*type
 				Time:   blockDetail.Time,
 				// BlockNumber:   blockDetail.BlockNumber,
 				CoupleAddress: from,
+				Status:        transaction.Status,
 			}
 			if _, ok := sequenceMap[to]; !ok {
 				sequenceMap[to] = 0

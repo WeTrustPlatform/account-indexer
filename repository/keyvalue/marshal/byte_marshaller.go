@@ -139,6 +139,11 @@ func (bm ByteMarshaller) MarshallAddressValue(index *types.AddressIndex) []byte 
 	// blockNumber
 	// blockNumber := blockNumberWidPad(index.BlockNumber.String())
 	// buf.Write([]byte(blockNumber))
+	var status byte // 0 by default
+	if index.Status {
+		status = 1
+	}
+	buf.WriteByte(status)
 	valueByteArr := index.Value.Bytes()
 	buf.Write(valueByteArr)
 	return buf.Bytes()
@@ -168,6 +173,13 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 	// blockNumberStr := string(value[prevIndex:index])
 	// blockNumber := new(big.Int)
 	// blockNumber.SetString(blockNumberStr, 10)
+	// status
+	statusByte := value[index]
+	index++
+	status := false
+	if statusByte > 0 {
+		status = true
+	}
 	prevIndex = index
 	txValueBI := new(big.Int)
 	txValueBI.SetBytes(value[prevIndex:])
@@ -176,6 +188,7 @@ func (bm ByteMarshaller) UnmarshallAddressValue(value []byte) types.AddressIndex
 		CoupleAddress: address,
 		Value:         txValueBI,
 		// BlockNumber:   blockNumber,
+		Status: status,
 	}
 	return result
 }

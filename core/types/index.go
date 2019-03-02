@@ -19,6 +19,7 @@ type AddressIndex struct {
 	Time   *big.Int `json:"time"`
 	// BlockNumber   *big.Int `json:"blockNumber"`
 	CoupleAddress string `json:"coupleAddress"`
+	Status        bool   `json:"status"`
 }
 
 // AddressSequence In same block, 1 address can stay in multiple transactions, especially the "to"
