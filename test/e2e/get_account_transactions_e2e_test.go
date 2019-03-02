@@ -51,9 +51,11 @@ func TestGetAccountTransactions(t *testing.T) {
 		tx := esTx.TxHash
 		addr := esTx.CoupleAddress
 		value := esTx.Value
+		status := esTx.Status
 		assert.Equal(t, tx, indexData[i].TxHash)
 		assert.Equal(t, addr, indexData[i].CoupleAddress)
 		assert.Equal(t, value, indexData[i].Value)
+		assert.Equal(t, status, indexData[i].Status)
 	}
 }
 
@@ -177,6 +179,8 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 			TxHash:        tx,
 			CoupleAddress: addr,
 			Value:         value,
+			// The tested account does not have failed transaction
+			Status: true,
 		})
 	})
 

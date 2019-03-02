@@ -33,6 +33,7 @@ type EIAddress struct {
 	Data          []byte   `json:"data"`
 	Gas           uint64   `json:"gas"`
 	GasPrice      *big.Int `json:"gasPrice"`
+	Status        bool     `json:"status"`
 }
 
 // EIBlocks list of blocks to return to frontend
@@ -60,5 +61,6 @@ func AddressToEIAddress(address types.AddressIndex) EIAddress {
 		Value:         address.Value,
 		Time:          common.UnmarshallIntToTime(address.Time).Format(time.RFC3339),
 		CoupleAddress: address.CoupleAddress,
+		Status:        address.Status,
 	}
 }
