@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -32,7 +33,7 @@ type EthClient interface {
 // Fetch the interface to interact with blockchain
 type Fetch interface {
 	RealtimeFetch(ch chan<- *types.BLockDetail)
-	FetchABlock(blockNumber *big.Int) (*types.BLockDetail, error)
+	FetchABlock(blockNumber *big.Int, isRecpRelax bool) (*types.BLockDetail, error)
 	GetLatestBlock() (*big.Int, error)
 	TransactionByHash(txHash string) (*types.TransactionExtra, error)
 }
@@ -99,7 +100,8 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 			break
 		}
 		blockNumber := receivedHeader.Number
-		blockDetail, err := cf.FetchABlock(blockNumber)
+		isRecpRelax := true
+		blockDetail, err := cf.FetchABlock(blockNumber, isRecpRelax)
 		if err == nil {
 			ch <- blockDetail
 		} else {
@@ -113,7 +115,8 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 }
 
 // FetchABlock fetch a block by block number
-func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, error) {
+// isRecpRelax throw error if there is no receipt or not. True for no, false for yes
+func (cf *ChainFetch) FetchABlock(blockNumber *big.Int, isRecpRelax bool) (*types.BLockDetail, error) {
 	ctx := context.Background()
 	block, err := cf.Client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
@@ -131,7 +134,7 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 		wg := sync.WaitGroup{}
 		wg.Add(numTrans)
 		for index, tx := range allTransactions {
-			go cf.getTransactionDetail(&wg, index, tx, block.Hash(), txDetails, errs)
+			go cf.getTransactionDetailWG(&wg, index, tx, block.Hash(), isRecpRelax, txDetails, errs)
 		}
 		wg.Wait()
 	}
@@ -162,13 +165,25 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 /**
  * This function runs in a goroutine of for loop, once done it updates data in txDetails[2*index] or txDetails[2*index+1] or errs[index]
  */
-func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx *gethtypes.Transaction, blockHash gethcommon.Hash, txDetails []*types.TransactionDetail, errs []error) {
+func (cf *ChainFetch) getTransactionDetailWG(wg *sync.WaitGroup, index int, tx *gethtypes.Transaction, blockHash gethcommon.Hash, isRecpRelax bool,
+	txDetails []*types.TransactionDetail, errs []error) {
 	defer wg.Done()
+	newTxDetails, err := cf.getTransactionDetail(index, tx, blockHash, isRecpRelax)
+	if err != nil {
+		errs[index] = err
+		return
+	}
+	txDetails[2*index] = newTxDetails[0]
+	txDetails[2*index+1] = newTxDetails[1]
+}
+
+// return a slice of TransactionDetail with at most 2 items (1 for main tx, 1 for contract creation) or error
+func (cf *ChainFetch) getTransactionDetail(index int, tx *gethtypes.Transaction, blockHash gethcommon.Hash, isRecpRelax bool) ([]*types.TransactionDetail, error) {
 	ctx := context.Background()
 	sender, err := cf.Client.TransactionSender(ctx, tx, blockHash, uint(index))
 	if err != nil {
-		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get sender for transaction %v, error=%v", tx.Hash().String(), err.Error())
-		return
+		newErr := fmt.Errorf("ChainFetch: getTransactionDetail cannot get sender for transaction %v, error=%v", tx.Hash().String(), err.Error())
+		return nil, newErr
 	}
 	// Some txDetails have nil To, for example Contract creation
 	to := ""
@@ -178,9 +193,19 @@ func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx *ge
 
 	txRecp, err := cf.Client.TransactionReceipt(ctx, tx.Hash())
 	if err != nil {
-		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get receipt for transaction %v, error=%v", tx.Hash().String(), err.Error())
-		return
+		logStr := fmt.Sprintf("ChainFetch: getTransactionDetail warning - cannot get receipt for transaction %v, block %v, error=%v", tx.Hash().String(), blockHash.String(), err.Error())
+		if isRecpRelax {
+			// This transaction detail only has hash without other info, will need to fetch this block again
+			// Don't want to force this as an error as it happens rarely and randomly with geth
+			// See https://github.com/WeTrustPlatform/account-indexer/issues/24
+			log.Println(logStr)
+			warningTx := types.TransactionDetail{TxHash: tx.Hash().String()}
+			return []*types.TransactionDetail{&warningTx, nil}, nil
+		}
+
+		return nil, errors.New(logStr)
 	}
+	result := make([]*types.TransactionDetail, 2)
 	isSuccessTx := txRecp.Status != 0
 
 	mainTx := types.TransactionDetail{
@@ -190,7 +215,7 @@ func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx *ge
 		Value:  tx.Value(),
 		Status: isSuccessTx,
 	}
-	txDetails[2*index] = &mainTx
+	result[0] = &mainTx
 
 	if isSuccessTx {
 		// Index transactions that create contract too
@@ -202,9 +227,10 @@ func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx *ge
 				Value:  tx.Value(),
 				Status: true,
 			}
-			txDetails[2*index+1] = &contractTx
+			result[1] = &contractTx
 		}
 	}
+	return result, nil
 }
 
 // TransactionByHash query geth node to get addtional data of tx
