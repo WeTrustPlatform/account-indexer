@@ -193,12 +193,12 @@ func (cf *ChainFetch) getTransactionDetail(index int, tx *gethtypes.Transaction,
 
 	txRecp, err := cf.Client.TransactionReceipt(ctx, tx.Hash())
 	if err != nil {
-		logStr := fmt.Sprintf("ChainFetch: getTransactionDetail warning - cannot get receipt for transaction %v, block %v, error=%v \n", tx.Hash().String(), blockHash.String(), err.Error())
+		logStr := fmt.Sprintf("ChainFetch: getTransactionDetail warning - cannot get receipt for transaction %v, block %v, error=%v", tx.Hash().String(), blockHash.String(), err.Error())
 		if isRecpRelax {
 			// This transaction detail only has hash without other info, will need to fetch this block again
 			// Don't want to force this as an error as it happens rarely and randomly with geth
 			// See https://github.com/WeTrustPlatform/account-indexer/issues/24
-			log.Printf(logStr)
+			log.Println(logStr)
 			warningTx := types.TransactionDetail{TxHash: tx.Hash().String()}
 			return []*types.TransactionDetail{&warningTx, nil}, nil
 		}
