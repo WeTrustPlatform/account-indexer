@@ -181,18 +181,6 @@ func TestWatchAfterBatch(t *testing.T) {
 	// TODO
 }
 
-func TestIsMissingRecp(t *testing.T) {
-	blockDetail := &types.BLockDetail{
-		BlockNumber: big.NewInt(2019),
-		Transactions: []types.TransactionDetail{
-			types.TransactionDetail{From: "", To: "", TxHash: "TestTxHash"},
-		},
-	}
-	assert.True(t, isMissingRecp(blockDetail))
-	blockDetail.Transactions[0].From = "from"
-	assert.False(t, isMissingRecp(blockDetail))
-}
-
 func NewTestIndexer() Indexer {
 	addressDB := memdb.New(comparer.DefaultComparer, 0)
 	addressDAO := dao.NewMemDbDAO(addressDB)
