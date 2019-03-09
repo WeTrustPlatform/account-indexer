@@ -171,7 +171,8 @@ func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx *ge
 	ctx := context.Background()
 	sender, err := cf.Client.TransactionSender(ctx, tx, blockHash, uint(index))
 	if err != nil {
-		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get sender for transaction %v, error=%v", tx.Hash().String(), err.Error())
+		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get sender for transaction %v, index=%v, blockHash=%v error=%v",
+			tx.Hash().String(), index, blockHash.String(), err.Error())
 		return
 	}
 	// Some txDetails have nil To, for example Contract creation
