@@ -183,7 +183,8 @@ func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx *ge
 
 	txRecp, err := cf.Client.TransactionReceipt(ctx, tx.Hash())
 	if err != nil {
-		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get receipt for transaction %v, error=%v", tx.Hash().String(), err.Error())
+		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get receipt for transaction %v, index=%v, blockHash=%v error=%v",
+			tx.Hash().String(), index, blockHash.String(), err.Error())
 		return
 	}
 	isSuccessTx := txRecp.Status != 0
