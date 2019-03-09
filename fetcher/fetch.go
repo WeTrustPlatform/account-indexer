@@ -131,7 +131,8 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 		wg := sync.WaitGroup{}
 		wg.Add(numTrans)
 		for index, tx := range allTransactions {
-			go cf.getTransactionDetail(&wg, index, tx, block.Hash(), txDetails, errs)
+			_index, _tx := index, tx
+			go cf.getTransactionDetail(&wg, _index, _tx, block.Hash(), txDetails, errs)
 		}
 		wg.Wait()
 	}
