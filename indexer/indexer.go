@@ -184,7 +184,7 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, stop chan struct{}, 
 	i := 0
 	for !batch.IsDone() {
 		blockNumber := batch.Next()
-		blockDetail, err := fetcher.FetchABlock(blockNumber)
+		blockDetail, err := fetcher.FetchABlock(blockNumber.Int64())
 		if err != nil {
 			// Finish the go-routines, someone will restart index()
 			log.Println(tag + " Indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
@@ -225,7 +225,7 @@ func (indexer *Indexer) ProcessBlock(blockDetail *types.BLockDetail, isBatch boo
 func (indexer *Indexer) FetchAndProcess(blockNumber *big.Int) error {
 	indexer.createRealtimeFetcher()
 	log.Printf("Indexer: Fetching block %v", blockNumber)
-	blockDetail, err := indexer.realtimeFetcher.FetchABlock(blockNumber)
+	blockDetail, err := indexer.realtimeFetcher.FetchABlock(blockNumber.Int64())
 	if err != nil {
 		return err
 	}

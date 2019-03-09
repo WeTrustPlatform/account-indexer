@@ -32,7 +32,7 @@ type EthClient interface {
 // Fetch the interface to interact with blockchain
 type Fetch interface {
 	RealtimeFetch(ch chan<- *types.BLockDetail)
-	FetchABlock(blockNumber *big.Int) (*types.BLockDetail, error)
+	FetchABlock(blockNumber int64) (*types.BLockDetail, error)
 	GetLatestBlock() (*big.Int, error)
 	TransactionByHash(txHash string) (*types.TransactionExtra, error)
 }
@@ -99,7 +99,7 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 			break
 		}
 		blockNumber := receivedHeader.Number
-		blockDetail, err := cf.FetchABlock(blockNumber)
+		blockDetail, err := cf.FetchABlock(blockNumber.Int64())
 		if err == nil {
 			ch <- blockDetail
 		} else {
@@ -113,8 +113,10 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 }
 
 // FetchABlock fetch a block by block number
-func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, error) {
+// Should not use param as pointer because it maybe changed
+func (cf *ChainFetch) FetchABlock(blockNbr int64) (*types.BLockDetail, error) {
 	ctx := context.Background()
+	blockNumber := big.NewInt(blockNbr)
 	block, err := cf.Client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
 		log.Println("ChainFetch: FetchABlock BlockByNumber returns error " + err.Error())

@@ -32,7 +32,7 @@ func TestContractCreation(t *testing.T) {
 	assert.Nil(t, err)
 	blockNumber := big.NewInt(6808718)
 	// Run Test
-	blockDetail, err := fetcher.FetchABlock(blockNumber)
+	blockDetail, err := fetcher.FetchABlock(blockNumber.Int64())
 	assert.Nil(t, err)
 	// log.Println(blockDetail)
 	idx := NewTestIndexer()
@@ -60,7 +60,7 @@ func TestFailedTransaction(t *testing.T) {
 	assert.Nil(t, err)
 	blockNumber := big.NewInt(7156456)
 	// This block has 162 transactions but 3 failed
-	blockDetail, err := fetcher.FetchABlock(blockNumber)
+	blockDetail, err := fetcher.FetchABlock(blockNumber.Int64())
 	assert.Nil(t, err)
 	numSuccess := 0
 	for _, tx := range blockDetail.Transactions {
