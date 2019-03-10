@@ -135,7 +135,9 @@ func (cf *ChainFetch) FetchABlock(blockNbr int64) (*types.BLockDetail, error) {
 		for index, tx := range allTransactions {
 			_index, _tx := index, *tx
 			_blockHash := block.Hash()
-			go cf.getTransactionDetail(&wg, _index, _tx, _blockHash, txDetails, errs)
+			go func(index int, tx gethtypes.Transaction, blockHash gethcommon.Hash) {
+				cf.getTransactionDetail(&wg, index, tx, blockHash, txDetails, errs)
+			}(_index, _tx, _blockHash)
 		}
 		wg.Wait()
 	}
