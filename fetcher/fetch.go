@@ -133,7 +133,7 @@ func (cf *ChainFetch) FetchABlock(blockNbr int64) (*types.BLockDetail, error) {
 		wg := sync.WaitGroup{}
 		wg.Add(numTrans)
 		for index, tx := range allTransactions {
-			_index, _tx := index, tx
+			_index, _tx := index, *tx
 			_blockHash := block.Hash()
 			go cf.getTransactionDetail(&wg, _index, _tx, _blockHash, txDetails, errs)
 		}
@@ -166,10 +166,10 @@ func (cf *ChainFetch) FetchABlock(blockNbr int64) (*types.BLockDetail, error) {
 /**
  * This function runs in a goroutine of for loop, once done it updates data in txDetails[2*index] or txDetails[2*index+1] or errs[index]
  */
-func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx *gethtypes.Transaction, blockHash gethcommon.Hash, txDetails []*types.TransactionDetail, errs []error) {
+func (cf *ChainFetch) getTransactionDetail(wg *sync.WaitGroup, index int, tx gethtypes.Transaction, blockHash gethcommon.Hash, txDetails []*types.TransactionDetail, errs []error) {
 	defer wg.Done()
 	ctx := context.Background()
-	sender, err := cf.Client.TransactionSender(ctx, tx, blockHash, uint(index))
+	sender, err := cf.Client.TransactionSender(ctx, &tx, blockHash, uint(index))
 	if err != nil {
 		errs[index] = fmt.Errorf("ChainFetch: getTransactionDetail cannot get sender for transaction %v, index=%v, blockHash=%v error=%v",
 			tx.Hash().String(), index, blockHash.String(), err.Error())
