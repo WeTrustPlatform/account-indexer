@@ -224,20 +224,21 @@ func (indexer *Indexer) processRealtimeBlock(blockDetail *types.BLockDetail) {
 		indexer.ProcessBlock(blockDetail, isBatch)
 		return
 	}
-	block := blockDetail
+	var block *types.BLockDetail
 	blockNumber := block.BlockNumber
 	for i := 0; i < 3; i++ {
-		log.Printf("Waiting for 1 more minute to get receipts for block %v . Try %v \n", blockNumber.String(), i)
+		log.Printf("Waiting for 1 more minute to get receipts for block %v . Try %v time \n", blockNumber.String(), i)
 		time.Sleep(1 * time.Minute)
-		block, err := indexer.realtimeFetcher.FetchABlock(blockNumber.Int64(), isRecpRelax)
+		_block, err := indexer.realtimeFetcher.FetchABlock(blockNumber.Int64(), isRecpRelax)
 		if err != nil {
 			log.Fatalf("Cannot fetch block %v, error: %v \n", blockNumber.String(), err.Error())
 		}
-		if !isMissingRecp(block) {
+		if !isMissingRecp(_block) {
+			block = _block
 			break
 		}
 	}
-	if !isMissingRecp(block) {
+	if block != nil && !isMissingRecp(block) {
 		indexer.ProcessBlock(block, isBatch)
 		return
 	}
