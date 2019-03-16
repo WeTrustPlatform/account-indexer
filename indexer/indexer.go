@@ -165,8 +165,9 @@ func (indexer *Indexer) realtimeIndex() {
 			break
 		}
 		log.Printf("Indexer: realtimeIndex - received BlockDetail %v blockTime: %v\n", blockDetail.BlockNumber.String(), common.UnmarshallIntToTime(blockDetail.Time))
-		isBatch := false
-		indexer.ProcessBlock(blockDetail, isBatch)
+		go func(blockDetail *types.BLockDetail) {
+			indexer.processRealtimeBlock(blockDetail)
+		}(blockDetail)
 	}
 	indexer.realtimeFetcher = nil
 	log.Println("Indexer: Stopped realtimeIndex")
@@ -184,7 +185,8 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, stop chan struct{}, 
 	i := 0
 	for !batch.IsDone() {
 		blockNumber := batch.Next()
-		blockDetail, err := fetcher.FetchABlock(blockNumber.Int64())
+		isRecpRelax := false
+		blockDetail, err := fetcher.FetchABlock(blockNumber.Int64(), isRecpRelax)
 		if err != nil {
 			// Finish the go-routines, someone will restart index()
 			log.Println(tag + " Indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
@@ -215,6 +217,33 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, stop chan struct{}, 
 	log.Println(tag + " Indexer: batchIndex is done in " + s + " minutes")
 }
 
+func (indexer *Indexer) processRealtimeBlock(blockDetail *types.BLockDetail) {
+	isRecpRelax := true
+	isBatch := false
+	if !isMissingRecp(blockDetail) {
+		indexer.ProcessBlock(blockDetail, isBatch)
+		return
+	}
+	block := blockDetail
+	blockNumber := block.BlockNumber
+	for i := 0; i < 3; i++ {
+		log.Printf("Waiting for 1 more minute to get receipts for block %v . Try %v \n", blockNumber.String(), i)
+		time.Sleep(1 * time.Minute)
+		block, err := indexer.realtimeFetcher.FetchABlock(blockNumber.Int64(), isRecpRelax)
+		if err != nil {
+			log.Fatalf("Cannot fetch block %v, error: %v \n", blockNumber.String(), err.Error())
+		}
+		if !isMissingRecp(block) {
+			break
+		}
+	}
+	if !isMissingRecp(block) {
+		indexer.ProcessBlock(block, isBatch)
+		return
+	}
+	log.Fatalln("Cannot get receipts for block " + blockNumber.String())
+}
+
 // ProcessBlock transform blockchain data to our index structure and save it to repo
 func (indexer *Indexer) ProcessBlock(blockDetail *types.BLockDetail, isBatch bool) error {
 	addressIndex, blockIndex := indexer.CreateIndexData(blockDetail)
@@ -225,7 +254,8 @@ func (indexer *Indexer) ProcessBlock(blockDetail *types.BLockDetail, isBatch boo
 func (indexer *Indexer) FetchAndProcess(blockNumber *big.Int) error {
 	indexer.createRealtimeFetcher()
 	log.Printf("Indexer: Fetching block %v", blockNumber)
-	blockDetail, err := indexer.realtimeFetcher.FetchABlock(blockNumber.Int64())
+	isRecpRelax := false
+	blockDetail, err := indexer.realtimeFetcher.FetchABlock(blockNumber.Int64(), isRecpRelax)
 	if err != nil {
 		return err
 	}
@@ -339,4 +369,15 @@ func (indexer *Indexer) createRealtimeFetcher() {
 		return
 	}
 	indexer.realtimeFetcher = fe
+}
+
+func isMissingRecp(blockDetail *types.BLockDetail) bool {
+	transactions := blockDetail.Transactions
+	for _, tx := range transactions {
+		if tx.From == "" && tx.To == "" {
+			log.Printf("Indexer: block %v has traansaction %v without receipt \n", blockDetail.BlockNumber.String(), tx.TxHash)
+			return true
+		}
+	}
+	return false
 }

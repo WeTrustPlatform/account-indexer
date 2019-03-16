@@ -193,3 +193,15 @@ func NewTestIndexer() Indexer {
 	idx := NewIndexer(indexRepo, batchRepo, nil)
 	return idx
 }
+
+func TestIsMissingRecp(t *testing.T) {
+	blockDetail := &types.BLockDetail{
+		BlockNumber: big.NewInt(2019),
+		Transactions: []types.TransactionDetail{
+			types.TransactionDetail{From: "", To: "", TxHash: "TestTxHash"},
+		},
+	}
+	assert.True(t, isMissingRecp(blockDetail))
+	blockDetail.Transactions[0].From = "from"
+	assert.False(t, isMissingRecp(blockDetail))
+}
