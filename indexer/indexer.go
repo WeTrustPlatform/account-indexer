@@ -225,7 +225,7 @@ func (indexer *Indexer) processRealtimeBlock(blockDetail *types.BLockDetail) {
 		return
 	}
 	var block *types.BLockDetail
-	blockNumber := block.BlockNumber
+	blockNumber := blockDetail.BlockNumber
 	for i := 0; i < 3; i++ {
 		log.Printf("Waiting for 1 more minute to get receipts for block %v . Try %v time \n", blockNumber.String(), i)
 		time.Sleep(1 * time.Minute)
