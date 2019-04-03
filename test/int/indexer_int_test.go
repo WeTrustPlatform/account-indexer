@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	IPC = "wss://mainnet.kivutar.me:8546/2KT179di"
+	IPC = "wss://mainindex.blockform.co:8546/2KT179di"
 	// IPC = "wss://mainnet.infura.io/_ws"
 )
 
