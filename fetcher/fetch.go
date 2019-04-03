@@ -161,7 +161,7 @@ func (cf *ChainFetch) FetchABlock(blockNbr int64, isRecpRelax bool) (*types.BLoc
 
 	blockDetail := types.BLockDetail{
 		BlockNumber:  block.Number(),
-		Time:         block.Time(),
+		Time:         big.NewInt(int64(block.Time())),
 		Transactions: finalTx,
 	}
 	return &blockDetail, nil
