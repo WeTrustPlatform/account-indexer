@@ -226,9 +226,9 @@ func (indexer *Indexer) processRealtimeBlock(blockDetail *types.BLockDetail) {
 	}
 	var block *types.BLockDetail
 	blockNumber := blockDetail.BlockNumber
-	for i := 0; i < 3; i++ {
-		log.Printf("Waiting for 1 more minute to get receipts for block %v . Try %v time \n", blockNumber.String(), i)
-		time.Sleep(1 * time.Minute)
+	for i := 0; i < 5; i++ {
+		log.Printf("Waiting for 2 more minutes to get receipts for block %v . Trying %v [th] time \n", blockNumber.String(), (i + 1))
+		time.Sleep(2 * time.Minute)
 		_block, err := indexer.realtimeFetcher.FetchABlock(blockNumber.Int64(), isRecpRelax)
 		if err != nil {
 			log.Fatalf("Cannot fetch block %v, error: %v \n", blockNumber.String(), err.Error())
