@@ -2,7 +2,7 @@ package config
 
 // These will be set by Travis
 // -X github.com/WeTrustPlatform/account-indexer/common/config.*=*
-var version = "1.0.2-alpha"
+var version = "1.0.3-alpha"
 var buildID = "55"
 var githash = "0"
 
