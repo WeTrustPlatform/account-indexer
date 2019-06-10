@@ -20,7 +20,7 @@ import (
 
 func TestContractCreation(t *testing.T) {
 	// Setup
-	// ipcs := []string{"wss://mainnet.kivutar.me:8546/2KT179di"}
+	// ipcs := []string{"wss://mainindex3.blockform.co:8546/657J4ZxS"}
 	ipcs := []string{"wss://mainnet.infura.io/_ws"}
 	t.Logf("TestContractCreation ipcs=%v \n ", ipcs)
 	service.GetIpcManager().SetIPC(ipcs)

@@ -23,7 +23,7 @@ import (
  * This test is not expected to run in travis.
  * Change this URL to test a different server
  */
-const IndexerUrl = "http://mainnet.kivutar.me:3000/api/v1/accounts/%v"
+const IndexerUrl = "https://mainindex3.blockform.co:3001/api/v1/accounts/%v"
 const EthereumNode = "wss://mainnet.infura.io/_ws"
 const BlockCount = 3
 const StartBlock = 7000000
