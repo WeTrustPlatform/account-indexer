@@ -155,9 +155,9 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 	trSelector := "div#ContentPlaceHolder1_mainrow > div.card-body > div > table > tbody > tr"
 	doc.Find(trSelector).Each(func(i int, s *goquery.Selection) {
 		// line by line
-		blockNumber := s.Find("td.hidden-sm > a").Text()
+		blockNumber := s.Find("td.d-none > a").Text()
 		blockNumbers = append(blockNumbers, blockNumber)
-		txOrAddr := s.Find("td > span.address-tag > a")
+		txOrAddr := s.Find("td > span.hash-tag > a")
 		tx := txOrAddr.First().Text()
 		addrNode := txOrAddr.Last()
 		addrHref, ok := addrNode.Attr("href")
