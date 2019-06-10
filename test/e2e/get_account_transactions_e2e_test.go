@@ -157,7 +157,7 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 		// line by line
 		blockNumber := s.Find("td.d-none > a").Text()
 		blockNumbers = append(blockNumbers, blockNumber)
-		txOrAddr := s.Find("td > span.hash-tag > a")
+		txOrAddr := s.Find("td a")
 		tx := txOrAddr.First().Text()
 		addrNode := txOrAddr.Last()
 		addrHref, ok := addrNode.Attr("href")
