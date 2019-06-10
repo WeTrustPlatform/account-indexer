@@ -88,7 +88,7 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 		Timeout: 10 * time.Second,
 	}
 	for _, block := range blockNumbers {
-		url := fmt.Sprintf("http://localhost:3000/admin/blocks/%v", block)
+		url := fmt.Sprintf("http://127.0.0.1:3000/admin/blocks/%v", block)
 		req, err := http.NewRequest("POST", url, bytes.NewBufferString("{}"))
 		assert.Nil(t, err)
 		req.Header.Set("Authorization", "Basic "+encoded)
@@ -106,7 +106,7 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 }
 
 func getDataFromIndexer(t *testing.T, account string, rows int, from string, to string) []httpTypes.EIAddress {
-	url := fmt.Sprintf("http://localhost:3000/api/v1/accounts/%v?rows=%v&from=%v&to=%v", account, rows, from, to)
+	url := fmt.Sprintf("http://127.0.0.1:3000/api/v1/accounts/%v?rows=%v&from=%v&to=%v", account, rows, from, to)
 	t.Logf("Getting index data from %v \n", url)
 	res, err := http.Get(url)
 	assert.Nil(t, err)
@@ -118,7 +118,7 @@ func getDataFromIndexer(t *testing.T, account string, rows int, from string, to 
 }
 
 func getTotalTxFromIndexer(t *testing.T, account string) int {
-	url := fmt.Sprintf("http://localhost:3000/api/v1/accounts/%v/total", account)
+	url := fmt.Sprintf("http://127.0.0.1:3000/api/v1/accounts/%v/total", account)
 	t.Logf("Getting index total transaction from %v \n", url)
 	res, err := http.Get(url)
 	assert.Nil(t, err)

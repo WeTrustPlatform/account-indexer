@@ -95,7 +95,7 @@ func (server *Server) Start() {
 		admin.GET("/config", server.getConfig)
 		admin.GET("/version", server.getVersion)
 	}
-	// Listen for port 3000 on localhost
+	// Listen for port 3000 on localhost(127.0.0.1)
 	// Admin needs to setup a reversed proxy and forward to http://127.0.0.1:3000
 	err := router.Run(fmt.Sprintf("127.0.0.1:%v", config.GetConfig().Port))
 	if err == nil {
