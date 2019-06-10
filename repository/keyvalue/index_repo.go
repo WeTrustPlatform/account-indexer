@@ -2,13 +2,13 @@ package keyvalue
 
 import (
 	"errors"
-	"log"
 	"math/big"
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/marshal"
+	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -74,7 +74,7 @@ func (repo *KVIndexRepo) SaveAddressIndex(addressIndex []*types.AddressIndex) er
 	}
 	err := repo.addressDAO.BatchPut(keyValues)
 	if err != nil {
-		log.Fatal("Cannot write to address leveldb", err)
+		panic(errors.New("Cannot write to address leveldb. Error: " + err.Error()))
 	}
 	return err
 }
@@ -85,7 +85,7 @@ func (repo *KVIndexRepo) SaveBlockIndex(blockIndex *types.BlockIndex) error {
 	value := repo.marshaller.MarshallBlockValue(blockIndex)
 	err := repo.blockDAO.Put(dao.NewKeyValue(key, value))
 	if err != nil {
-		log.Fatal("Cannot write to block leveldb", err)
+		panic(errors.New("Cannot write to block leveldb. Error: " + err.Error()))
 	}
 	return err
 }

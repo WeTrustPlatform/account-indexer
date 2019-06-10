@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -98,7 +99,7 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 			assert.Equal(t, 200, res.StatusCode)
 			log.Printf("Index block %v successfully \n", block)
 		} else {
-			log.Fatal("Error indexing block, error=" + err.Error())
+			panic(errors.New("Error indexing block, error=" + err.Error()))
 		}
 
 		defer res.Body.Close()
@@ -187,7 +188,7 @@ func getEtherScanDoc(t *testing.T, url string) *goquery.Document {
 	assert.Nil(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
+		panic(errors.New(fmt.Sprintf("status code error: %d %s", res.StatusCode, res.Status)))
 	}
 	// Load the HTML document
 	doc, err := goquery.NewDocumentFromReader(res.Body)

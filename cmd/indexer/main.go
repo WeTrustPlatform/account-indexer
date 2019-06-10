@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -12,6 +12,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue/dao"
 	"github.com/WeTrustPlatform/account-indexer/service"
 	"github.com/WeTrustPlatform/account-indexer/watcher"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/WeTrustPlatform/account-indexer/http"
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
@@ -100,19 +101,19 @@ func setConfig(ctx *cli.Context) {
 	config := config.GetConfig()
 	config.CleanInterval = time.Duration(clearInterval) * time.Minute
 	if config.CleanInterval < 1*time.Second {
-		log.Fatalf("CleanInterval of %v is not valid \n", config.CleanInterval)
+		panic(errors.New(fmt.Sprintf("CleanInterval of %v is not valid \n", config.CleanInterval)))
 	}
 	config.BlockTTL = time.Duration(blockTTL) * time.Hour
 	if config.BlockTTL < 1*time.Hour {
-		log.Fatalf("BlockTTL of %v is not valid. Should not be less than 1 hour \n", config.BlockTTL)
+		panic(errors.New(fmt.Sprintf("BlockTTL of %v is not valid. Should not be less than 1 hour \n", config.BlockTTL)))
 	}
 	config.WatcherInterval = time.Duration(watcherInterval) * time.Minute
 	if config.WatcherInterval < 1*time.Second {
-		log.Fatalf("WatcherInterval of %v is not valid \n", config.WatcherInterval)
+		panic(errors.New(fmt.Sprintf("WatcherInterval of %v is not valid \n", config.WatcherInterval)))
 	}
 	config.OOSThreshold = time.Duration(oosThreshold) * time.Second
 	if config.OOSThreshold < 1*time.Second {
-		log.Fatalf("OOSThreshold of %v is not valid \n", config.OOSThreshold)
+		panic(errors.New(fmt.Sprintf("OOSThreshold of %v is not valid \n", config.OOSThreshold)))
 	}
 
 	config.Port = ctx.GlobalInt(portFlag.Name)
@@ -120,7 +121,7 @@ func setConfig(ctx *cli.Context) {
 	config.StartTime = time.Now()
 	// byte range
 	if config.NumBatch < 1 || config.NumBatch > 127 {
-		log.Fatal("Number of batch should be 1 to 127")
+		panic(errors.New("Number of batch should be 1 to 127"))
 	}
 	log.Printf("configuration: %v \n", config)
 }
@@ -136,17 +137,17 @@ func index(ctx *cli.Context) {
 	service.GetIpcManager().SetIPC(ipcs)
 	addressDB, err := leveldb.OpenFile(dbPath+"_address", nil)
 	if err != nil {
-		log.Fatal("Can't connect to Address LevelDB", err)
+		panic(errors.New("Can't connect to Address LevelDB. Error: " + err.Error()))
 	}
 	defer addressDB.Close()
 	blockDB, err := leveldb.OpenFile(dbPath+"_block", nil)
 	if err != nil {
-		log.Fatal("Can't connect to Block LevelDB", err)
+		panic(errors.New("Can't connect to Block LevelDB. Error: " + err.Error()))
 	}
 	defer blockDB.Close()
 	batchDB, err := leveldb.OpenFile(dbPath+"_batch", nil)
 	if err != nil {
-		log.Fatal("Can't connect to Batch LevelDB", err)
+		panic(errors.New("Can't connect to Batch LevelDB. Error: " + err.Error()))
 	}
 	defer batchDB.Close()
 	indexRepo := keyvalue.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB))

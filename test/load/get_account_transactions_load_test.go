@@ -114,7 +114,7 @@ func testAddress(t *testing.T, addr string, testTime bool) float64 {
 	res, err := getClient().Get(url)
 	dur := time.Since(now)
 	if err != nil {
-		log.Fatalf("Received error %v for address %v url=%v \n", err.Error(), addr, url)
+		panic(errors.New(fmt.Sprintf("Received error %v for address %v url=%v \n", err.Error(), addr, url)))
 		return 0
 	}
 	defer res.Body.Close()

@@ -62,11 +62,10 @@ func (im *IpcManager) SetIPC(ipcs []string) error {
 	return nil
 }
 
-// ForceChangeIPC force change ipc, otherwise log.Fatal
+// ForceChangeIPC force change ipc, otherwise panic
 func (im *IpcManager) ForceChangeIPC() {
 	if len(im.ipcList) <= 1 {
-		log.Fatal("IpcManager: Cannot switch IPC, number of IPC = " + strconv.Itoa(len(im.ipcList)))
-		return
+		panic(errors.New("IpcManager: Cannot switch IPC, number of IPC = " + strconv.Itoa(len(im.ipcList))))
 	}
 	im.ChangeIPC()
 }
