@@ -1,8 +1,8 @@
 package indexer
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"sync"
 	"time"
@@ -14,6 +14,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/WeTrustPlatform/account-indexer/service"
 	"github.com/WeTrustPlatform/account-indexer/watcher"
+	log "github.com/sirupsen/logrus"
 )
 
 // Indexer fetch data from blockchain and store in a repository
@@ -194,12 +195,12 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, stop chan struct{}, 
 		isBatch := true
 		err = indexer.ProcessBlock(blockDetail, isBatch)
 		if err != nil {
-			log.Fatal(tag + " Indexer: cannot process block " + blockNumber.String() + " , error is " + err.Error())
+			panic(errors.New(tag + " Indexer: cannot process block " + blockNumber.String() + " , error is " + err.Error()))
 		}
 		batch.UpdatedAt = big.NewInt(time.Now().Unix())
 		err = indexer.BatchRepo.UpdateBatch(batch)
 		if err != nil {
-			log.Fatal(tag + " Indexer: cannot update batch for process block " + blockNumber.String() + " , error is " + err.Error())
+			panic(errors.New(tag + " Indexer: cannot update batch for process block " + blockNumber.String() + " , error is " + err.Error()))
 		}
 		i++
 		if i%10 == 0 {

@@ -1,8 +1,8 @@
 package http
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"net/http"
 	"os"
@@ -13,6 +13,8 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/common"
 	"github.com/WeTrustPlatform/account-indexer/common/config"
 	"github.com/WeTrustPlatform/account-indexer/fetcher"
+	log "github.com/sirupsen/logrus"
+
 	httpTypes "github.com/WeTrustPlatform/account-indexer/http/types"
 	"github.com/WeTrustPlatform/account-indexer/indexer"
 	"github.com/WeTrustPlatform/account-indexer/repository"
@@ -101,7 +103,7 @@ func (server *Server) Start() {
 	if err == nil {
 		log.Println("Server: Started server successfully at port ", config.GetConfig().Port)
 	} else {
-		log.Fatal("Server: Cannot start http server", err.Error())
+		panic(errors.New("Server: Cannot start http server. Error: " + err.Error()))
 	}
 }
 
