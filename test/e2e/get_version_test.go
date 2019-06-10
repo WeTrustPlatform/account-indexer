@@ -19,7 +19,7 @@ import (
 
 func TestGetVersion(t *testing.T) {
 	log.Println("Start TestGetVersion")
-	url := "http://localhost:3000/admin/version"
+	url := "http://127.0.0.1:3000/admin/version"
 	userName := os.Getenv(indexerHttp.AdminUserName)
 	password := os.Getenv(indexerHttp.AdminPassword)
 	encoded := base64.StdEncoding.EncodeToString([]byte(userName + ":" + password))

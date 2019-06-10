@@ -88,7 +88,7 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 		Timeout: 10 * time.Second,
 	}
 	for _, block := range blockNumbers {
-		url := fmt.Sprintf("http://localhost:3000/admin/blocks/%v", block)
+		url := fmt.Sprintf("http://127.0.0.1:3000/admin/blocks/%v", block)
 		req, err := http.NewRequest("POST", url, bytes.NewBufferString("{}"))
 		assert.Nil(t, err)
 		req.Header.Set("Authorization", "Basic "+encoded)
@@ -106,7 +106,7 @@ func indexBlocks(t *testing.T, blockNumbers []string) {
 }
 
 func getDataFromIndexer(t *testing.T, account string, rows int, from string, to string) []httpTypes.EIAddress {
-	url := fmt.Sprintf("http://localhost:3000/api/v1/accounts/%v?rows=%v&from=%v&to=%v", account, rows, from, to)
+	url := fmt.Sprintf("http://127.0.0.1:3000/api/v1/accounts/%v?rows=%v&from=%v&to=%v", account, rows, from, to)
 	t.Logf("Getting index data from %v \n", url)
 	res, err := http.Get(url)
 	assert.Nil(t, err)
@@ -118,7 +118,7 @@ func getDataFromIndexer(t *testing.T, account string, rows int, from string, to 
 }
 
 func getTotalTxFromIndexer(t *testing.T, account string) int {
-	url := fmt.Sprintf("http://localhost:3000/api/v1/accounts/%v/total", account)
+	url := fmt.Sprintf("http://127.0.0.1:3000/api/v1/accounts/%v/total", account)
 	t.Logf("Getting index total transaction from %v \n", url)
 	res, err := http.Get(url)
 	assert.Nil(t, err)
@@ -137,7 +137,7 @@ func getTotalTxFromEtherScan(t *testing.T, account string) int {
 	doc := getEtherScanDoc(t, url)
 	wholeText := doc.Text()
 	i := strings.Index(wholeText, "A total of ")
-	j := strings.Index(wholeText, " Txns found")
+	j := strings.Index(wholeText, " transactions found")
 	numTx := string([]byte(wholeText)[i+len("A total of ") : j])
 	log.Println("Found number of transactions from etherscan: " + numTx)
 	result, err := strconv.Atoi(numTx)
@@ -152,12 +152,12 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 	doc := getEtherScanDoc(t, url)
 	blockNumbers := []string{}
 	txLines := []httpTypes.EIAddress{}
-	trSelector := "div#ContentPlaceHolder1_mainrow > div > div > div > table > tbody > tr"
+	trSelector := "div#ContentPlaceHolder1_mainrow > div.card-body > div > table > tbody > tr"
 	doc.Find(trSelector).Each(func(i int, s *goquery.Selection) {
 		// line by line
-		blockNumber := s.Find("td.hidden-sm > a").Text()
+		blockNumber := s.Find("td.d-none > a").Text()
 		blockNumbers = append(blockNumbers, blockNumber)
-		txOrAddr := s.Find("td > span.address-tag > a")
+		txOrAddr := s.Find("td a")
 		tx := txOrAddr.First().Text()
 		addrNode := txOrAddr.Last()
 		addrHref, ok := addrNode.Attr("href")

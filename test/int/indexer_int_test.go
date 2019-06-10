@@ -20,8 +20,8 @@ import (
 
 func TestContractCreation(t *testing.T) {
 	// Setup
-	// ipcs := []string{"wss://mainnet.kivutar.me:8546/2KT179di"}
-	ipcs := []string{"wss://mainnet.infura.io/_ws"}
+	// ipcs := []string{"wss://mainindex3.blockform.co:8546/657J4ZxS"}
+	ipcs := []string{"https://mainnet.infura.io/v3/022f489bd91a47f3960f6f70333bdb76"}
 	t.Logf("TestContractCreation ipcs=%v \n ", ipcs)
 	service.GetIpcManager().SetIPC(ipcs)
 	fetcher, err := fetcher.NewChainFetch()
