@@ -152,7 +152,7 @@ func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.E
 	doc := getEtherScanDoc(t, url)
 	blockNumbers := []string{}
 	txLines := []httpTypes.EIAddress{}
-	trSelector := "div#ContentPlaceHolder1_mainrow > div > div > div > table > tbody > tr"
+	trSelector := "div#ContentPlaceHolder1_mainrow > div.card-body > div > table > tbody > tr"
 	doc.Find(trSelector).Each(func(i int, s *goquery.Selection) {
 		// line by line
 		blockNumber := s.Find("td.hidden-sm > a").Text()
