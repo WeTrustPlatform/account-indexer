@@ -1,6 +1,7 @@
 branches:
   only:
     - master
+    - develop
     - /^v.*$/
 
 language: go
