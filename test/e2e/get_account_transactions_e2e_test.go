@@ -137,7 +137,7 @@ func getTotalTxFromEtherScan(t *testing.T, account string) int {
 	doc := getEtherScanDoc(t, url)
 	wholeText := doc.Text()
 	i := strings.Index(wholeText, "A total of ")
-	j := strings.Index(wholeText, " Txns found")
+	j := strings.Index(wholeText, " transactions found")
 	numTx := string([]byte(wholeText)[i+len("A total of ") : j])
 	log.Println("Found number of transactions from etherscan: " + numTx)
 	result, err := strconv.Atoi(numTx)
