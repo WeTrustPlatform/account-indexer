@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -139,17 +140,30 @@ func index(ctx *cli.Context) {
 	if err != nil {
 		panic(errors.New("Can't connect to Address LevelDB. Error: " + err.Error()))
 	}
-	defer addressDB.Close()
 	blockDB, err := leveldb.OpenFile(dbPath+"_block", nil)
 	if err != nil {
 		panic(errors.New("Can't connect to Block LevelDB. Error: " + err.Error()))
 	}
-	defer blockDB.Close()
 	batchDB, err := leveldb.OpenFile(dbPath+"_batch", nil)
 	if err != nil {
 		panic(errors.New("Can't connect to Batch LevelDB. Error: " + err.Error()))
 	}
-	defer batchDB.Close()
+
+	cleanUp := func() {
+		addressDB.Close()
+		blockDB.Close()
+		batchDB.Close()
+	}
+	defer cleanUp()
+	interuptChan := make(chan os.Signal, 1)
+	signal.Notify(interuptChan, os.Interrupt)
+	go func() {
+		<-interuptChan
+		cleanUp()
+		log.Info("Received interupt signal, cleanup and exit...")
+		os.Exit(1)
+	}()
+
 	indexRepo := keyvalue.NewKVIndexRepo(dao.NewLevelDbDAO(addressDB), dao.NewLevelDbDAO(blockDB))
 	batchRepo := keyvalue.NewKVBatchRepo(dao.NewLevelDbDAO(batchDB))
 	idx := indexer.NewIndexer(indexRepo, batchRepo, nil)
