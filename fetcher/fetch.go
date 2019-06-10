@@ -165,7 +165,7 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 	}
 	blockDetail := types.BLockDetail{
 		BlockNumber:  aBlock.Number(),
-		Time:         aBlock.Time(),
+		Time:         new(big.Int).SetUint64(aBlock.Time()),
 		Transactions: transactions,
 	}
 	return &blockDetail, nil
