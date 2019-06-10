@@ -188,7 +188,7 @@ func getEtherScanDoc(t *testing.T, url string) *goquery.Document {
 	assert.Nil(t, err)
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
-		panic(errors.New(fmt.Sprintf("status code error: %d %s", res.StatusCode, res.Status)))
+		panic(fmt.Errorf("status code error: %d %s", res.StatusCode, res.Status))
 	}
 	// Load the HTML document
 	doc, err := goquery.NewDocumentFromReader(res.Body)

@@ -101,19 +101,19 @@ func setConfig(ctx *cli.Context) {
 	config := config.GetConfig()
 	config.CleanInterval = time.Duration(clearInterval) * time.Minute
 	if config.CleanInterval < 1*time.Second {
-		panic(errors.New(fmt.Sprintf("CleanInterval of %v is not valid \n", config.CleanInterval)))
+		panic(fmt.Errorf("CleanInterval of %v is not valid", config.CleanInterval))
 	}
 	config.BlockTTL = time.Duration(blockTTL) * time.Hour
 	if config.BlockTTL < 1*time.Hour {
-		panic(errors.New(fmt.Sprintf("BlockTTL of %v is not valid. Should not be less than 1 hour \n", config.BlockTTL)))
+		panic(fmt.Errorf("BlockTTL of %v is not valid. Should not be less than 1 hour", config.BlockTTL))
 	}
 	config.WatcherInterval = time.Duration(watcherInterval) * time.Minute
 	if config.WatcherInterval < 1*time.Second {
-		panic(errors.New(fmt.Sprintf("WatcherInterval of %v is not valid \n", config.WatcherInterval)))
+		panic(fmt.Errorf("WatcherInterval of %v is not valid", config.WatcherInterval))
 	}
 	config.OOSThreshold = time.Duration(oosThreshold) * time.Second
 	if config.OOSThreshold < 1*time.Second {
-		panic(errors.New(fmt.Sprintf("OOSThreshold of %v is not valid \n", config.OOSThreshold)))
+		panic(fmt.Errorf("OOSThreshold of %v is not valid", config.OOSThreshold))
 	}
 
 	config.Port = ctx.GlobalInt(portFlag.Name)
@@ -121,7 +121,7 @@ func setConfig(ctx *cli.Context) {
 	config.StartTime = time.Now()
 	// byte range
 	if config.NumBatch < 1 || config.NumBatch > 127 {
-		panic(errors.New("Number of batch should be 1 to 127"))
+		panic(errors.New("number of batch should be 1 to 127"))
 	}
 	log.Printf("configuration: %v \n", config)
 }
