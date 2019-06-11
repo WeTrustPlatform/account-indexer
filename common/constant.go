@@ -4,9 +4,9 @@ const (
 	// AddressZero some transactions do not have To address, use this address instead
 	AddressZero = "0x0000000000000000000000000000000000000000"
 	// DefaultIpc the default ipc path
-	DefaultIpc = "/datadrive/geth.ipc"
+	DefaultIpc = "/home/blockform/.ethereum/geth.ipc"
 	// DefaultDbPath default database path, a folder then prefix
-	DefaultDbPath = "/datadrive/account-indexer-db/geth_indexer_leveldb"
+	DefaultDbPath = "/home/blockform/account-indexer-db/geth_indexer_leveldb"
 	// NumMaxTransaction if number of transaction is more than this, just return +10000 to the client
 	NumMaxTransaction = 10000
 	// DefaultCleanInterval In minute
