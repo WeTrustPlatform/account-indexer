@@ -18,7 +18,6 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/http"
 	"github.com/WeTrustPlatform/account-indexer/repository/keyvalue"
 	"github.com/ethereum/go-ethereum/console"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/syndtr/goleveldb/leveldb"
 
 	"os"
@@ -89,7 +88,7 @@ func newApp() *cli.App {
 	app.Author = ""
 	//app.Authors = nil
 	app.Email = ""
-	app.Version = params.VersionWithMeta
+	app.Version = config.GetVersion().Version
 	app.Usage = "the indexer for geth"
 	return app
 }
