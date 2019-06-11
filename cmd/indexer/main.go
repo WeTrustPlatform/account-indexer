@@ -194,7 +194,7 @@ func init() {
 
 func logInit() {
 	// Log as JSON instead of the default ASCII formatter.
-	log.SetFormatter(&log.JSONFormatter{})
+	// log.SetFormatter(&log.JSONFormatter{})
 
 	// Only log the warning severity or above.
 	logLevel := os.Getenv("INDEXER_LOG_LEVEL")
