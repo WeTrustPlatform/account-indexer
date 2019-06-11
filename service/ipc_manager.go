@@ -2,10 +2,11 @@ package service
 
 import (
 	"errors"
-	"log"
 	"strconv"
 	"sync"
 	"sync/atomic"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // IpcSubscriber interface for subscribers
@@ -29,7 +30,7 @@ var once sync.Once
 func (im *IpcManager) Subscribe(sub *IpcSubscriber) {
 	for _, oldSub := range im.subscribers {
 		if oldSub == sub {
-			log.Printf("IpcManager: Already has the subscription for %v, no need to subscribe again \n", (*sub).Name())
+			log.WithField("subscription", (*sub).Name()).Info("IpcManager: Already has the subscription no need to subscribe again")
 			break
 		}
 	}
@@ -58,7 +59,7 @@ func (im *IpcManager) SetIPC(ipcs []string) error {
 	}
 	im.ipcList = ipcs
 	im.curIPC = im.ipcList[0]
-	log.Printf("IpcManager: Initial ipc: %v \n", im.curIPC)
+	log.WithField("ipc", im.curIPC).Info("IpcManager: Initial ipc")
 	return nil
 }
 
@@ -72,7 +73,7 @@ func (im *IpcManager) ForceChangeIPC() {
 
 // EnableSwitchIPC enable ForceChangeIPC
 func (im *IpcManager) EnableSwitchIPC() {
-	log.Printf("IpcManager: EnableSwitchIPC")
+	log.Info("IpcManager: EnableSwitchIPC")
 	atomic.StoreInt32(&im.switchIPCCounter, 0)
 }
 
@@ -81,18 +82,21 @@ func (im *IpcManager) ChangeIPC() {
 	atomic.AddInt32(&im.switchIPCCounter, 1)
 	counter := atomic.LoadInt32(&im.switchIPCCounter)
 	if counter > 1 {
-		log.Printf("IpcManager: Switching is in progress, counter=%v ... \n", counter)
+		log.WithField("counter", counter).Info("IpcManager: Switching is in progress")
 		return
 	}
-	log.Println("IpcManager: Attempt to change IPC...")
+	log.Info("IpcManager: Attempt to change IPC...")
 	if len(im.ipcList) <= 1 {
-		log.Printf("IpcManager: Cannot change ipc because there is only %v ipc provided \n", im.ipcList)
+		log.WithField("ipcList", im.ipcList).Info("IpcManager: Cannot change ipc")
 		return
 	}
 	im.curIPC = NextIPC(im.curIPC, im.ipcList)
-	log.Printf("IpcManager: New IPC: %v, number of subscriber to update: %v \n", im.curIPC, len(im.subscribers))
+	log.WithFields(log.Fields{
+		"curIPC":         im.curIPC,
+		"numSubscribers": len(im.subscribers),
+	}).Info("IPCManager: ChangeIPC")
 	for _, sub := range im.subscribers {
-		log.Printf("IpcManager: Updating new ipc to %v \n", (*sub).Name())
+		log.WithField("ipc", (*sub).Name()).Info("IpcManager: Updating new ipc")
 		(*sub).IpcUpdated(im.curIPC)
 	}
 }

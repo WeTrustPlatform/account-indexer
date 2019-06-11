@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
 	"testing"
@@ -15,10 +14,11 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/common/config"
 	indexerHttp "github.com/WeTrustPlatform/account-indexer/http"
 	"github.com/stretchr/testify/assert"
+	log "github.com/sirupsen/logrus"
 )
 
 func TestGetVersion(t *testing.T) {
-	log.Println("Start TestGetVersion")
+	log.Info("Start TestGetVersion")
 	url := "http://127.0.0.1:3000/admin/version"
 	userName := os.Getenv(indexerHttp.AdminUserName)
 	password := os.Getenv(indexerHttp.AdminPassword)
@@ -36,5 +36,5 @@ func TestGetVersion(t *testing.T) {
 	err = json.NewDecoder(res.Body).Decode(&httpResult)
 	assert.Nil(t, err)
 	log.Printf("TestGetVersion version=%v, buildID=%v, githash=%v \n", httpResult.Version, httpResult.BuildID, httpResult.GitHash)
-	log.Println("End TestGetVersion")
+	log.Info("End TestGetVersion")
 }

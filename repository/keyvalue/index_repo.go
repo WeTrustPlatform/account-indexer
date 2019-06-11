@@ -39,7 +39,7 @@ func (repo *KVIndexRepo) Store(addressIndex []*types.AddressIndex, blockIndex *t
 				reorgAddresses := blockIndex.Addresses
 				err = repo.HandleReorg(blockTime, reorgAddresses)
 				if err != nil {
-					log.Println("Cannot handle reorg, err=" + err.Error())
+					log.WithField("error", err.Error).Error("Cannot handle reorg")
 					return err
 				}
 			}
@@ -49,7 +49,7 @@ func (repo *KVIndexRepo) Store(addressIndex []*types.AddressIndex, blockIndex *t
 	// AddressDB: write in batch
 	err := repo.SaveAddressIndex(addressIndex)
 	if err != nil {
-		log.Println("Cannot save address index, err=" + err.Error())
+		log.WithField("error", err.Error).Error("Cannot save address index")
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (repo *KVIndexRepo) Store(addressIndex []*types.AddressIndex, blockIndex *t
 	if !isBatch {
 		err = repo.SaveBlockIndex(blockIndex)
 		if err != nil {
-			log.Println("Cannot save block index, err=" + err.Error())
+			log.WithField("error", err.Error).Error("Cannot save block index")
 		}
 	}
 	return err

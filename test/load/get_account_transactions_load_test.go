@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -17,6 +16,7 @@ import (
 	httpTypes "github.com/WeTrustPlatform/account-indexer/http/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/assert"
+	log "github.com/sirupsen/logrus"
 )
 
 /**
@@ -66,7 +66,7 @@ func TestHandleMultipleRequest(t *testing.T) {
 }
 
 func TestGetTransactionRequestTime(t *testing.T) {
-	log.Println("TestGetTransactionRequestTime start")
+	log.Info("TestGetTransactionRequestTime start")
 	// only 20 transactions in this block, should be good to test time
 	addresses := getAddressesForBlock(7000002)
 	now := time.Now()
@@ -87,7 +87,7 @@ func TestGetTransactionRequestTime(t *testing.T) {
 }
 
 func TestGetTotalRequestTime(t *testing.T) {
-	log.Println("TestGetTotalRequestTime")
+	log.Info("TestGetTotalRequestTime")
 	// this address has a lot lot of transactions
 	addr := "0x8d12A197cB00D4747a1fe03395095ce2A5CC6819"
 	totalUrl := IndexerUrl + "/total"

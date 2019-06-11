@@ -2,7 +2,6 @@ package fetcher
 
 import (
 	"context"
-	"log"
 	"math/big"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	log "github.com/sirupsen/logrus"
 )
 
 //EthClient the Client of geth
@@ -47,7 +47,10 @@ func NewChainFetch() (*ChainFetch, error) {
 	ipcPath := service.GetIpcManager().GetIPC()
 	client, err := ethclient.Dial(ipcPath)
 	if err != nil {
-		log.Printf("ChainFetch: Cannot dial, ipc %v is wrong, error: %v", ipcPath, err.Error())
+		log.WithFields(log.Fields{
+			"ipc":   ipcPath,
+			"error": err.Error(),
+		}).Error("ChainFetch: Cannot dial")
 		switchIPC()
 		return nil, err
 	}
@@ -63,9 +66,9 @@ func (cf *ChainFetch) IpcUpdated() {
 	if cf.ethSub != nil {
 		cf.ethSub.Unsubscribe()
 	}
-	log.Println("ChainFetch: Unsubscribed the old ipc, wait for 30s")
+	log.Info("ChainFetch: Unsubscribed the old ipc, wait for 30s")
 	time.Sleep(30 * time.Second)
-	log.Println("ChainFetch: 30s passed, closing blockHeaderChannel")
+	log.Info("ChainFetch: 30s passed, closing blockHeaderChannel")
 	// writer should be the one to close the channel?
 	if cf.blockHeaderChannel != nil {
 		// This should finish the RealtimeFetch for loop
@@ -81,18 +84,18 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 	cf.blockHeaderChannel = make(chan *gethtypes.Header)
 	ethSub, err := cf.Client.SubscribeNewHead(ctx, cf.blockHeaderChannel)
 	if err != nil {
-		log.Printf("ChainFetch: Cannot do newHead subscribe to this ipc %v\n", service.GetIpcManager().GetIPC())
+		log.WithField("ipc", service.GetIpcManager().GetIPC()).Error("ChainFetch: Cannot do newHead subscribe to this ipc")
 		switchIPC()
 		return
 	}
 	cf.ethSub = ethSub
 
-	log.Println("ChainFetch: RealtimeFetch Waiting for new block hearders...")
+	log.Info("ChainFetch: RealtimeFetch Waiting for new block hearders...")
 	for {
 		receivedHeader, ok := <-cf.blockHeaderChannel
 		if !ok {
 			// switched ipc
-			log.Println("ChainFetch: Stopping SubscribeNewHead, ipc is switched?")
+			log.Info("ChainFetch: Stopping SubscribeNewHead, ipc is switched?")
 			close(ch)
 			break
 		}
@@ -102,12 +105,12 @@ func (cf *ChainFetch) RealtimeFetch(ch chan<- *types.BLockDetail) {
 			ch <- blockDetail
 		} else {
 			// Finish the Realtime process, someone will switch the IPC
-			log.Println("ChainFetch: RealtimeFetch Cannot get block detail for block " + blockNumber.String())
+			log.WithField("blockNumber", blockNumber.String()).Info("ChainFetch: RealtimeFetch Cannot get block detail")
 			close(ch)
 			break
 		}
 	}
-	log.Println("ChainFetch: Stopped RealtimeFetch")
+	log.Info("ChainFetch: Stopped RealtimeFetch")
 }
 
 // FetchABlock fetch a block by block number
@@ -115,7 +118,7 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 	ctx := context.Background()
 	aBlock, err := cf.Client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
-		log.Println("ChainFetch: FetchABlock BlockByNumber returns error " + err.Error())
+		log.WithField("error", err.Error()).Error("ChainFetch: FetchABlock BlockByNumber returns error")
 		switchIPC()
 		return &types.BLockDetail{}, err
 	}
@@ -124,7 +127,7 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 		for index, tx := range aBlock.Transactions() {
 			sender, err := cf.Client.TransactionSender(ctx, tx, aBlock.Hash(), uint(index))
 			if err != nil {
-				log.Println("ChainFetch: FetchABlock TransactionSender returns error " + err.Error())
+				log.Error("ChainFetch: FetchABlock TransactionSender returns error " + err.Error())
 				switchIPC()
 				return &types.BLockDetail{}, err
 			}
@@ -154,7 +157,10 @@ func (cf *ChainFetch) FetchABlock(blockNumber *big.Int) (*types.BLockDetail, err
 						transactions = append(transactions, transaction)
 					}
 				} else {
-					log.Printf("ChainFetch: FetchABlock warning cannot get receipt for transaction %v, error=%v \n", tx.Hash().String(), err.Error())
+					log.WithFields(log.Fields{
+						"txHash": tx.Hash().String(),
+						"error":  err.Error(),
+					}).Warn("ChainFetch: FetchABlock cannot get receipt for transaction")
 					// https://github.com/WeTrustPlatform/account-indexer/issues/18
 					// We trust our geth nodes, some other nodes always return error for this API
 					// switchIPC()

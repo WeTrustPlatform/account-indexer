@@ -123,7 +123,7 @@ func setConfig(ctx *cli.Context) {
 	if config.NumBatch < 1 || config.NumBatch > 127 {
 		panic(errors.New("number of batch should be 1 to 127"))
 	}
-	log.Printf("configuration: %v \n", config)
+	log.WithField("config", config).Info("Found configuration")
 }
 
 // Entry point
@@ -181,6 +181,7 @@ func main() {
 }
 
 func init() {
+	logInit()
 	app.Action = index
 	app.Flags = append(app.Flags, indexerFlags...)
 	// app.Before
@@ -189,4 +190,23 @@ func init() {
 		console.Stdin.Close() // Resets terminal mode.
 		return nil
 	}
+}
+
+func logInit() {
+	// Log as JSON instead of the default ASCII formatter.
+	// log.SetFormatter(&log.JSONFormatter{})
+
+	// Only log the warning severity or above.
+	logLevel := os.Getenv("INDEXER_LOG_LEVEL")
+	logLevelMap := map[string]log.Level{
+		"":      log.InfoLevel,
+		"panic": log.PanicLevel,
+		"fatal": log.FatalLevel,
+		"error": log.ErrorLevel,
+		"warn":  log.WarnLevel,
+		"info":  log.InfoLevel,
+		"debug": log.DebugLevel,
+		"trace": log.TraceLevel,
+	}
+	log.SetLevel(logLevelMap[strings.ToLower(logLevel)])
 }

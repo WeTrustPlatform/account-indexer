@@ -2,11 +2,11 @@ package types
 
 import (
 	"encoding/json"
-	"log"
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	log "github.com/sirupsen/logrus"
 )
 
 // var blockTime = big.NewInt(time.Now().Unix())

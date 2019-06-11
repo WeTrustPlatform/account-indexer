@@ -43,13 +43,13 @@ func (indexer *Indexer) IpcUpdated(ipcPath string) {
 		// let the old realtime fetch go, no need to give it new ipc
 		indexer.realtimeFetcher.IpcUpdated()
 	}
-	log.Println("Indexer: stopping all batch index goroutines, waiting for 30s")
+	log.Info("Indexer: stopping all batch index goroutines, waiting for 30s")
 	// finish any ongoing go-routines of this fetcher
 	if indexer.stopChan != nil {
 		close(indexer.stopChan)
 	}
 	time.Sleep(30 * time.Second)
-	log.Println("Indexer: stopped all batch index goroutines")
+	log.Info("Indexer: stopped all batch index goroutines")
 	indexAfterIPCChange := true
 	indexer.index(indexAfterIPCChange)
 }
@@ -75,7 +75,7 @@ func (indexer *Indexer) index(indexAfterIPCChange bool) {
 	}
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
-		log.Println("Indexer: index stopped because cannot create new fetch for realtime goroutine")
+		log.Error("Indexer: index stopped because cannot create new fetch for realtime goroutine")
 		indexer.realtimeFetcher = nil
 		return
 	}
@@ -83,10 +83,13 @@ func (indexer *Indexer) index(indexAfterIPCChange bool) {
 
 	latestBlock, err := indexer.realtimeFetcher.GetLatestBlock()
 	if err != nil {
-		log.Printf("Indexer: Can't get latest block, check IPC server. Error: %v \n", err.Error())
+		log.WithField("error", err.Error()).Error("Indexer: Can't get latest block, check IPC server.")
 		return
 	}
-	log.Printf("Indexer: IPC path %v is correct, latestBlock=%v \n", service.GetIpcManager().GetIPC(), latestBlock.String())
+	log.WithFields(log.Fields{
+		"ipc":         service.GetIpcManager().GetIPC(),
+		"latestBlock": latestBlock.String(),
+	}).Info("Indexer: IPC path is correct")
 	batches := indexer.getBatches(latestBlock)
 	mainWG := sync.WaitGroup{}
 	mainWG.Add(2)
@@ -112,7 +115,7 @@ func (indexer *Indexer) index(indexAfterIPCChange bool) {
 	}()
 
 	batchWG.Wait()
-	log.Println("Indexer: All batches are done, starting watcher")
+	log.Info("Indexer: All batches are done, starting watcher")
 	go func() {
 		defer mainWG.Done()
 		indexer.watcher.Watch()
@@ -142,7 +145,7 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 					batch.To = latestBlock
 					indexer.BatchRepo.ReplaceBatch(batch.From, latestBlock)
 					found = true
-					log.Println("Indexer: Updated batch with from " + batch.From.String())
+					log.WithField("from", batch.From.String()).Info("Indexer: Updated batch")
 				}
 				batches = append(batches, batch)
 			}
@@ -157,30 +160,36 @@ func (indexer *Indexer) getBatches(latestBlock *big.Int) []types.BatchStatus {
 
 // RealtimeIndex newHead subscribe
 func (indexer *Indexer) realtimeIndex() {
-	log.Println("Indexer: Starting realtime index")
+	log.Info("Indexer: Starting realtime index")
 	indexer.bdChan = make(chan *types.BLockDetail)
 	go indexer.realtimeFetcher.RealtimeFetch(indexer.bdChan)
 	for {
 		blockDetail, ok := <-indexer.bdChan
 		if !ok {
-			log.Println("Indexer: Stopping realtimeIndex, ipc is switched?")
+			log.Error("Indexer: Stopping realtimeIndex, ipc is switched?")
 			break
 		}
-		log.Printf("Indexer: realtimeIndex - received BlockDetail %v blockTime: %v\n", blockDetail.BlockNumber.String(), common.UnmarshallIntToTime(blockDetail.Time))
+		log.WithFields(log.Fields{
+			"blockNumber": blockDetail.BlockNumber.String(),
+			"blockTime":   common.UnmarshallIntToTime(blockDetail.Time),
+		}).Debug("Indexer: realtimeIndex - received new block")
 		isBatch := false
 		indexer.ProcessBlock(blockDetail, isBatch)
 	}
 	indexer.realtimeFetcher = nil
-	log.Println("Indexer: Stopped realtimeIndex")
+	log.Info("Indexer: Stopped realtimeIndex")
 }
 
 // from: inclusive, to: exclusive
 func (indexer *Indexer) batchIndex(batch types.BatchStatus, stop chan struct{}, tag string) {
-	log.Println("Indexer: start batchIndex, tag=" + tag)
+	log.WithField("tag", tag).Info("Indexer: start batchIndex")
 	start := time.Now()
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
-		log.Println(tag+"Indexer: batchIndex can't connect to IPC server", err)
+		log.WithFields(log.Fields{
+			"tag":   tag,
+			"error": err.Error(),
+		}).Info("Indexer: batchIndex can't connect to IPC server")
 		return
 	}
 	i := 0
@@ -189,7 +198,11 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, stop chan struct{}, 
 		blockDetail, err := fetcher.FetchABlock(blockNumber)
 		if err != nil {
 			// Finish the go-routines, someone will restart index()
-			log.Println(tag + " Indexer: cannot get block " + blockNumber.String() + " , error is " + err.Error())
+			log.WithFields(log.Fields{
+				"tag":         tag,
+				"blockNumber": blockNumber.String(),
+				"error":       err.Error(),
+			}).Error("Indexer: cannot get block")
 			break
 		}
 		isBatch := true
@@ -213,8 +226,11 @@ func (indexer *Indexer) batchIndex(batch types.BatchStatus, stop chan struct{}, 
 		}
 	}
 	duration := time.Since(start)
-	s := fmt.Sprintf("%f", duration.Minutes())
-	log.Println(tag + " Indexer: batchIndex is done in " + s + " minutes")
+	s := fmt.Sprintf("%f minutes", duration.Minutes())
+	log.WithFields(log.Fields{
+		"tag":      tag,
+		"duration": s,
+	}).Info("Indexer: batchIndex is done")
 }
 
 // ProcessBlock transform blockchain data to our index structure and save it to repo
@@ -233,13 +249,13 @@ func (indexer *Indexer) FetchAndProcess(blockNumber *big.Int) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Indexer: Fetching block %v successfully", blockNumber)
+	log.WithField("blockNumber", blockNumber).Info("Indexer: Fetching block successfully")
 	isBatch := true
 	err = indexer.ProcessBlock(blockDetail, isBatch)
 	if err != nil {
 		return err
 	}
-	log.Printf("Indexer: Processed and saved block %v successfully", blockNumber)
+	log.WithField("blockNumber", blockNumber).Info("Indexer: Processed and saved block successfully")
 	return err
 }
 

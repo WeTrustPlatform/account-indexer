@@ -1,12 +1,12 @@
 package common
 
 import (
-	"log"
 	"math/big"
 	"strconv"
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,11 +30,11 @@ func TestStrToUnixTime(t *testing.T) {
 	i, err := StrToUnixTimeInt("1405544146")
 	assert.Nil(t, err)
 	tm := time.Unix(i.Int64(), 0)
-	log.Println(tm)
+	log.Info(tm)
 	i, err = StrToUnixTimeInt("140554414")
 	assert.Nil(t, err)
 	tm = time.Unix(i.Int64(), 0)
-	log.Println(tm)
+	log.Info(tm)
 	_, err = StrToUnixTimeInt("")
 	assert.NotNil(t, err)
 	_, err = StrToUnixTimeInt("100a")
@@ -43,16 +43,16 @@ func TestStrToUnixTime(t *testing.T) {
 
 func TestStrToTime(t *testing.T) {
 	tm, err := StrToTime("1405544146")
-	log.Println(tm)
+	log.Info(tm)
 	assert.Nil(t, err)
 	tm, err = StrToTime("2019-01-19T15:04:05+0100")
-	log.Println(tm)
+	log.Info(tm)
 	assert.Nil(t, err)
 	tm, err = StrToTime("2019-01-19T15:04:05")
-	log.Println(tm)
+	log.Info(tm)
 	assert.Nil(t, err)
 	tm, err = StrToTime("2019-01-25T07:01:00.691Z")
-	log.Println(tm)
+	log.Info(tm)
 	assert.Nil(t, err)
 }
 

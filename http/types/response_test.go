@@ -3,7 +3,6 @@ package types
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/big"
 	"testing"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/common"
 	coreTypes "github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/stretchr/testify/assert"
+	log "github.com/sirupsen/logrus"
 )
 
 var index = coreTypes.AddressIndex{
