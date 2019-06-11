@@ -10,6 +10,7 @@ To get transactions of an account, use this Rest
 
 ## Configuration
 + Admin Rest API is protected by ${INDEXER_USER_NAME} and ${INDEXER_PASSWORD} environment variable
++ Use INDEXER_LOG_LEVEL to define the log level ("info" - default, "warn", "debug" ...)
 + --ipc: either unix socket or wss connection
 + -p: port number for http
 + -h: for the overall configuration
