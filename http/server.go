@@ -52,7 +52,7 @@ func NewServer(idx indexer.Indexer) Server {
 	// Don't care the error, if there is error then IPCUpdate will call
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
-		log.Println("Server: cannot create fetcher err=", err)
+		log.WithField("error", err.Error).Error("Server: cannot create fetcher")
 	} else {
 		server.fetcher = fetcher
 	}
@@ -64,10 +64,10 @@ func (server *Server) IpcUpdated(ipcPath string) {
 	// Don't care the error, if there is error then IPCUpdate will call
 	fetcher, err := fetcher.NewChainFetch()
 	if err != nil {
-		log.Println("Server - IPCUpdated: cannot create net fetcher err=", err)
+		log.WithField("error", err.Error).Error("Server - IPCUpdated: cannot create net fetcher")
 		return
 	}
-	log.Println("Server - IPCUpdated: update to new IPC successfully")
+	log.Info("Server - IPCUpdated: update to new IPC successfully")
 	server.fetcher = fetcher
 }
 
@@ -101,7 +101,7 @@ func (server *Server) Start() {
 	// Admin needs to setup a reversed proxy and forward to http://127.0.0.1:3000
 	err := router.Run(fmt.Sprintf("127.0.0.1:%v", config.GetConfig().Port))
 	if err == nil {
-		log.Println("Server: Started server successfully at port ", config.GetConfig().Port)
+		log.WithField("port", config.GetConfig().Port).Info("Server: Started server successfully")
 	} else {
 		panic(errors.New("Server: Cannot start http server. Error: " + err.Error()))
 	}
@@ -119,7 +119,7 @@ func (server *Server) getTransactionsByAccount(c *gin.Context) {
 	needGasPrice := common.Contains(addlFields, "gasPrice")
 
 	rows, start := getPagingQueryParams(c)
-	log.Printf("Server: Getting transactions for account %v\n", account)
+	log.WithField("account", account).Info("Server: Getting transactions for account")
 	total, addressIndexes := server.indexRepo.GetTransactionByAddress(account, rows, start, fromTime, toTime)
 	addresses := []httpTypes.EIAddress{}
 	for _, idx := range addressIndexes {
@@ -138,7 +138,7 @@ func (server *Server) getTransactionsByAccount(c *gin.Context) {
 				}
 
 			} else {
-				log.Println("Server: Warning: cannot get additional data for transaction ", addr.TxHash)
+				log.WithField("txHash", addr.TxHash).Warn("Server: cannot get additional data for transaction")
 			}
 		}
 		addresses = append(addresses, addr)
@@ -178,13 +178,13 @@ func (server *Server) getBlock(c *gin.Context) {
 		Start:   start,
 		Indexes: blocks,
 	}
-	log.Printf("Server: Number of found blocks : %v \n", len(blocks))
+	log.WithField("numBlock", len(blocks)).Info("Server: found blocks")
 	c.JSON(http.StatusOK, response)
 }
 
 func (server *Server) rerunBlock(c *gin.Context) {
 	blockNumberStr := c.Param("blockNumber")
-	log.Printf("Server: Getting block %v from http param", blockNumberStr)
+	log.WithField("blockNumber", blockNumberStr).Info("Server: found block from http param")
 	blockNumber := new(big.Int)
 	blockNumber, ok := blockNumber.SetString(blockNumberStr, 10)
 	if !ok {

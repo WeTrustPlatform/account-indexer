@@ -30,7 +30,7 @@ func TestContractCreation(t *testing.T) {
 	// Run Test
 	blockDetail, err := fetcher.FetchABlock(blockNumber)
 	assert.Nil(t, err)
-	// log.Println(blockDetail)
+	// log.Info(blockDetail)
 	idx := NewTestIndexer()
 	isBatch := true
 	idx.ProcessBlock(blockDetail, isBatch)

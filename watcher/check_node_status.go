@@ -1,7 +1,6 @@
 package watcher
 
 import (
-	"log"
 	"time"
 
 	"github.com/WeTrustPlatform/account-indexer/common"
@@ -9,6 +8,7 @@ import (
 	"github.com/WeTrustPlatform/account-indexer/core/types"
 	"github.com/WeTrustPlatform/account-indexer/repository"
 	"github.com/WeTrustPlatform/account-indexer/service"
+	log "github.com/sirupsen/logrus"
 )
 
 // Watcher interface for Watch()
@@ -32,13 +32,13 @@ func NewNodeStatusWatcher(indexRepo repository.IndexRepo, batchRepo repository.B
 func (n *NodeStatusWatcher) Watch() {
 	if n.isWatching {
 		// Don't start new ticker again
-		log.Println("Watcher: waching, no need to watch again")
+		log.Info("Watcher: waching, no need to watch again")
 		return
 	}
 	n.isWatching = true
 	ticker := time.NewTicker(config.GetConfig().WatcherInterval)
 	for t := range ticker.C {
-		log.Println("Watcher: Watch geth node status at", t)
+		log.WithField("ticket", t).Info("Watcher: Watch geth node status")
 		n.watch(ticker)
 	}
 }
@@ -46,7 +46,7 @@ func (n *NodeStatusWatcher) Watch() {
 func (n *NodeStatusWatcher) watch(ticker *time.Ticker) {
 	lastBlock, err := n.indexRepo.GetLastBlock()
 	if err != nil {
-		log.Println("Watcher: warning: error=", err.Error())
+		log.WithField("error", err.Error).Error("Watcher.watch error")
 		return
 	}
 	if shouldChangeIPC(lastBlock) {
@@ -65,7 +65,11 @@ func shouldChangeIPC(lastBlock types.BlockIndex) bool {
 	// check if the last received block is on time or not
 	blockDelay := createdAt.Sub(blockTime)
 	if createdAtDelay > config.GetConfig().OOSThreshold || blockDelay > config.GetConfig().OOSThreshold {
-		log.Printf("Watcher: Geth node is out of date, createdAtDelay=%v, blockDelay=%v OOSThreshold=%v \n", createdAtDelay, blockDelay, config.GetConfig().OOSThreshold)
+		log.WithFields(log.Fields{
+			"createdAtDelay": createdAtDelay,
+			"blockDelay":     blockDelay,
+			"OOSThreshold":   config.GetConfig().OOSThreshold,
+		}).Info("Watcher: Geth node is out of date")
 		return true
 	}
 	return false
