@@ -134,7 +134,7 @@ func getTotalTxFromIndexer(t *testing.T, account string) int {
 
 func getTotalTxFromEtherScan(t *testing.T, account string) int {
 	url := fmt.Sprintf("https://etherscan.io/txs?a=%v", account)
-	log.Info("Getting total transaction from %v \n", url)
+	log.Info("Getting total transaction from " + url)
 	doc := getEtherScanDoc(t, url)
 	wholeText := doc.Text()
 	i := strings.Index(wholeText, "A total of ")
@@ -149,7 +149,7 @@ func getTotalTxFromEtherScan(t *testing.T, account string) int {
 // Return list of block numbers and list of AddressIndex
 func getDataFromEtherScan(t *testing.T, account string) ([]string, []httpTypes.EIAddress) {
 	url := fmt.Sprintf("https://etherscan.io/txs?a=%v", account)
-	log.Info("Getting data from %v", url)
+	log.Info("Getting data from " + url)
 	doc := getEtherScanDoc(t, url)
 	blockNumbers := []string{}
 	txLines := []httpTypes.EIAddress{}
